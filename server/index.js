@@ -88,7 +88,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT = path.resolve(__dirname, "..");
 // Persistent secret enables the built-in API/WebSocket access-token login.
-loadConfiguredAccessToken(new URL("../config/access-token", import.meta.url));
+loadConfiguredAccessToken(
+  process.env.SPARKDASH_ACCESS_TOKEN_FILE
+    ? path.resolve(process.env.SPARKDASH_ACCESS_TOKEN_FILE)
+    : new URL("../config/access-token", import.meta.url)
+);
 
 // Default to loopback. A non-loopback bind without SPARKDASH_TOKEN stays OPEN —
 // anyone who can reach the port can mutate settings and power units — unless

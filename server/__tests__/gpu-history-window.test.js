@@ -48,6 +48,7 @@ test("gpu-history serves the week window from the long store and the 8 h window 
       BIND_HOST: "127.0.0.1",
       PORT: String(port),
       SPARKDASH_TOKEN: "",
+      SPARKDASH_ACCESS_TOKEN_FILE: path.join(tmp, "access-token"),
       SPARKS_JSON_PATH: path.join(tmp, "sparks.json"),
       SPARKS_SECRETS_PATH: path.join(tmp, "sparks-secrets.json"),
       SECRETS_KEY_PATH: path.join(tmp, ".secrets-key"),
