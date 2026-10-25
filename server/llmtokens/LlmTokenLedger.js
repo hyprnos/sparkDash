@@ -45,8 +45,8 @@ const MAX_MODELS_PER_SERIES = 100;
 const MAX_SERIES = 200;
 /** Daily per-model buckets retained for range queries (covers "last month" + margin). */
 const MAX_DAILY_DAYS = 35;
-/** Hourly per-model buckets (UTC hour keys) kept for the detailed token page's "last 24 h" view. */
-const MAX_HOURLY_HOURS = 72;
+/** Hourly per-model buckets (UTC hour keys) kept for detailed views and local calendar ranges. */
+const MAX_HOURLY_HOURS = 35 * 24;
 /** Any per-sample delta above this is a counter anomaly, not real traffic. */
 const MAX_CREDITABLE_DELTA = 1e9;
 const UNKNOWN_MODEL = "unknown";
@@ -128,6 +128,7 @@ function sanitizeBuckets(buckets) {
         completionTokens: Math.max(0, Math.round(Number(r.completionTokens) || 0)),
         cachedTokens: Math.min(cachedTokens, promptTokens),
         ...cacheReportedField(r),
+        cacheObservedPromptTokens: coverage({ ...r, promptTokens, cachedTokens }),
       };
     }
     out[bucketKey] = models;
@@ -142,10 +143,15 @@ function creditBucket(bucket, modelId, dOut, dIn, dCached, cachedReported) {
   if (dOut > 0) addTokensTo(row, "completionTokens", dOut);
   if (dIn != null && dIn > 0) addTokensTo(row, "promptTokens", dIn);
   if (dCached != null && dCached > 0) addTokensTo(row, "cachedTokens", dCached);
+  if (dCached != null && dIn > 0) addTokensTo(row, "cacheObservedPromptTokens", dIn);
   if (row.cachedTokens > row.promptTokens) {
     addTokensTo(row, "promptTokens", row.cachedTokens - row.promptTokens);
   }
 }
+
+// Legacy zero-cache buckets are ambiguous: older probes omitted the split.
+const coverage = (r) => Math.min(r.promptTokens || 0,
+  r.cacheObservedPromptTokens ?? ((r.cachedTokens || 0) > 0 ? r.promptTokens || 0 : 0));
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const DEFAULT_LEDGER_PATH = LLM_TOKEN_JSON_PATH;
@@ -215,7 +221,7 @@ export class LlmTokenLedger {
       if (!fs.existsSync(this.filePath)) return;
       const raw = JSON.parse(fs.readFileSync(this.filePath, "utf8"));
       if (!raw || typeof raw !== "object" || !raw.series || typeof raw.series !== "object") return;
-      this._data = { version: 1, series: this._sanitize(raw.series) };
+      this._data = { version: 1, series: this._sanitize(raw.series), logCursors: raw.logCursors || {} };
     } catch (err) {
       if (err instanceof SyntaxError) quarantineCorrupt(this.filePath, "LlmTokenLedger", err);
       this._data = { version: 1, series: {} };
@@ -238,6 +244,7 @@ export class LlmTokenLedger {
             completionTokens: Math.max(0, Math.round(Number(row.completionTokens) || 0)),
             // Older files have no cached split; clamp to the prompt bucket.
             cachedTokens: Math.min(cachedTokens, promptTokens),
+            cacheObservedPromptTokens: coverage({ ...row, promptTokens, cachedTokens }),
             lastSeenAt: Number(row.lastSeenAt) || 0,
             ...cacheReportedField(row),
           };
@@ -398,6 +405,7 @@ export class LlmTokenLedger {
         if (dOut > 0) addTokensTo(row, "completionTokens", dOut);
         if (dIn != null && dIn > 0) addTokensTo(row, "promptTokens", dIn);
         if (dCached != null && dCached > 0) addTokensTo(row, "cachedTokens", dCached);
+        if (dCached != null && dIn > 0) addTokensTo(row, "cacheObservedPromptTokens", dIn);
         // Keep cached ⊆ prompt: a bigger cached delta means the backend
         // backfilled cache stats for older traffic (or counted buckets
         // slightly differently). Absorb the excess into the prompt bucket.
@@ -422,6 +430,40 @@ export class LlmTokenLedger {
       this._scheduleFlush();
     }
     return changed;
+  }
+
+  importPrefillEvents(source, cursorKey, nextOffset, events) {
+    const cursors = this._data.logCursors ||= {};
+    if (nextOffset <= (cursors[cursorKey] || 0)) return false;
+    const key = seriesKey(source.sparkId, source.port);
+    const series = this._data.series[key] ||= {
+      updatedAt: 0, lastModelId: source.modelId,
+      counters: { output: null, prompt: null, cached: null }, models: {},
+    };
+    for (const e of events) {
+      const prompt = e.computed + e.cached;
+      if (!Number.isSafeInteger(prompt) || prompt < 0 || !Number.isFinite(e.at)) continue;
+      const model = series.models[source.modelId] ||= {
+        promptTokens: 0, completionTokens: 0, cachedTokens: 0, cacheReported: true,
+        cacheObservedPromptTokens: 0,
+      };
+      model.cacheReported = true;
+      model.cacheObservedPromptTokens = coverage(model);
+      addTokensTo(model, "promptTokens", prompt);
+      addTokensTo(model, "cachedTokens", e.cached);
+      addTokensTo(model, "cacheObservedPromptTokens", prompt);
+      model.lastSeenAt = Math.max(model.lastSeenAt || 0, e.at);
+      for (const [field, bucketKey] of [["hourly", utcHourKey(e.at)], ["daily", utcDateKey(e.at)]]) {
+        const buckets = series[field] ||= {};
+        creditBucket(buckets[bucketKey] ||= {}, source.modelId, 0, prompt, e.cached, true);
+      }
+      series.updatedAt = Math.max(series.updatedAt, e.at);
+    }
+    cursors[cursorKey] = nextOffset;
+    this._prune();
+    this._dirty = true;
+    this._scheduleFlush();
+    return true;
   }
 
   _prune() {
@@ -495,6 +537,7 @@ export class LlmTokenLedger {
             acc.completionTokens = addTokens(acc.completionTokens, row.completionTokens || 0);
             acc.cachedTokens = addTokens(acc.cachedTokens, row.cachedTokens || 0);
             acc.cacheReported = acc.cacheReported || cacheReportedOf(row, endpointReports);
+            acc.cacheObservedPromptTokens = addTokens(acc.cacheObservedPromptTokens || 0, coverage(row));
             agg.set(modelId, acc);
           }
         }
@@ -504,6 +547,7 @@ export class LlmTokenLedger {
           completionTokens: row.completionTokens,
           cachedTokens: Math.min(row.cachedTokens, row.promptTokens),
           cacheReported: row.cacheReported,
+          cacheObservedPromptTokens: coverage(row),
           lastSeenAt: null,
         }));
       } else if (dayCount == null) {
@@ -513,6 +557,7 @@ export class LlmTokenLedger {
           completionTokens: row.completionTokens || 0,
           cachedTokens: row.cachedTokens || 0,
           cacheReported: cacheReportedOf(row, endpointReports),
+          cacheObservedPromptTokens: coverage(row),
           lastSeenAt: row.lastSeenAt || 0,
         }));
       } else {
@@ -528,6 +573,7 @@ export class LlmTokenLedger {
             acc.completionTokens = addTokens(acc.completionTokens, row.completionTokens || 0);
             acc.cachedTokens = addTokens(acc.cachedTokens, row.cachedTokens || 0);
             acc.cacheReported = acc.cacheReported || cacheReportedOf(row, endpointReports);
+            acc.cacheObservedPromptTokens = addTokens(acc.cacheObservedPromptTokens || 0, coverage(row));
             agg.set(modelId, acc);
           }
         }
@@ -537,6 +583,7 @@ export class LlmTokenLedger {
           completionTokens: row.completionTokens,
           cachedTokens: Math.min(row.cachedTokens, row.promptTokens),
           cacheReported: row.cacheReported,
+          cacheObservedPromptTokens: coverage(row),
           lastSeenAt: null,
         }));
       }
@@ -551,6 +598,7 @@ export class LlmTokenLedger {
           promptTokens: addTokens(acc.promptTokens, row.promptTokens),
           completionTokens: addTokens(acc.completionTokens, row.completionTokens),
           cachedTokens: addTokens(acc.cachedTokens || 0, row.cachedTokens),
+          cacheObservedPromptTokens: addTokens(acc.cacheObservedPromptTokens || 0, coverage(row)),
         }),
         { promptTokens: 0, completionTokens: 0, cachedTokens: 0 }
       );
@@ -597,6 +645,7 @@ LlmTokenLedger.prototype.history = function history(nowMs = Date.now()) {
             completionTokens: r.completionTokens || 0,
             cachedTokens: Math.min(r.cachedTokens || 0, r.promptTokens || 0),
             cacheReported: cacheReportedOf(r, endpointReports),
+            cacheObservedPromptTokens: coverage(r),
           });
         }
       }

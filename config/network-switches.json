@@ -1,0 +1,176 @@
+{
+  "enabled": true,
+  "id": "crs812",
+  "name": "CRS812",
+  "address": "10.1.1.20",
+  "model": "CRS812-8DS-2DQ-2DDQ",
+  "routeros": "7.25rc3",
+  "prometheusUrl": "http://127.0.0.1:9096",
+  "ports": [
+    {
+      "name": "qsfp56-dd-2-5",
+      "peer": "spark001",
+      "configuredSpeedBps": 200000000000.0
+    },
+    {
+      "name": "qsfp56-dd-2-1",
+      "peer": "spark002",
+      "configuredSpeedBps": 200000000000.0
+    },
+    {
+      "name": "qsfp56-dd-1-5",
+      "peer": "spark003",
+      "configuredSpeedBps": 200000000000.0
+    },
+    {
+      "name": "qsfp56-dd-1-1",
+      "peer": "spark004",
+      "configuredSpeedBps": 200000000000.0
+    },
+    {
+      "name": "ether2",
+      "peer": "LAN uplink",
+      "configuredSpeedBps": 10000000000.0
+    }
+  ],
+  "sensors": [
+    {
+      "name": "cpu-temperature",
+      "label": "CPU",
+      "kind": "temperature",
+      "unit": "\u00b0C",
+      "scale": 1
+    },
+    {
+      "name": "switch-temperature",
+      "label": "Switch ASIC",
+      "kind": "temperature",
+      "unit": "\u00b0C",
+      "scale": 1
+    },
+    {
+      "name": "phy-temperature",
+      "label": "PHY",
+      "kind": "temperature",
+      "unit": "\u00b0C",
+      "scale": 1
+    },
+    {
+      "name": "fan-state",
+      "label": "Chassis fan status",
+      "kind": "status",
+      "unit": "",
+      "scale": 1,
+      "valueLabels": {
+        "0": "OK",
+        "4": "No input"
+      }
+    },
+    {
+      "name": "fan1-speed",
+      "label": "Chassis fan 1",
+      "kind": "fan",
+      "unit": "RPM",
+      "scale": 1
+    },
+    {
+      "name": "fan2-speed",
+      "label": "Chassis fan 2",
+      "kind": "fan",
+      "unit": "RPM",
+      "scale": 1
+    },
+    {
+      "name": "fan3-speed",
+      "label": "Chassis fan 3",
+      "kind": "fan",
+      "unit": "RPM",
+      "scale": 1
+    },
+    {
+      "name": "fan4-speed",
+      "label": "Chassis fan 4",
+      "kind": "fan",
+      "unit": "RPM",
+      "scale": 1
+    },
+    {
+      "name": "board-temperature1",
+      "label": "Board 1",
+      "kind": "temperature",
+      "unit": "\u00b0C",
+      "scale": 1
+    },
+    {
+      "name": "board-temperature2",
+      "label": "Board 2",
+      "kind": "temperature",
+      "unit": "\u00b0C",
+      "scale": 1
+    },
+    {
+      "name": "board-temperature3",
+      "label": "Board 3",
+      "kind": "temperature",
+      "unit": "\u00b0C",
+      "scale": 1
+    },
+    {
+      "name": "psu1-state",
+      "label": "PSU 1 status",
+      "kind": "status",
+      "unit": "",
+      "scale": 1,
+      "valueLabels": {
+        "0": "OK",
+        "4": "No input"
+      }
+    },
+    {
+      "name": "psu2-state",
+      "label": "PSU 2 status",
+      "kind": "status",
+      "unit": "",
+      "scale": 1,
+      "valueLabels": {
+        "0": "OK",
+        "4": "No input"
+      }
+    },
+    {
+      "name": "psu1-power",
+      "label": "PSU 1 power",
+      "kind": "power",
+      "unit": "W",
+      "scale": 0.1
+    },
+    {
+      "name": "psu1-temperature",
+      "label": "PSU 1",
+      "kind": "temperature",
+      "unit": "\u00b0C",
+      "scale": 1
+    },
+    {
+      "name": "psu2-temperature",
+      "label": "PSU 2",
+      "kind": "temperature",
+      "unit": "\u00b0C",
+      "scale": 1
+    },
+    {
+      "name": "psu1-fan-speed",
+      "label": "PSU 1 fan",
+      "kind": "fan",
+      "unit": "RPM",
+      "scale": 1
+    },
+    {
+      "name": "psu1-input-voltage",
+      "label": "PSU 1 input",
+      "kind": "voltage",
+      "unit": "V",
+      "scale": 0.1
+    }
+  ]
+}

@@ -5,6 +5,7 @@
  * Local-only module (like server/energy/FleetEnergyRuntime.js): index.js only
  * needs createLlmTokenRuntime() + registerLlmTokenTotalsRoute().
  */
+import { readSglangTokenLogs } from "./SglangTokenLogReader.js";
 import { extractTokenObservations, normalizeLlmTokenRange } from "./LlmTokenLedger.js";
 
 /** Ledger sampling cadence. Independent of the probe poll interval on purpose. */
@@ -46,6 +47,7 @@ export function createLlmTokenRuntime({
   setIntervalFn = setInterval,
   clearIntervalFn = clearInterval,
   logError = console.error,
+  sampleLogs = readSglangTokenLogs,
 }) {
   let started = false;
   let stopped = false;
@@ -63,7 +65,9 @@ export function createLlmTokenRuntime({
   const tick = () => {
     if (stopped) return;
     try {
-      ledger.record(extractTokenObservations(orderedSnapshots()), now());
+      const snapshots = orderedSnapshots();
+      ledger.record(extractTokenObservations(snapshots), now());
+      sampleLogs(ledger, { snapshots });
     } catch (error) {
       reportError("llm token ledger sample error", error);
     }

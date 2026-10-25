@@ -424,26 +424,26 @@ test("LlmTokenLedger.history: day and hour rows carry the same credited deltas, 
   ]);
   assert.deepEqual(h.hour.map((r) => r.t), ["2026-10-06T23", "2026-10-07T00"]);
   assert.equal(h.firstDay, "2026-10-06");
-  assert.equal(h.retention.hours, 72);
+  assert.equal(h.retention.hours, 840);
   assert.equal(h.day[0].sparkId, "s1");
   assert.equal(h.day[0].port, 8888);
 });
 
-test("LlmTokenLedger: hourly buckets are pruned to 72 hours and survive a save/load round trip", () => {
+test("LlmTokenLedger: hourly buckets are pruned to 35 days and survive a save/load round trip", () => {
   const ledger = tmpLedger();
   const base = Date.UTC(2026, 0, 1, 0, 0);
   let out = 0;
   ledger.record([{ sparkId: "s1", port: 1, modelId: "m", output: out, prompt: 0, cached: 0 }], base);
-  for (let h = 1; h <= 100; h++) {
+  for (let h = 1; h <= 900; h++) {
     out += 10;
     ledger.record([{ sparkId: "s1", port: 1, modelId: "m", output: out, prompt: 0, cached: 0 }], base + h * 3_600_000);
   }
-  const hours = ledger.history(base + 100 * 3_600_000).hour;
-  assert.equal(hours.length, 72);
+  const hours = ledger.history(base + 900 * 3_600_000).hour;
+  assert.equal(hours.length, 840);
   assert.equal(hours.at(-1).completionTokens, 10);
   ledger.flush();
   const reloaded = new LlmTokenLedger(ledger.filePath);
-  assert.equal(reloaded.history().hour.length, 72);
+  assert.equal(reloaded.history().hour.length, 840);
 });
 
 test("reset() zeroes totals and history, per Spark or for all, and keeps counter baselines", () => {

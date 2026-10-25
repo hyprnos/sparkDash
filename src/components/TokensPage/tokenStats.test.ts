@@ -11,6 +11,7 @@ import {
   buildCsv,
   buildInsights,
   cacheRate,
+  calendarDayRows,
   compare,
   endpointRows,
   entriesFromTotals,
@@ -18,6 +19,7 @@ import {
   groupBuckets,
   hitRate,
   lastSeenByModel,
+  localDayRows,
   modelRows,
   pctChange,
   rowsIn,
@@ -48,7 +50,7 @@ describe("tally", () => {
       { sparkId: "a", port: 1, modelId: "m", promptTokens: 50, completionTokens: 5, cachedTokens: 20 },
       { sparkId: "a", port: 1, modelId: "m", promptTokens: -5, completionTokens: NaN, cachedTokens: 3 },
     ]);
-    expect(t).toEqual({ generated: 15, prompt: 150, cached: 120, computed: 30, total: 165 });
+    expect(t).toEqual({ cacheObservedPrompt: 150, generated: 15, prompt: 150, cached: 120, computed: 30, total: 165 });
   });
   it("cache rate is null without prompt data and never above 1", () => {
     expect(cacheRate({ cached: 0, prompt: 0 })).toBeNull();
@@ -122,6 +124,9 @@ describe("keys and labels", () => {
   it("passes malformed keys through", () => {
     expect(bucketLabel("garbage", "day")).toBe("garbage");
   });
+  it("marks calendar day titles as local", () => {
+    expect(bucketTitle("2026-10-07", "day", undefined, true)).toBe("Wed 7 Oct 2026 (local)");
+  });
 });
 
 describe("windowFor", () => {
@@ -146,6 +151,79 @@ describe("windowFor", () => {
   });
   it("every range spec resolves", () => {
     for (const r of RANGES) expect(windowFor(r.key, hist([]), NOW).keys.length).toBeGreaterThan(0);
+  });
+  it("calendar ranges use the configured local day, not UTC midnight", () => {
+    const firstHour = "2026-09-01T00";
+    const today = windowFor("today", hist([], [], null, firstHour), NOW, 480);
+    // 22:30 in UTC+8 is 06 Oct 16:00Z through 07 Oct 14:00Z.
+    expect(today.keys[0]).toBe("2026-10-06T16");
+    expect(today.keys.at(-1)).toBe("2026-10-07T14");
+    expect(today.keys).toHaveLength(23);
+    expect(today.prevKeys[0]).toBe("2026-10-05T16");
+    const week = windowFor("week", hist([], [], null, firstHour), NOW, 480);
+    expect(week.keys).toEqual(["2026-10-05", "2026-10-06", "2026-10-07"]);
+    expect(week.prevKeys).toEqual(["2026-09-28", "2026-09-29", "2026-09-30"]);
+    const month = windowFor("month", hist([], [], null, firstHour), NOW, 480);
+    expect(month.keys[0]).toBe("2026-10-01");
+    expect(month.keys.at(-1)).toBe("2026-10-07");
+    expect(month.prevKeys[0]).toBe("2026-09-01");
+    expect(month.localDays).toBe(true);
+  });
+  it("calendar days trim buckets before tracking began", () => {
+    const w = windowFor("today", hist([], [row("2026-10-07T03")], null, "2026-10-07T03"), NOW, 480);
+    expect(w.keys[0]).toBe("2026-10-07T03");
+    expect(w.prevKeys).toEqual([]);
+  });
+  it("calendar months keep days older than hourly history", () => {
+    const w = windowFor("month", hist([row("2026-10-01")], [row("2026-10-07T03")], "2026-10-01", "2026-10-07T03"), NOW, 480);
+    expect(w.keys[0]).toBe("2026-10-01");
+    expect(w.firstKey).toBe("2026-10-01");
+  });
+  it("month-end comparison clamps to the previous month's last day", () => {
+    const dec31 = Date.parse("2026-12-31T12:00:00Z"); // 20:00 in UTC+8
+    const w = windowFor("month", hist([], [], null, "2025-12-01T00"), dec31, 480);
+    expect(w.prevKeys).toEqual(["2026-11-01", "2026-11-02", "2026-11-03", "2026-11-04", "2026-11-05", "2026-11-06", "2026-11-07", "2026-11-08", "2026-11-09", "2026-11-10", "2026-11-11", "2026-11-12", "2026-11-13", "2026-11-14", "2026-11-15", "2026-11-16", "2026-11-17", "2026-11-18", "2026-11-19", "2026-11-20", "2026-11-21", "2026-11-22", "2026-11-23", "2026-11-24", "2026-11-25", "2026-11-26", "2026-11-27", "2026-11-28", "2026-11-29", "2026-11-30"]);
+  });
+});
+
+describe("localDayRows", () => {
+  it("folds UTC hours into local days across midnight", () => {
+    const out = localDayRows(
+      [
+        row("2026-10-06T16", { promptTokens: 100, completionTokens: 10, cachedTokens: 20 }),
+        row("2026-10-06T17", { promptTokens: 200, completionTokens: 20, cachedTokens: 40 }),
+        row("2026-10-06T15", { promptTokens: 7, completionTokens: 1, cachedTokens: 2 }),
+        row("2026-10-07T01", { sparkId: "b", promptTokens: 5, completionTokens: 1, cachedTokens: 0 }),
+      ],
+      480
+    );
+    expect(out.map((r) => [r.t, r.sparkId, r.promptTokens, r.completionTokens, r.cachedTokens])).toEqual([
+      ["2026-10-06", "a", 7, 1, 2],
+      ["2026-10-07", "a", 300, 30, 60],
+      ["2026-10-07", "b", 5, 1, 0],
+    ]);
+  });
+});
+
+describe("calendarDayRows", () => {
+  it("falls back to daily buckets before hourly history without double counting", () => {
+    const out = calendarDayRows(
+      [
+        row("2026-10-07T03", { promptTokens: 100 }),
+        row("2026-10-07T20", { promptTokens: 200 }), // folds into 8 Oct locally
+        row("2026-10-08T01", { promptTokens: 300 }),
+      ],
+      [row("2026-10-05", { promptTokens: 50 }), row("2026-10-07", { promptTokens: 999 })],
+      480,
+      "2026-10-05"
+    );
+    // Every hour of the first UTC date lives in its daily bucket; only later
+    // UTC dates are folded, so the local-day boundary is not counted twice.
+    expect(out.map((r) => [r.t, r.promptTokens])).toEqual([
+      ["2026-10-05", 50],
+      ["2026-10-07", 999],
+      ["2026-10-08", 300],
+    ]);
   });
 });
 
@@ -325,4 +403,25 @@ describe("buildCsv", () => {
   it("is header-only for no rows", () => {
     expect(buildCsv([]).trim().split("\n")).toHaveLength(1);
   });
+  it("labels local calendar buckets in the header", () => {
+    expect(buildCsv([row("2026-10-07")], (id) => id, true).split("\n")[0]).toContain("bucket_local,");
+  });
+});
+
+ it("excludes unknown historical cache counters from the cache-rate denominator", () => {
+ const t = tallyOf([
+  row("x", { promptTokens: 1000, cachedTokens: 0, cacheObservedPromptTokens: 0 }),
+  row("x", { promptTokens: 100, cachedTokens: 90, cacheObservedPromptTokens: 100 }),
+ ]);
+ expect(t.prompt).toBe(1100);
+ expect(cacheRate(t)).toBe(0.9);
+ expect(cacheRate(tallyOf([row("x", { cachedTokens: 0, cacheObservedPromptTokens: 0 })]))).toBeNull();
+ });
+
+it("keeps unknown cache input separate in charts and CSV", () => {
+ const rows = [row("2026-10-07", {promptTokens:1000,cachedTokens:90,cacheObservedPromptTokens:100})];
+ const g = groupBuckets(rows,["2026-10-07"],"type");
+ expect(g.buckets[0].values).toMatchObject({computed:10,cached:90,unknown:900});
+ expect(buildCsv(rows)).toContain("cache_unknown_prompt_tokens");
+ expect(buildCsv(rows)).toContain(",90,10,100,900");
 });

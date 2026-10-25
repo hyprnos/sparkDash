@@ -132,10 +132,10 @@ export function extractSample(snapshot, isFresh = () => true) {
     m.llm.forEach((entry, i) => {
       const port = Number.isInteger(entry?.port) ? entry.port : ports[i];
       if (!Number.isInteger(port) || !ports.includes(port) || entry?.available !== true) return;
-      // The endpoint answered but its stats could not be read: a gap, not a zero rate.
+// The endpoint answered but its stats could not be read: a gap, not a zero rate.
       if (entry.measurementValid === false) return;
-      set(llmKey(port, "genTps"), entry.generationTps);
-      set(llmKey(port, "prefillTps"), entry.prefillTps);
+      if (entry.generationTpsKnown !== false) set(llmKey(port, "genTps"), entry.generationTps);
+      if (entry.prefillTpsKnown !== false) set(llmKey(port, "prefillTps"), entry.prefillTps);
       if (finite(entry.kvCacheUsage)) {
         set(llmKey(port, "kvUsage"), Math.min(1, Math.max(0, entry.kvCacheUsage)));
       }

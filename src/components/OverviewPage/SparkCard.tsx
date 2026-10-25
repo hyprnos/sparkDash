@@ -345,7 +345,7 @@ function SparkCardImpl({
               )}
               <div className="ov-launch__hint">
                 {headLlm
-                  ? `${backendLabel(headLlm.backend) ?? headLlm.backend ?? "LLM"} · ${headLlm.measurementValid === false ? "—" : headLlm.generationTps.toFixed(1)} tok/s decode${headLlm.perStreamTps != null ? ` · ${headLlm.perStreamTps.toFixed(1)} per stream` : ""}${headLlm.perStreamPrefillTps != null ? ` · ${Math.round(headLlm.perStreamPrefillTps).toLocaleString()} prefill per request (effective, incl. cached)` : ""}`
+? `${backendLabel(headLlm.backend) ?? headLlm.backend ?? "LLM"} · ${headLlm.measurementValid === false || headLlm.generationTpsKnown === false ? "—" : headLlm.generationTps.toFixed(1)} tok/s decode${headLlm.perStreamTps != null ? ` · ${headLlm.perStreamTps.toFixed(1)} per stream` : ""}${headLlm.perStreamPrefillTps != null ? ` · ${Math.round(headLlm.perStreamPrefillTps).toLocaleString()} prefill per request (effective, incl. cached)` : ""}`
                   : headSpark
                     ? headSpark.online
                       ? "No model loaded on the head"
@@ -364,8 +364,8 @@ function SparkCardImpl({
                 }
               >
                 <div className="eyebrow">Decode</div>
-                {llm.measurementValid === false ? (
-                  <div className="big-num ov-tps__num" title={llm.measurementError ?? "Stats could not be read"}>—</div>
+{llm.measurementValid === false || llm.generationTpsKnown === false ? (
+                  <div className="big-num ov-tps__num" title={llm.measurementError ?? (llm.generationTpsKnown === false ? "Rate unavailable on this poll" : "Stats could not be read")}>—</div>
                 ) : isStrata && llm.decodeActive && llm.generationTps <= 0 ? (
                   <div className="big-num ov-tps__num ov-tps__num--live">
                     <span className="ov-tps__dots" aria-hidden />
@@ -400,7 +400,7 @@ function SparkCardImpl({
                     <small>prefilling</small>
                   </div>
                 ) : (
-                  <div className="big-num ov-tps__num">{Math.round(llm.prefillTps).toLocaleString()}<small>tok/s</small></div>
+                  <div className="big-num ov-tps__num">{llm.prefillTpsKnown === false ? "—" : Math.round(llm.prefillTps).toLocaleString()}<small>tok/s</small></div>
                 )}
                 {llm.measurementValid !== false && llm.perStreamPrefillTps != null && (
                   <small
@@ -414,6 +414,10 @@ function SparkCardImpl({
               </div>
             </div>
           ) : null}
+          {llm?.runtimePhase && <div className="ov-launch__hint" title="Native engine activity and estimated uncached tokens awaiting prefill.">
+            {llm.runtimePhase.replaceAll("-", " ")} · Run {llm.requestsRunning ?? "—"} / Wait {llm.requestsWaiting ?? "—"}
+            {llm.pendingPrefillTokens != null ? ` · ${llm.pendingPrefillTokens.toLocaleString()} tokens pending (est.)` : ""}
+          </div>}
           {chips}
           {rootDisk ? (
             <div className="ov-foot">

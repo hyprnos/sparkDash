@@ -15,6 +15,7 @@ import {
   bucketTotals,
   buildCsv,
   buildInsights,
+  calendarDayRows,
   compare,
   endpointRows,
   entriesFromTotals,
@@ -46,6 +47,7 @@ const TYPE_COLORS: Record<string, string> = {
   generated: "var(--color-accent)",
   cached: "var(--color-info)",
   computed: "var(--color-violet)",
+  unknown: "var(--color-muted)",
 };
 const GROUP_COLORS = ["var(--color-accent)", "var(--color-info)", "var(--color-violet)", "var(--color-success)", "var(--color-warning)"];
 
@@ -114,7 +116,11 @@ export function TokensPage({ sparks, onSelectSpark }: { sparks: SparkSnapshot[];
     const { history, lifetime, at } = data;
     const w = windowFor(range, history, at);
     const unit = w.spec.unit;
-    const source = unit === "hour" ? history.hour : history.day;
+    // Calendar weeks/months are local days, folded from the hourly rows; UTC days
+    // cannot be split at a local midnight.
+    const source = w.spec.calendar && unit === "day"
+      ? calendarDayRows(history.hour, history.day, undefined, history.firstDay)
+      : unit === "hour" ? history.hour : history.day;
     const inRange = rowsIn(source, w.keys);
     const useLifetime = range === "all" && lifetime != null;
     const entries = useLifetime ? entriesFromTotals(lifetime) : inRange;
@@ -146,6 +152,7 @@ export function TokensPage({ sparks, onSelectSpark }: { sparks: SparkSnapshot[];
             totals: view.totals,
             firstKey: view.w.firstKey,
             sparkName,
+            localDays: view.w.localDays,
           })
         : [],
     [view, sparkName]
@@ -153,7 +160,7 @@ export function TokensPage({ sparks, onSelectSpark }: { sparks: SparkSnapshot[];
 
   const copyCsv = async () => {
     if (!view) return;
-    const text = buildCsv(view.inRange, sparkName);
+    const text = buildCsv(view.inRange, sparkName, view.w.localDays);
     const n = view.inRange.length;
     try {
       if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(text);
@@ -176,7 +183,7 @@ export function TokensPage({ sparks, onSelectSpark }: { sparks: SparkSnapshot[];
     }
   };
 
-  const spec = RANGES.find((r) => r.key === range) ?? RANGES[1];
+  const spec = RANGES.find((r) => r.key === range) ?? RANGES.find((r) => r.key === "7d")!;
   const unitWord = spec.unit === "hour" ? "hour" : "day";
 
   const series: BarSeries[] = (grouped?.series ?? []).map((s, i) => ({
@@ -187,7 +194,7 @@ export function TokensPage({ sparks, onSelectSpark }: { sparks: SparkSnapshot[];
   const buckets: BarBucket[] = (grouped?.buckets ?? []).map((b) => ({
     key: b.key,
     label: bucketLabel(b.key, spec.unit),
-    title: bucketTitle(b.key, spec.unit),
+    title: bucketTitle(b.key, spec.unit, undefined, spec.localDays),
     values: b.values,
   }));
   const chartEmpty =
@@ -256,7 +263,7 @@ export function TokensPage({ sparks, onSelectSpark }: { sparks: SparkSnapshot[];
                     Tokens per {unitWord}
                   </h2>
                   <p className="tk-card__sub">
-                    {spec.unit === "hour" ? "Local-time hours, oldest to newest" : range === "all" ? "UTC days, as far back as history is kept" : "UTC days, oldest to newest"}
+                    {spec.unit === "hour" ? "Local-time hours, oldest to newest" : range === "all" ? "UTC days, as far back as history is kept" : spec.localDays ? "Local calendar days, oldest to newest" : "UTC days, oldest to newest"}
                   </p>
                 </div>
                 <div className="tk-card__tools">
@@ -300,7 +307,7 @@ export function TokensPage({ sparks, onSelectSpark }: { sparks: SparkSnapshot[];
                   ))}
                 </ul>
               ) : (
-                <p className="tk-card__sub">Insights appear once there is traffic in {spec.phrase}.</p>
+                <p className="tk-card__sub">Insights appear once there is traffic for {spec.phrase}.</p>
               )}
             </section>
           </div>
@@ -314,7 +321,7 @@ export function TokensPage({ sparks, onSelectSpark }: { sparks: SparkSnapshot[];
                       By model
                     </h2>
                     <p className="tk-card__sub">
-                      {view.models.length} model{view.models.length === 1 ? "" : "s"} in {spec.phrase}. Click a column to sort.
+                      {view.models.length} model{view.models.length === 1 ? "" : "s"} for {spec.phrase}. Click a column to sort.
                     </p>
                   </div>
                 </div>
@@ -335,7 +342,7 @@ export function TokensPage({ sparks, onSelectSpark }: { sparks: SparkSnapshot[];
             </>
           ) : (
             <section className="panel tk-note" role="status">
-              <b>No token traffic in {spec.phrase}.</b>
+              <b>No token traffic for {spec.phrase}.</b>
               <span>
                 {view.hasRetainedHistory
                   ? " Try a longer range."
@@ -350,7 +357,9 @@ export function TokensPage({ sparks, onSelectSpark }: { sparks: SparkSnapshot[];
             </h2>
             <ul>
               <li>
-                Daily buckets are <b>UTC days</b>; hourly buckets are UTC hours shown in the time zone from Settings (browser default).
+                Rolling ranges use <b>UTC days</b>; hourly buckets are UTC hours shown in the time zone from Settings (browser default). <b>Today</b>, <b>This week</b> and <b>This month</b> are
+                absolute calendar windows in that time zone (weeks start Monday), built by folding hourly buckets into local days; days older than retained
+                hourly history fall back to UTC daily buckets.
                 {data?.history.firstDay ? (
                   <>
                     {" "}
@@ -360,7 +369,7 @@ export function TokensPage({ sparks, onSelectSpark }: { sparks: SparkSnapshot[];
               </li>
               <li>Counters that go backwards (an engine restart) are re-seeded from the new value, so a restart never inflates totals. Tokens served right before a restart can be missed.</li>
               <li>
-                Hourly history is kept for {data?.history.retention.hours ?? 72} hours and daily history for {data?.history.retention.days ?? 35} days. The hourly view only has data from when
+                Hourly history is kept for {data?.history.retention.hours ?? 840} hours and daily history for {data?.history.retention.days ?? 35} days. The hourly view only has data from when
                 it was first recorded.
               </li>
               <li>
@@ -368,10 +377,9 @@ export function TokensPage({ sparks, onSelectSpark }: { sparks: SparkSnapshot[];
                 buckets.
               </li>
               <li>
-                Generated = tokens the model wrote. Prompt = tokens it read. Cached prefill is the part of the prompt served from the prefix cache; computed prefill is the rest. Engines that do not report cache
-                hits count as zero cached.
+                Generated = tokens the model wrote. Prompt = tokens it read. Cached prefill is the part of the prompt served from the prefix cache; computed prefill is the observed uncached part. Missing cache counters remain unknown. Cache hit rate uses only input tokens with an observed cache split; partial coverage is shown explicitly. Local SGLang log counts measure scheduled prefill work, including retries, rather than completed-request billing.
               </li>
-              {view.w.prevKeys.length === 0 && spec.count != null ? <li>No change-vs-previous figures are shown because the previous {spec.phrase.replace("the last ", "")} were not fully tracked.</li> : null}
+              {view.w.prevKeys.length === 0 && spec.key !== "all" ? <li>No change-vs-previous figures are shown because {spec.prevPhrase ?? `the previous ${spec.phrase.replace("the last ", "")}`} was not fully tracked.</li> : null}
             </ul>
           </section>
         </>
@@ -406,7 +414,7 @@ function Tile({ label, value, unit, sub, delta, title }: { label: string; value:
 
 function Tiles({ s, cmp, spec }: { s: Summary; cmp: Comparison | null; spec: (typeof RANGES)[number] }) {
   const per = spec.unit === "hour" ? "hour" : "day";
-  const prevWord = `prev. ${spec.phrase.replace("the last ", "")}`;
+  const prevWord = spec.prevPhrase ? spec.prevPhrase.replace(/^the /, "") : `prev. ${spec.phrase.replace("the last ", "")}`;
   const ratio = s.genPerPrompt != null && s.generated > 0 ? s.prompt / s.generated : null;
   return (
     <section className="tk-tiles" aria-label={`Summary for ${spec.phrase}`}>
@@ -421,21 +429,21 @@ function Tiles({ s, cmp, spec }: { s: Summary; cmp: Comparison | null; spec: (ty
       <Tile
         label="Prompt (input)"
         value={fmt(s.prompt)}
-        sub={s.prompt > 0 ? `${fmt(s.computed)} computed, ${fmt(s.cached)} cached` : "No prompt data reported"}
+        sub={s.prompt > 0 ? `${fmt(s.cached)} cached; ${fmt(Math.max(0, s.prompt - (s.cacheObservedPrompt ?? s.prompt)))} without cache stats` : "No prompt data reported"}
         title={s.prompt.toLocaleString()}
         delta={<Delta value={cmp?.prompt} suffix={`vs ${prevWord}`} />}
       />
       <Tile
         label="Cache hit rate"
-        value={s.cacheRate == null ? "—" : fmtPct(s.cacheRate)}
+value={s.cacheRate == null ? "—" : fmtPct(s.cacheRate, 1)}
         sub={
           s.prompt <= 0
             ? "Needs prompt data"
             : s.cacheReported === false
               ? "This engine does not report prefix-cache hits"
               : s.cached > 0
-                ? `The prefix cache saved ${fmt(s.cached)} prefill tokens`
-                : "The prefix cache saved nothing"
+                ? `${fmt(s.cached)} of ${fmt(s.cacheObservedPrompt ?? s.prompt)} observed input tokens served from cache${(s.cacheObservedPrompt ?? s.prompt) < s.prompt ? " · Partial coverage" : ""}`
+                : "No cache hits were recorded"
         }
         delta={cmp?.cachePoints != null ? <span className={`tk-delta ${Math.abs(cmp.cachePoints) < 0.5 ? "" : cmp.cachePoints > 0 ? "is-up" : "is-down"}`}>{cmp.cachePoints >= 0 ? "+" : "−"}{Math.abs(cmp.cachePoints).toFixed(1)} pts vs {prevWord}</span> : null}
       />
@@ -453,7 +461,7 @@ function Tiles({ s, cmp, spec }: { s: Summary; cmp: Comparison | null; spec: (ty
       <Tile
         label={`Busiest ${per}`}
         value={s.busiest ? fmt(s.busiest.total) : "—"}
-        sub={s.busiest ? bucketTitle(s.busiest.key, spec.unit).replace(/ \((UTC|local)\)$/, "") : "No traffic yet"}
+        sub={s.busiest ? bucketTitle(s.busiest.key, spec.unit, undefined, spec.localDays).replace(/ \((UTC|local)\)$/, "") : "No traffic yet"}
         title={s.busiest ? s.busiest.total.toLocaleString() : undefined}
       />
     </section>

@@ -45,9 +45,11 @@ interface LlmPanelProps {
 
 const VLLM_METRIC_INFO = {
   kvCache:
-    "Free tokens left in the engine’s KV-cache pool, over the allocated pool (tokens and memory). The pool is shared across concurrent requests and can be larger than one request’s max context. High usage (≥80% full) means little room for new or long contexts and often leads to queuing or preemptions.",
+    "SGLang reports the maximum pressure across full-attention and sliding-window pools. These pools have different denominators; free full-pool tokens are omitted when this pressure cannot describe them. Other engines show free tokens left in the engine’s KV-cache pool, over the allocated pool (tokens and memory). The pool is shared across concurrent requests and can be larger than one request’s max context. High usage (≥80% full) means little room for new or long contexts and often leads to queuing or preemptions.",
+  phase: "Recent engine snapshot activity. Prefill and decode rates use successive native counter deltas. Stale or unavailable snapshots are not reported as idle.",
+  backlog: "Estimated uncached prompt tokens awaiting prefill, including the current chunked prompt and queued requests. The engine estimates cache hits for requests not yet prefix-matched.",
   requests:
-    "Run = requests actively generating on the GPU. Wait = accepted but not yet scheduled (capacity or constraints). Growing wait with high KV cache usually means the server is overloaded.",
+    "Run / Wait are the engine's reported running and waiting queues. SGLang may keep a chunked prefill outside both queues: see Phase and Prefill backlog as well.",
   ttftMean:
     "Mean time-to-first-token reported by FreeToken (a mean, not a percentile): how long requests wait until the first output token.",
   ttftP95:
@@ -438,7 +440,7 @@ export function LlmPanel({
   // The endpoint answered but its stats could not be read: show no rate rather than 0.
   const measured = llm?.measurementValid !== false;
   // While nothing is flowing, say when the endpoint last served.
-  const idleNote = available && measured && isLlmIdle({ generationTps, prefillTps, prefillActive: llm?.prefillActive, decodeActive: llm?.decodeActive })
+const idleNote = available && measured && (!llm?.runtimePhase || llm.runtimePhase === "idle") && isLlmIdle({ generationTps, prefillTps, prefillActive: llm?.prefillActive, decodeActive: llm?.decodeActive })
     ? idleLabel(llm?.lastActiveAt)
     : null;
 
@@ -511,7 +513,9 @@ export function LlmPanel({
   const isVllm = llm != null && (llm.backend === "vllm" || llm.backend === "q27" || llm.backend === "radiance" || llm.backend === "flare" || llm.backend === "locals" || llm.backend === "splash");
   // FreeToken reports KV use, active requests and a TTFT mean in /v1/stats; the tiles below are null-gated.
   const isFreeToken = llm?.backend === "freetoken";
-  const showEngineTiles = isVllm || isFreeToken || isStrata;
+const isSglang = llm?.backend === "sglang";
+  const showEngineTiles = isVllm || isFreeToken || isStrata || isSglang;
+  const phaseLabels: Record<string, string> = { prefill: "Prefilling", decode: "Decoding", mixed: "Prefill + decode", "pending-prefill": "Pending prefill", sampling: "Sampling", waiting: "Queued", idle: "Idle", stale: "Stale", unavailable: "Unavailable" };
   const kvTone =
     llm?.kvCacheUsage == null
       ? ""
@@ -555,6 +559,7 @@ export function LlmPanel({
       ? `${formatKvTokens(llm.kvCacheTokensAvailable)} free`
       : null,
     llm?.kvCacheTokens != null ? `${formatKvTokens(llm.kvCacheTokens)} pool` : null,
+    llm?.kvCacheTokensUsed != null ? `${formatKvTokens(llm.kvCacheTokensUsed)} reported in use` : null,
     llm?.kvCacheMemoryBytes != null ? formatKvBytes(llm.kvCacheMemoryBytes) : null,
   ]
     .filter(Boolean)
@@ -774,8 +779,8 @@ export function LlmPanel({
             >
               <span className="eyebrow">Decode</span>
               <div className="big-num sp-big-lg">
-                {!measured ? (
-                  <span title={llm?.measurementError ?? undefined}>—</span>
+{!measured || llm?.generationTpsKnown === false ? (
+                  <span title={llm?.measurementError ?? (llm?.generationTpsKnown === false ? "Rate unavailable on this poll" : undefined)}>—</span>
                 ) : isStrata && llm?.decodeActive && generationTps <= 0 ? (
                   <>
                     <span className="ov-tps__dots" aria-hidden />
@@ -812,10 +817,12 @@ export function LlmPanel({
             </div>
             <div
               className="sp-metric"
-              title={
-                isStrata
-                  ? "Engine-reported mean for computed/new prompt tokens. It may be from an earlier prefill and is not an aggregate across slots."
-                  : "Prompt tokens/sec taken in during the last poll window — cache-served + computed. Opening a saved chat in the UI does not hit the GPU; send (or regenerate) so the history is sent as the prompt. Cached prefill does little GPU work; uncached prefill is what builds KV cache."
+title={
+                llm?.metricsSource === "sglang-loads"
+                  ? "Computed prefill tokens/sec over successive engine snapshots; cache-served tokens are not included. — means the counter baseline or a fresh snapshot is unavailable."
+                  : isStrata
+                    ? "Engine-reported mean for computed/new prompt tokens. It may be from an earlier prefill and is not an aggregate across slots."
+                    : "Prompt tokens/sec taken in during the last poll window — cache-served + computed. Opening a saved chat in the UI does not hit the GPU; send (or regenerate) so the history is sent as the prompt. Cached prefill does little GPU work; uncached prefill is what builds KV cache."
               }
             >
               <span className="eyebrow">Prefill</span>
@@ -829,7 +836,7 @@ export function LlmPanel({
                   </>
                 ) : (
                   <>
-                    {fmtTps(prefillTps)}
+                    {llm?.prefillTpsKnown === false ? "—" : fmtTps(prefillTps)}
                     <small>tok/s</small>
                   </>
                 )}
@@ -849,7 +856,7 @@ export function LlmPanel({
           </div>
           {showPrefillSplit && (
             <div className="sp-decode sp-decode--split">
-              <div
+              {llm?.cachedPrefillTps != null && <div
                 className="sp-metric"
                 title="Prefill tokens served from prefix cache (little GPU work). High values mean prompt reuse, not a faster cold prefill."
               >
@@ -860,7 +867,7 @@ export function LlmPanel({
                 </div>
                 <TrendLine data={cachedPrefillHistory} height={30} color="var(--color-muted)" />
                 {cachedPrefillAvg != null && <span className="sp-avg mono">avg {fmtAvg(cachedPrefillAvg)}</span>}
-              </div>
+              </div>}
               <div
                 className="sp-metric"
                 title="Uncached (computed) prefill — tokens that actually build KV cache on the GPU."
@@ -877,7 +884,9 @@ export function LlmPanel({
           )}
 
           <div className="sp-tiles">
-            {showEngineTiles && kvValue != null && tile("kvCache", "KV cache", kvValue, { tone: kvTone, sub: kvSub || undefined })}
+            {llm?.runtimePhase && tile("phase", "Phase", phaseLabels[llm.runtimePhase] ?? llm.runtimePhase)}
+            {llm?.pendingPrefillTokens != null && tile("backlog", "Prefill backlog (est.)", formatKvTokens(llm.pendingPrefillTokens))}
+            {showEngineTiles && kvValue != null && tile("kvCache", isSglang ? "KV pressure" : "KV cache", kvValue, { tone: kvTone, sub: kvSub || undefined })}
             {showEngineTiles &&
               llm?.requestsRunning != null &&
               tile(

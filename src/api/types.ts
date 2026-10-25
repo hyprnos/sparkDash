@@ -483,6 +483,17 @@ export interface LlmMetrics {
    */
   perStreamPrefillTps?: number | null;
   prefillTps: number;
+  /** Native SGLang load snapshots; absent for older engines. */
+  metricsSource?: "sglang-loads";
+  runtimePhase?: "prefill" | "decode" | "mixed" | "pending-prefill" | "sampling" | "waiting" | "idle" | "stale" | "unavailable";
+  pendingPrefillTokens?: number | null;
+  telemetryTimestamp?: number | null;
+  telemetryAgeMs?: number;
+  telemetryStale?: boolean;
+  prefillTpsKnown?: boolean;
+  generationTpsKnown?: boolean;
+  kvCacheTokensUsed?: number | null;
+  kvCachePressureIsHybrid?: boolean;
   /** A prompt is being processed right now. With no live rate available (TensorFold reports totals only for finished requests) the UI says "prefilling" instead of 0. */
   prefillActive?: boolean;
   /** A request is generating right now, even when the backend has no live rate. */
@@ -1675,6 +1686,8 @@ export interface TokenHistoryRow {
    * Absent on data recorded before the flag existed (treated as reported).
    */
   cacheReported?: boolean;
+  /** Prompt tokens with an observed cache split; excludes missing historical data. */
+  cacheObservedPromptTokens?: number;
 }
 
 export interface TokenHistory {

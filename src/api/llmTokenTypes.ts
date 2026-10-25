@@ -10,12 +10,14 @@ export interface LlmTokenModelTotals {
   completionTokens: number;
   /** Prefix-cache served subset of promptTokens (0 when the backend does not report the split). */
   cachedTokens: number;
-  /**
+/**
    * Whether the backend reports the cache split at all. `false` = `cachedTokens` is not
    * a measured value (the engine publishes no prefix-cache counter), so it must render as
    * "unknown" instead of a 0 % hit rate. Absent on older data (treated as reported).
    */
   cacheReported?: boolean;
+  /** Prompt tokens with an observed cache split; excludes missing historical data. */
+  cacheObservedPromptTokens?: number;
   lastSeenAt: number;
 }
 
@@ -25,7 +27,7 @@ export interface LlmTokenSeriesTotals {
   port: number;
   updatedAt: number | null;
   lastModelId: string | null;
-  totals: { promptTokens: number; completionTokens: number; cachedTokens: number; cacheReported?: boolean };
+  totals: { promptTokens: number; completionTokens: number; cachedTokens: number; cacheReported?: boolean; cacheObservedPromptTokens?: number };
   models: LlmTokenModelTotals[];
 }
 

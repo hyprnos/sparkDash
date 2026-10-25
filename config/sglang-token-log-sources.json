@@ -1,0 +1,8 @@
+[
+  {
+    "sparkId": "spark001-4f9e87",
+    "port": 8888,
+    "modelId": "DeepSeek-V4.1-Flash-1017",
+    "containerName": "dsv41-tp4-head"
+  }
+]

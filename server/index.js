@@ -1,3 +1,5 @@
+import { registerSwitchRoutes } from "./switches/SwitchTelemetry.js";
+import { loadConfiguredAccessToken } from "./configuredAccessToken.js";
 import express from "express";
 import { createServer } from "http";
 import { WebSocketServer } from "ws";
@@ -85,13 +87,17 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT = path.resolve(__dirname, "..");
+// Persistent secret enables the built-in API/WebSocket access-token login.
+loadConfiguredAccessToken(new URL("../config/access-token", import.meta.url));
 
 // Default to loopback. A non-loopback bind without SPARKDASH_TOKEN stays OPEN —
 // anyone who can reach the port can mutate settings and power units — unless
 // SPARKDASH_ALLOW_OPEN_REMOTE=0, which makes startup fail closed instead. Prefer
 // SPARKDASH_TOKEN, an SSH tunnel, an authenticated reverse proxy, or Tailscale
 // Serve (docs/REMOTE-ACCESS.md).
-const BIND_HOST = process.env.BIND_HOST || "127.0.0.1";
+// Local: use the Linux dual-stack wildcard for the existing remote wildcard bind.
+// Keeps IPv4 working while enabling IPv6; explicit addresses/loopback stay exact.
+const BIND_HOST = process.env.BIND_HOST === "0.0.0.0" ? "::" : (process.env.BIND_HOST || "127.0.0.1");
 const PORT = parseInt(process.env.PORT || "5555", 10);
 const LLM_PORT = parseInt(process.env.LLM_PORT || "8888", 10);
 const COMFY_PORT = parseInt(process.env.COMFY_PORT || "8188", 10);
@@ -569,6 +575,7 @@ function clientKey(req) {
 registerFleetEnergyRoute(app, fleetEnergyTracker);
 registerLlmTokenTotalsRoute(app, llmTokenLedger);
 app.get("/api/model-prices", createModelPricesHandler());
+registerSwitchRoutes(app);
 registerAlertRoutes(app, alertsRuntime);
 
 // Never return SSH passwords in any response

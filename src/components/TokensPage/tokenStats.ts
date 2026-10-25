@@ -11,9 +11,10 @@ import { tzOffsetMinutes } from "../../shared/timeZone";
 import type { TokenHistory, TokenHistoryRow } from "../../api/types";
 import type { LlmTokenSeriesTotals } from "../../api/llmTokenTypes";
 
-export type RangeKey = "24h" | "7d" | "14d" | "30d" | "all";
+export type RangeKey = "today" | "week" | "month" | "24h" | "7d" | "14d" | "30d" | "all";
 export type BucketUnit = "hour" | "day";
 export type GroupBy = "type" | "model" | "spark";
+export type CalendarRange = "day" | "week" | "month";
 
 /** A token row without its time: what tables aggregate (history rows and lifetime totals both fit). */
 export type Entry = Omit<TokenHistoryRow, "t">;
@@ -24,11 +25,20 @@ export interface RangeSpec {
   /** Used in sentences: "in the last 7 days". */
   phrase: string;
   unit: BucketUnit;
-  /** Bucket count; null = everything retained. */
+  /** Bucket count; null = everything retained or a calendar window. */
   count: number | null;
+  /** Absolute calendar window in the configured time zone; absent = rolling window. */
+  calendar?: CalendarRange;
+  /** Day keys are local calendar dates, not UTC dates. */
+  localDays?: boolean;
+  /** Used in comparisons: "compared with the previous week". */
+  prevPhrase?: string;
 }
 
 export const RANGES: readonly RangeSpec[] = [
+  { key: "today", label: "Today", phrase: "today", unit: "hour", count: null, calendar: "day", prevPhrase: "the previous day" },
+  { key: "week", label: "This week", phrase: "this week", unit: "day", count: null, calendar: "week", localDays: true, prevPhrase: "the previous week" },
+  { key: "month", label: "This month", phrase: "this month", unit: "day", count: null, calendar: "month", localDays: true, prevPhrase: "the previous month" },
   { key: "24h", label: "Last 24 h", phrase: "the last 24 hours", unit: "hour", count: 24 },
   { key: "7d", label: "7 d", phrase: "the last 7 days", unit: "day", count: 7 },
   { key: "14d", label: "14 d", phrase: "the last 14 days", unit: "day", count: 14 },
@@ -50,6 +60,7 @@ function nn(v: unknown): number {
 }
 
 export interface Tally {
+  cacheObservedPrompt?: number;
   generated: number;
   prompt: number;
   /** Always <= prompt. */
@@ -71,13 +82,14 @@ export function emptyTally(): Tally {
 }
 
 /** Add one entry; cached is clamped to that entry's prompt so the invariant holds per row. */
-export function addEntry(t: Tally, e: Pick<Entry, "promptTokens" | "completionTokens" | "cachedTokens" | "cacheReported">): void {
+export function addEntry(t: Tally, e: Pick<Entry, "promptTokens" | "completionTokens" | "cachedTokens" | "cacheReported" | "cacheObservedPromptTokens">): void {
   const prompt = nn(e.promptTokens);
   const cached = Math.min(nn(e.cachedTokens), prompt);
+  t.cacheObservedPrompt = addTokens(t.cacheObservedPrompt || 0, e.cacheObservedPromptTokens == null ? prompt : Math.min(prompt, nn(e.cacheObservedPromptTokens)));
   t.generated = addTokens(t.generated, nn(e.completionTokens));
   t.prompt = addTokens(t.prompt, prompt);
   t.cached = addTokens(t.cached, cached);
-  t.computed = t.prompt - t.cached;
+  t.computed = Math.max(0, (t.cacheObservedPrompt ?? t.prompt) - t.cached);
   t.total = addTokens(t.generated, t.prompt);
   // A single reporting entry is enough; "unreported" wins only when no entry reported.
   if (e.cacheReported === true) t.cacheReported = true;
@@ -91,8 +103,9 @@ export function tallyOf(entries: readonly Entry[]): Tally {
 }
 
 /** cached / prompt, or null when there is no prompt data to divide by. */
-export function cacheRate(t: Pick<Tally, "cached" | "prompt">): number | null {
-  return t.prompt > 0 ? Math.min(1, t.cached / t.prompt) : null;
+export function cacheRate(t: Pick<Tally, "cached" | "prompt" | "cacheObservedPrompt">): number | null {
+  const observed = t.cacheObservedPrompt ?? t.prompt;
+  return observed > 0 ? Math.min(1, t.cached / observed) : null;
 }
 
 /**
@@ -158,13 +171,13 @@ export function bucketLabel(key: string, unit: BucketUnit, offsetMin?: number): 
   return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
 }
 
-/** Tooltip heading: "Wed 7 Oct 2026 (UTC)" or "Wed 7 Oct, 14:00–15:00 (local)". */
-export function bucketTitle(key: string, unit: BucketUnit, offsetMin?: number): string {
+/** Tooltip heading: "Wed 7 Oct 2026 (UTC)" or "Wed 7 Oct 2026 (local)" for calendar days, and "Wed 7 Oct, 14:00–15:00 (local)" for hours. */
+export function bucketTitle(key: string, unit: BucketUnit, offsetMin?: number, localDay = false): string {
   const ms = parseKey(key);
   if (ms == null) return key;
   if (unit === "day") {
     const d = new Date(ms);
-    return `${WEEKDAYS[d.getUTCDay()]} ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()} (UTC)`;
+    return `${WEEKDAYS[d.getUTCDay()]} ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()} (${localDay ? "local" : "UTC"})`;
   }
   const off = tzOffset(ms, offsetMin);
   const d = new Date(ms + off * 60_000);
@@ -173,13 +186,77 @@ export function bucketTitle(key: string, unit: BucketUnit, offsetMin?: number): 
   return `${WEEKDAYS[d.getUTCDay()]} ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}, ${clock(d)}–${clock(new Date(d.getTime() + 3_600_000))} (local)`;
 }
 
+/** Local wall-clock Date for `ms`, shifted by the zone offset (read with getUTC*). */
+function localWall(ms: number, offsetMin?: number): Date {
+  return new Date(ms + tzOffset(ms, offsetMin) * 60_000);
+}
+
+/** UTC ms of local midnight for a wall-clock date. */
+function zonedMidnight(y: number, m: number, d: number, offsetMin?: number): number {
+  const wall = Date.UTC(y, m, d);
+  let ms = wall;
+  // Two passes resolve zones whose offset differs from the one at the naive guess.
+  for (let i = 0; i < 2; i++) ms = wall - tzOffset(ms, offsetMin) * 60_000;
+  return ms;
+}
+
+/** Local calendar date key ("2026-10-07") for an instant or a UTC bucket start. */
+export function localDayKey(ms: number, offsetMin?: number): string {
+  return localWall(ms, offsetMin).toISOString().slice(0, 10);
+}
+
+function shiftDayKey(key: string, days: number): string {
+  const ms = Date.parse(`${key}T00:00:00Z`);
+  return new Date(ms + days * DAY_MS).toISOString().slice(0, 10);
+}
+
+/** Previous-month counterpart, clamping month-end (31 Oct → 30 Sep). */
+function shiftMonthKey(key: string, months: number): string {
+  const d = new Date(Date.parse(`${key}T00:00:00Z`));
+  const target = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + months, 1));
+  const lastDay = new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth(), Math.min(d.getUTCDate(), lastDay)))
+    .toISOString()
+    .slice(0, 10);
+}
+
+/** Local calendar date keys from `startMs` through `endMs`, oldest first. */
+function localDayKeys(startMs: number, endMs: number, offsetMin?: number): string[] {
+  const start = localWall(startMs, offsetMin);
+  const end = localWall(endMs, offsetMin);
+  const first = Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate());
+  const last = Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate());
+  const out: string[] = [];
+  for (let t = first; t <= last; t += DAY_MS) out.push(new Date(t).toISOString().slice(0, 10));
+  return out;
+}
+
+function startOfLocalDay(nowMs: number, offsetMin?: number): number {
+  const wall = localWall(nowMs, offsetMin);
+  return zonedMidnight(wall.getUTCFullYear(), wall.getUTCMonth(), wall.getUTCDate(), offsetMin);
+}
+
+/** Monday 00:00 in the configured zone. */
+function startOfLocalWeek(nowMs: number, offsetMin?: number): number {
+  const wall = localWall(nowMs, offsetMin);
+  const back = (wall.getUTCDay() + 6) % 7;
+  return zonedMidnight(wall.getUTCFullYear(), wall.getUTCMonth(), wall.getUTCDate() - back, offsetMin);
+}
+
+function startOfLocalMonth(nowMs: number, offsetMin?: number): number {
+  const wall = localWall(nowMs, offsetMin);
+  return zonedMidnight(wall.getUTCFullYear(), wall.getUTCMonth(), 1, offsetMin);
+}
+
 export interface RangeWindow {
   spec: RangeSpec;
   keys: string[];
-  /** Equal-length window right before `keys`; empty when it was not fully tracked. */
+  /** Same span right before `keys`; empty when it was not fully tracked. */
   prevKeys: string[];
   /** First bucket tracking ever recorded for this unit (null = none yet). */
   firstKey: string | null;
+  /** Calendar ranges bucket by local date, not UTC date. */
+  localDays: boolean;
 }
 
 function firstKeyOf(history: Pick<TokenHistory, "firstDay" | "firstHour" | "day" | "hour">, unit: BucketUnit): string | null {
@@ -190,13 +267,53 @@ function firstKeyOf(history: Pick<TokenHistory, "firstDay" | "firstHour" | "day"
   return min;
 }
 
+/**
+ * Absolute calendar window in the configured time zone. Today uses UTC hour
+ * buckets (the source is hourly); week and month return local date keys that
+ * the page builds by folding the same hourly rows into local days.
+ */
+function calendarWindow(
+  spec: RangeSpec,
+  history: Pick<TokenHistory, "firstDay" | "firstHour" | "day" | "hour" | "retention">,
+  nowMs: number,
+  offsetMin?: number
+): RangeWindow {
+  const firstHour = firstKeyOf(history, "hour");
+  if (spec.calendar === "day") {
+    const since = startOfLocalDay(nowMs, offsetMin);
+    let keys = bucketKeys("hour", Math.max(1, Math.floor((nowMs - since) / HOUR_MS) + 1), nowMs);
+    // Buckets before tracking began are unknown, not zero traffic.
+    if (firstHour) keys = keys.filter((k) => k >= firstHour);
+    const prevKeys = keys.map((k) => {
+      const ms = parseKey(k);
+      return ms == null ? k : hourKey(ms - DAY_MS);
+    });
+    const covered = firstHour != null && prevKeys.length > 0 && prevKeys[0] >= firstHour;
+    return { spec, keys, prevKeys: covered ? prevKeys : [], firstKey: firstHour, localDays: false };
+  }
+  const startMs = spec.calendar === "week" ? startOfLocalWeek(nowMs, offsetMin) : startOfLocalMonth(nowMs, offsetMin);
+  const firstLocalDay = firstHour ? localDayKey(parseKey(firstHour) ?? nowMs, offsetMin) : null;
+  // Older days use the daily buckets, so tracking starts at the first daily bucket.
+  const firstTracked = history.firstDay || firstLocalDay;
+  let keys = localDayKeys(startMs, nowMs, offsetMin);
+  if (firstTracked) keys = keys.filter((k) => k >= firstTracked);
+  if (keys.length === 0) keys = [localDayKey(nowMs, offsetMin)];
+  // A partial week/month compares with the same weekdays/day numbers, not a sliding window.
+  // Clamped month-ends collapse to one key, so a 31-day October compares with 30-day September.
+  const prevKeys = [...new Set(keys.map((k) => (spec.calendar === "week" ? shiftDayKey(k, -7) : shiftMonthKey(k, -1))))];
+  const covered = firstTracked != null && prevKeys.length > 0 && prevKeys[0] >= firstTracked;
+  return { spec, keys, prevKeys: covered ? prevKeys : [], firstKey: firstTracked, localDays: true };
+}
+
 /** Resolve a range into bucket keys (and the previous equal-length window when tracking covers it). */
 export function windowFor(
   range: RangeKey,
   history: Pick<TokenHistory, "firstDay" | "firstHour" | "day" | "hour" | "retention">,
-  nowMs: number
+  nowMs: number,
+  offsetMin?: number
 ): RangeWindow {
-  const spec = RANGES.find((r) => r.key === range) ?? RANGES[1];
+  const spec = RANGES.find((r) => r.key === range) ?? RANGES.find((r) => r.key === "7d")!;
+  if (spec.calendar) return calendarWindow(spec, history, nowMs, offsetMin);
   const firstKey = firstKeyOf(history, spec.unit);
   if (spec.count == null) {
     // All time: the retained daily buckets, from the first tracked day to today.
@@ -204,7 +321,7 @@ export function windowFor(
     const todayMs = Math.floor(nowMs / DAY_MS) * DAY_MS;
     const firstMs = firstKey ? parseKey(firstKey) : null;
     const spanDays = firstMs == null ? 1 : Math.max(1, Math.round((todayMs - firstMs) / DAY_MS) + 1);
-    return { spec, keys: bucketKeys("day", Math.min(spanDays, retained), nowMs), prevKeys: [], firstKey };
+    return { spec, keys: bucketKeys("day", Math.min(spanDays, retained), nowMs), prevKeys: [], firstKey, localDays: false };
   }
   const keys = bucketKeys(spec.unit, spec.count, nowMs);
   const step = spec.unit === "hour" ? HOUR_MS : DAY_MS;
@@ -212,7 +329,7 @@ export function windowFor(
   const prevKeys = bucketKeys(spec.unit, spec.count, startMs - step);
   // Only compare against a previous period that tracking fully covered.
   const covered = firstKey != null && prevKeys[0] >= firstKey;
-  return { spec, keys, prevKeys: covered ? prevKeys : [], firstKey };
+  return { spec, keys, prevKeys: covered ? prevKeys : [], firstKey, localDays: false };
 }
 
 /** Buckets from `firstKey` through the current one (inclusive); null when nothing was tracked yet. */
@@ -226,6 +343,80 @@ export function trackedBuckets(firstKey: string | null, unit: BucketUnit, nowMs:
 export function rowsIn(rows: readonly TokenHistoryRow[], keys: readonly string[]): TokenHistoryRow[] {
   const set = new Set(keys);
   return rows.filter((r) => set.has(r.t));
+}
+
+/**
+ * Fold UTC hour rows into local calendar days. Calendar ranges need this because
+ * a local day spans two UTC days; the raw daily buckets cannot be split.
+ */
+export function localDayRows(hourRows: readonly TokenHistoryRow[], offsetMin?: number): TokenHistoryRow[] {
+  const by = new Map<string, TokenHistoryRow & { observed?: number; sawObserved?: boolean }>();
+  for (const r of hourRows) {
+    const ms = parseKey(r.t);
+    if (ms == null) continue;
+    const t = localDayKey(ms, offsetMin);
+    const id = `${t}\u0000${r.sparkId}\u0000${r.port}\u0000${r.modelId}`;
+    let out = by.get(id);
+    if (!out) {
+      out = {
+        t,
+        sparkId: r.sparkId,
+        port: r.port,
+        modelId: r.modelId,
+        promptTokens: 0,
+        completionTokens: 0,
+        cachedTokens: 0,
+      };
+      by.set(id, out);
+    }
+    out.promptTokens = addTokens(out.promptTokens, nn(r.promptTokens));
+    out.completionTokens = addTokens(out.completionTokens, nn(r.completionTokens));
+    out.cachedTokens = addTokens(out.cachedTokens, nn(r.cachedTokens));
+    if (r.cacheObservedPromptTokens != null) {
+      out.sawObserved = true;
+      out.observed = addTokens(out.observed ?? 0, nn(r.cacheObservedPromptTokens));
+    }
+  }
+  return [...by.values()]
+    .map(({ observed, sawObserved, ...r }) => ({ ...r, ...(sawObserved ? { cacheObservedPromptTokens: observed } : {}) }))
+    .sort((a, b) => a.t.localeCompare(b.t) || a.sparkId.localeCompare(b.sparkId) || a.port - b.port || a.modelId.localeCompare(b.modelId));
+}
+
+/**
+ * Calendar-range rows: exact local days folded from retained hours, plus UTC daily
+ * buckets for days older than the hourly retention. The fallback keeps "This month"
+ * from undercounting pre-upgrade history; those older days are UTC-aligned.
+ */
+export function calendarDayRows(
+  hourRows: readonly TokenHistoryRow[],
+  dayRows: readonly TokenHistoryRow[],
+  offsetMin?: number,
+  firstDay: string | null = null
+): TokenHistoryRow[] {
+  const firstHourUtcDate = hourRows.reduce<string | null>(
+    (min, r) => (r.t.length >= 10 && (!min || r.t.slice(0, 10) < min) ? r.t.slice(0, 10) : min),
+    null
+  );
+  // Use daily buckets through the first hourly UTC date: that date's hourly
+  // coverage is partial, and a daily bucket must replace ALL of its hours
+  // (some fold into the next local day) or the boundary is double counted.
+  const fallbackDates = new Set<string>();
+  const out: TokenHistoryRow[] = [];
+  for (const r of dayRows) {
+    if (firstHourUtcDate && r.t > firstHourUtcDate) continue;
+    if (firstDay && r.t < firstDay) continue;
+    fallbackDates.add(r.t);
+    out.push({ ...r });
+  }
+  const folded = localDayRows(
+    hourRows.filter((r) => {
+      const utcDate = r.t.slice(0, 10);
+      return !firstHourUtcDate || utcDate > firstHourUtcDate || !fallbackDates.has(utcDate);
+    }),
+    offsetMin
+  );
+  out.push(...folded);
+  return out.sort((a, b) => a.t.localeCompare(b.t) || a.sparkId.localeCompare(b.sparkId) || a.port - b.port || a.modelId.localeCompare(b.modelId));
 }
 
 /** Per-bucket totals (generated + prompt) for `keys`, zero where nothing was recorded. */
@@ -248,6 +439,7 @@ export function entriesFromTotals(series: readonly LlmTokenSeriesTotals[]): Entr
         completionTokens: m.completionTokens,
         cachedTokens: m.cachedTokens,
         cacheReported: m.cacheReported,
+        cacheObservedPromptTokens: m.cacheObservedPromptTokens,
       });
     }
   }
@@ -359,15 +551,17 @@ export function groupBuckets(
   }
 
   if (by === "type") {
-    const totals: Record<string, number> = { generated: 0, cached: 0, computed: 0 };
+    const totals: Record<string, number> = { generated: 0, cached: 0, computed: 0, unknown: 0 };
     const buckets = keys.map((key) => {
       const t = tallyOf(byKey.get(key) ?? []);
       totals.generated += t.generated;
       totals.cached += t.cached;
       totals.computed += t.computed;
-      return { key, values: { generated: t.generated, cached: t.cached, computed: t.computed } };
+      const unknown = t.prompt - (t.cacheObservedPrompt ?? t.prompt);
+      totals.unknown += unknown;
+      return { key, values: { generated: t.generated, cached: t.cached, computed: t.computed, ...(unknown > 0 ? { unknown } : {}) } };
     });
-    return { series: TYPE_SERIES.map((s) => ({ ...s, total: totals[s.id] })), buckets };
+    return { series: [...TYPE_SERIES, ...(totals.unknown > 0 ? [{ id: "unknown", label: "Input · cache stats unavailable" }] : [])].map((s) => ({ ...s, total: totals[s.id] })), buckets };
   }
 
   const idOf = (r: TokenHistoryRow) => (by === "model" ? r.modelId : r.sparkId);
@@ -501,6 +695,8 @@ export interface InsightInput {
   firstKey: string | null;
   sparkName: (id: string) => string;
   tzOffsetMin?: number;
+  /** Calendar ranges bucket by local date, so titles must not say UTC. */
+  localDays?: boolean;
 }
 
 const compact = formatTokensCompact;
@@ -515,15 +711,17 @@ export function buildInsights(i: InsightInput): string[] {
 
   if (s.busiest && s.activeBuckets >= 2) {
     const share = s.busiest.total / Math.max(1, i.totals.reduce((a, b) => a + b.total, 0));
-    out.push(`The busiest ${unitWord} was ${bucketTitle(s.busiest.key, i.spec.unit, i.tzOffsetMin).replace(/ \((UTC|local)\)$/, "")} with ${compact(s.busiest.total)} tokens, ${fmtPct(share)} of ${period === "all time" ? "the retained history" : period}.`);
+    out.push(`The busiest ${unitWord} was ${bucketTitle(s.busiest.key, i.spec.unit, i.tzOffsetMin, i.localDays).replace(/ \((UTC|local)\)$/, "")} with ${compact(s.busiest.total)} tokens, ${fmtPct(share)} of ${period === "all time" ? "the retained history" : period}.`);
   }
 
   if (s.prompt > 0) {
-    const rate = hitRate(s);
+const rate = hitRate(s);
     if (rate == null) {
       out.push("This engine does not publish a prefix-cache counter, so the cache hit rate cannot be measured — only the per-response split knows it.");
     } else if (s.cached > 0) {
-      out.push(`The prefix cache served ${fmtPct(rate)} of prompt tokens, so about ${compact(s.cached)} prefill tokens did not have to be recomputed.`);
+      const observed = s.cacheObservedPrompt ?? s.prompt;
+      const partial = observed < s.prompt;
+      out.push(`The prefix cache served ${fmtPct(rate)} of ${partial ? "cache-observed prompt tokens (partial coverage)" : "prompt tokens"}, so about ${compact(s.cached)} prefill tokens did not have to be recomputed.`);
     } else {
       out.push("No prompt tokens were served from the prefix cache: either prefix caching is off or no prompt reused an earlier one.");
     }
@@ -559,7 +757,7 @@ export function buildInsights(i: InsightInput): string[] {
 
   if (i.comparison?.total != null && out.length < 6) {
     const c = i.comparison.total;
-    const prev = i.spec.phrase.replace("the last", "the previous");
+    const prev = i.spec.prevPhrase ?? i.spec.phrase.replace("the last", "the previous");
     out.push(Math.abs(c) < 0.01 ? `Usage is flat compared with ${prev}.` : `Usage is ${c > 0 ? "up" : "down"} ${fmtPct(Math.abs(c))} compared with ${prev}.`);
   }
   return out.slice(0, 6);
@@ -572,15 +770,20 @@ function csvCell(v: string | number): string {
   return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-/** Raw per-bucket rows (UTC bucket start) with a computed-prefill column. */
-export function buildCsv(rows: readonly TokenHistoryRow[], sparkName: (id: string) => string = (id) => id): string {
-  const head = ["bucket_utc", "spark_id", "spark", "port", "model", "prompt_tokens", "completion_tokens", "cached_tokens", "computed_prefill_tokens"];
+/** Raw per-bucket rows (bucket start in UTC, or a local date for calendar ranges) with a computed-prefill column. */
+export function buildCsv(rows: readonly TokenHistoryRow[], sparkName: (id: string) => string = (id) => id, localDays = false): string {
+  const partial = rows.some(r => r.cacheObservedPromptTokens != null && r.cacheObservedPromptTokens < r.promptTokens);
+  const head = [`bucket_${localDays ? "local" : "utc"}`, "spark_id", "spark", "port", "model", "prompt_tokens", "completion_tokens", "cached_tokens", "computed_prefill_tokens"];
+  if (partial) head.push("cache_observed_prompt_tokens", "cache_unknown_prompt_tokens");
   const sorted = [...rows].sort((a, b) => a.t.localeCompare(b.t) || a.sparkId.localeCompare(b.sparkId) || a.port - b.port || a.modelId.localeCompare(b.modelId));
   const lines = [head.join(",")];
   for (const r of sorted) {
     const prompt = nn(r.promptTokens);
     const cached = Math.min(nn(r.cachedTokens), prompt);
-    lines.push([r.t, r.sparkId, sparkName(r.sparkId), r.port, r.modelId, prompt, nn(r.completionTokens), cached, prompt - cached].map(csvCell).join(","));
+    const observed = r.cacheObservedPromptTokens == null ? prompt : Math.min(prompt, nn(r.cacheObservedPromptTokens));
+    const values = [r.t, r.sparkId, sparkName(r.sparkId), r.port, r.modelId, prompt, nn(r.completionTokens), cached, Math.max(0, observed - cached)];
+    if (partial) values.push(observed, prompt - observed);
+    lines.push(values.map(csvCell).join(","));
   }
   return lines.join("\n") + "\n";
 }

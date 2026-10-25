@@ -8,6 +8,7 @@ import { LLM_PROBE_TIMEOUT_MS } from "../config.js";
 import { classifyHostScope } from "../validate.js";
 import { llmProbeHost } from "./llmHost.js";
 import { openSshLlmTunnel } from "./llmTunnel.js";
+import { SglangLoadTelemetry } from "./SglangLoadTelemetry.js";
 
 const FAIL_RESET_THRESHOLD = 3;
 /** Direct failures in a row before the probe tries an SSH tunnel to the unit's loopback. */
@@ -240,6 +241,8 @@ export class LlmProbe {
      * @type {"server_info" | "prometheus" | null}
      */
     this._sglangTokenSource = null;
+    this._sglangNativeTelemetry = new SglangLoadTelemetry();
+    this._sglangLoadPayload = null;
   }
 
   /**
@@ -435,6 +438,11 @@ export class LlmProbe {
   }
 
   _resetDetection() {
+    this._sglangNativeTelemetry = new SglangLoadTelemetry();
+    this._sglangLoadPayload = null;
+    for (const key of ["metricsSource", "runtimePhase", "pendingPrefillTokens",
+      "telemetryTimestamp", "telemetryAgeMs", "telemetryStale", "prefillTpsKnown",
+      "generationTpsKnown", "kvCacheTokensUsed", "kvCachePressureIsHybrid"]) delete this[key];
     this.serverIsOpenAI = null;
     this.backendType = null;
     this.authOpen = null;
@@ -1047,6 +1055,7 @@ export class LlmProbe {
       // Gate on which series answered, never on the displayed rates: a live
       // rate keeps the split path selected forever, and the split path is not
       // allowed to clear prefillTps — the value then latches (#99).
+      let promOwnsTotals = false;
       try {
         const metricsRes = await this._fetch(`${this.baseUrl}/metrics`);
         if (metricsRes.ok) {
@@ -1054,11 +1063,29 @@ export class LlmProbe {
           this._applySglangKvMetrics(txt);
           if (this._sglangTotalsPolled) this._applySglangPrefillSplit(txt, dtSec);
           else this._applySglangMetrics(txt, dtSec);
+          promOwnsTotals = this._sglangTokenSource === "prometheus";
         }
       } catch {
         /* metrics optional */
       }
       await this._enrichSglangModelInfo();
+      // Current /v1/loads has live counters and pool/queue gauges even with
+      // --enable-metrics off. Apply last so optional legacy probes cannot
+      // overwrite a live rate with a sticky decode gauge or clear the KV pool.
+      const native = this._sglangNativeTelemetry.sample(this._sglangLoadPayload)
+        ?? this._sglangNativeTelemetry.unavailable();
+      if (native) {
+        // The loads snapshot carries a lifetime completion counter. Use it
+        // only when this poll's Prometheus/server_info series did not provide
+        // one, so two different cumulative series are never mixed.
+        const nativeOutput = native.totalOutputTokens;
+        delete native.totalOutputTokens;
+        Object.assign(this, native);
+        if (!promOwnsTotals && !this._sglangTotalsPolled &&
+            nativeOutput != null) {
+          this.totalOutputTokens = nativeOutput;
+        }
+      }
       // Native SGLang endpoints expose the storage path (often just `/model`).
       // Keep that as modelPath, but show/use the client-facing served model ID.
       if (servedModelId) this.modelId = servedModelId;
@@ -2485,13 +2512,17 @@ export class LlmProbe {
    * num_reqs is running + waiting.
    */
   async _probeSglangLoad() {
+    this._sglangLoadPayload = null;
     this._sglangLoadGenTps = null;
     for (const path of ["/v1/loads", "/get_load"]) {
       try {
         const res = await this._fetch(`${this.baseUrl}${path}`);
         if (!res.ok) continue;
         const data = await res.json().catch(() => null);
-        if (this._applySglangLoad(data)) return;
+        if (this._applySglangLoad(data)) {
+          this._sglangLoadPayload = data;
+          return;
+        }
       } catch {
         /* try next */
       }
@@ -3202,6 +3233,16 @@ export class LlmProbe {
       gpuMemoryUtilization: this.gpuMemoryUtilization,
       slotsActive: this.slotsActive,
       slotsTotal: this.slotsTotal,
+      metricsSource: this.backendType === "sglang" ? this.metricsSource : undefined,
+      runtimePhase: this.backendType === "sglang" ? this.runtimePhase : undefined,
+      pendingPrefillTokens: this.pendingPrefillTokens,
+      telemetryTimestamp: this.telemetryTimestamp,
+      telemetryAgeMs: this.telemetryAgeMs,
+      telemetryStale: this.telemetryStale,
+      prefillTpsKnown: this.prefillTpsKnown,
+      generationTpsKnown: this.generationTpsKnown,
+      kvCacheTokensUsed: this.kvCacheTokensUsed,
+      kvCachePressureIsHybrid: this.kvCachePressureIsHybrid,
       generationTps: this.generationTps,
       perStreamTps: this.perStreamTps,
       perStreamPrefillTps: this.perStreamPrefillTps,

@@ -1,3 +1,4 @@
+import { SwitchMonitorPanel } from "../NetworkSwitches/SwitchMonitorPanel";
 import { useEffect, useMemo, useState } from "react";
 import type { AlertInstance, SparkSnapshot } from "../../api/types";
 import { isWorkerSpark } from "../../api/sparkRole";
@@ -344,7 +345,8 @@ export function OverviewPage({
             );
           })}
         </div>
-        <FleetKpis sparks={sparks} snapshotKey={sparks} show={kpis} />
+<FleetKpis sparks={sparks} snapshotKey={sparks} show={kpis} />
+        <SwitchMonitorPanel />
         {showFleetEnergy || showLlmTokenTotals || showActivityFeed || showInferenceActivity ? (
         <div className="ov-side">
           {showInferenceActivity ? <InferenceTrafficCard /> : null}
