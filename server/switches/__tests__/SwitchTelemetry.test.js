@@ -4,7 +4,12 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {normalizeSwitch,normalizeHistory,SwitchTelemetry,readSwitchConfig} from '../SwitchTelemetry.js';
-const config=JSON.parse(fs.readFileSync(new URL('../../../config/network-switches.json',import.meta.url),'utf8'));
+// Synthetic inventory: tests never read the live operator configuration.
+const config={enabled:true,id:'crs812',name:'Test switch',address:'192.0.2.20',prometheusUrl:'http://127.0.0.1:9096',
+ ports:[{name:'test-port',peer:'test-node',configuredSpeedBps:200e9}],
+ sensors:[{name:'switch-temperature',kind:'temperature',scale:1,unit:'°C'},
+ {name:'psu1-input-voltage',kind:'voltage',scale:.1,unit:'V'},
+ {name:'psu1-power',kind:'power',scale:.1,unit:'W'}]};
 const now=200000;
 const row=(name,value,labels={})=>({metric:{__name__:name,instance:config.address,...labels},value:[200,String(value)]});
 const job=(name,value,kind,labels={})=>row(name,value,{job:'crs812_'+kind,...labels});
@@ -45,5 +50,26 @@ test('snapshot coalesces requests, bounds cache and hides downstream errors; rej
   clock+=4000;fail=true;const d=await service.snapshot();assert.equal(d.switches[0].available,false);assert.doesNotMatch(JSON.stringify(d),/private credentials/);
   assert.equal(await service.history('http://external'),null);await assert.rejects(service.history('crs812','bad'));
   fs.writeFileSync(file,JSON.stringify({...config,prometheusUrl:'http://external'}));assert.throws(()=>readSwitchConfig(file),/local/);
+ }finally{fs.rmSync(dir,{recursive:true});}
+});
+test('peak buckets retain valid historical rates if collector is down at bucket end, and leave empty buckets unknown',()=>{
+ const metric={__name__:'crs812:rx_bits_per_second',ifName:config.ports[0].name};
+ const h=normalizeHistory(config,[{metric,values:[[300,'198e9'],[900,'0']]}],300,900,300,{trafficAggregation:'max'});
+ assert.deepEqual(h.series[0].values,[[300,198],[600,null],[900,0]]);
+ assert.ok(h.series.find(s=>s.kind==='temperature').values.every(p=>p[1]===null));
+});
+test('long history explicitly aggregates every traffic sample within non-overlapping buckets',async()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'switch-history-test-'));const file=path.join(dir,'config.json');fs.writeFileSync(file,JSON.stringify(config));
+ const calls=[];
+ const service=new SwitchTelemetry({configFile:file,now:()=>1805000,fetchFn:async url=>{
+  const q=url.searchParams.get('query');calls.push(q);
+  const metric=q.includes('max_over_time(crs812:rx_')?'crs812:rx_bits_per_second':q.includes('max_over_time(crs812:tx_')?'crs812:tx_bits_per_second':null;
+  return {ok:true,json:async()=>({status:'success',data:{result:metric?[{metric:{__name__:metric,ifName:config.ports[0].name},values:[[Number(url.searchParams.get('end')),'198e9']]}]:[]}})};
+ }});
+ try{
+  const d=await service.history('crs812','24h');
+  assert.equal(d.trafficAggregation,'max');assert.equal(d.step,300);assert.equal(d.end,1805);assert.equal(d.series[0].values.at(-1)[1],198);
+  assert.equal(calls.filter(q=>q.includes('max_over_time')&&q.includes('[300s]')).length,2);
+  assert.ok(calls.some(q=>q.includes('mtxrGaugeValue')));
  }finally{fs.rmSync(dir,{recursive:true});}
 });

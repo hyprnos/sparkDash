@@ -56,7 +56,7 @@ export function normalizeSwitch(config, vector, now = Date.now()) {
     uptimeSeconds:uptime==null?null:uptime/100,sensors,ports,retentionDays:30,trafficIntervalSeconds:5,healthIntervalSeconds:30};
 }
 
-export function normalizeHistory(config,matrix,start,end,step) {
+export function normalizeHistory(config,matrix,start,end,step,{trafficAggregation='instant'}={}) {
   const rows=Array.isArray(matrix)?matrix:[];
   const points=[];
   for(let t=start;t<=end;t+=step)points.push(t);
@@ -67,7 +67,7 @@ export function normalizeHistory(config,matrix,start,end,step) {
   const series=[];
   for(const p of config.ports)for(const direction of ['rx','tx']){
     const data=values(rows.find(r=>r.metric.__name__===`crs812:${direction}_bits_per_second`&&r.metric.ifName===p.name));
-    series.push({id:p.name+':'+direction,name:p.name,label:p.peer||p.name,kind:direction,unit:'Gbps',values:points.map(t=>[t,fresh('ports',t)&&data.get(t)!=null&&data.get(t)>=0?data.get(t)/1e9:null])});
+    series.push({id:p.name+':'+direction,name:p.name,label:p.peer||p.name,kind:direction,unit:'Gbps',values:points.map(t=>[t,(trafficAggregation==='max'||fresh('ports',t))&&data.get(t)!=null&&data.get(t)>=0?data.get(t)/1e9:null])});
   }
   for(const s of config.sensors.filter(s=>s.kind==='temperature')){
     const data=values(rows.find(r=>r.metric.__name__==='mtxrGaugeValue'&&r.metric.mtxrGaugeName===s.name));
@@ -108,9 +108,23 @@ export class SwitchTelemetry {
     if(!config||config.id!==id)return null;
     const window={ '1h':[3600,15], '24h':[86400,300], '7d':[604800,1800]}[range];
     if(!window)throw new Error('Unsupported switch history range');
-    const [duration,step]=window,end=Math.floor(this.now()/1000/step)*step,start=end-duration;
-    const matrix=await this.query(config,'{__name__=~"crs812:(rx_bits_per_second|tx_bits_per_second)|mtxrGaugeValue|up|crs812:sample_time_seconds",job=~"crs812_(ports|health)"}',{start,end,step});
-    return {id,range,...normalizeHistory(config,matrix,start,end,step)};
+    // End at now so even a 30-minute chart includes the current partial window.
+    const [duration,step]=window,end=Math.floor(this.now()/1000),start=end-duration;
+    // query_range with a coarse step samples instants; it does NOT aggregate
+    // intermediate samples. Preserve short bursts with actual maxima in (t-step,t].
+    // Rate recording rules already exclude failed scrapes. Do not gate a bucket's
+    // valid historical peak on availability at its end (a link may have gone down).
+    const trafficQuery=direction=>{
+      const metric=`crs812:${direction}_bits_per_second`;
+      return `label_replace(max_over_time(${metric}{job="crs812_ports"}[${step}s]), "__name__", "${metric}", "", "")`;
+    };
+    const matrices=await Promise.all([
+      this.query(config,trafficQuery('rx'),{start,end,step}),
+      this.query(config,trafficQuery('tx'),{start,end,step}),
+      this.query(config,'{__name__=~"mtxrGaugeValue|up|crs812:sample_time_seconds",job=~"crs812_(ports|health)"}',{start,end,step}),
+    ]);
+    return {id,range,trafficAggregation:'max',trafficSampleSeconds:5,
+      ...normalizeHistory(config,matrices.flat(),start,end,step,{trafficAggregation:'max'})};
   }
 }
 

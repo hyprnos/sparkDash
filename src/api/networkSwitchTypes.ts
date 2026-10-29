@@ -50,5 +50,7 @@ export interface SwitchHistory {
   id: string;
   range: SwitchHistoryRange;
   start:number;end:number;step:number;
+  trafficAggregation?: 'max';
+  trafficSampleSeconds?: number;
   series: {id:string;name:string;label:string;kind:'rx'|'tx'|'temperature';unit:string;values:[number,number|null][]}[];
 }

@@ -40,7 +40,7 @@ function SwitchCard({device,transportStale}:{device:NetworkSwitch;transportStale
  },[expanded,range,device.id]);
  const chart=(id:string):LinePoint[]=>{
   const series=history?.series.find(s=>s.id===id);
-  return (series?.values??[]).map(([t,value])=>({key:String(t),label:new Date(t*1000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),title:new Date(t*1000).toLocaleString(),value}));
+  return (series?.values??[]).map(([t,value])=>({key:String(t),label:new Date(t*1000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),title:new Date(t*1000).toLocaleString()+(history?.trafficAggregation==='max'&&id.includes(':')?` · peak in previous ${history.step}s`:''),value}));
  };
  const primary=['switch-temperature','cpu-temperature','phy-temperature','fan1-speed','fan2-speed','fan3-speed','fan4-speed'];
  const issues=device.ports.filter(p=>p.link==='up'&&((p.rxErrorsPerSecond??0)>0||(p.txErrorsPerSecond??0)>0));
@@ -56,8 +56,9 @@ function SwitchCard({device,transportStale}:{device:NetworkSwitch;transportStale
    <div className="sw-detail-head"><h4>History</h4><div className="sw-ranges">{(['1h','24h','7d'] as const).map(r=><button key={r} className={`btn btn--sm ${range===r?'sw-selected':'btn--ghost'}`} aria-pressed={range===r} onClick={()=>setRange(r)}>{r==='1h'?'Last hour':r==='24h'?'24 hours':'7 days'}</button>)}</div></div>
    <p className="sw-note">{device.retentionDays}-day retention. Collection starts when monitoring is enabled; earlier history is not reconstructed. RX and TX have independent full-duplex utilisation. Where SNMP does not report speed, utilisation uses the labelled configured bandwidth.</p>
    {historyFailed?<p className="sw-note">History unavailable. Retry automatically in 30 seconds.</p>:history==null?<p className="sw-note">Loading switch history…</p>:<>
+   <p className="sw-note">Traffic: highest {history.trafficSampleSeconds??5}s sampled rate per {history.step<60?`${history.step}s`:history.step<3600?`${history.step/60}min`:`${history.step/3600}h`} bucket. Short bursts are preserved; this is not the bucket average. Temperatures are point samples.</p>
    <label className="sw-select-label">Port<select value={port} onChange={e=>setPort(e.target.value)}>{device.ports.map(p=><option key={p.name} value={p.name}>{p.peer||p.name} · {p.name}</option>)}</select></label>
-   <div className="sw-charts"><div><h5>RX · into switch</h5><LineAreaChart points={chart(port+':rx')} format={v=>v.toFixed(v<1?3:1)} unit="Gbps" ariaLabel="Switch receive traffic history"/></div><div><h5>TX · out of switch</h5><LineAreaChart points={chart(port+':tx')} color="var(--color-info)" format={v=>v.toFixed(v<1?3:1)} unit="Gbps" ariaLabel="Switch transmit traffic history"/></div></div>
+   <div className="sw-charts"><div><h5>RX · into switch · peak</h5><LineAreaChart points={chart(port+':rx')} format={v=>v.toFixed(v<1?3:1)} unit="Gbps" ariaLabel="Switch receive traffic history"/></div><div><h5>TX · out of switch · peak</h5><LineAreaChart points={chart(port+':tx')} color="var(--color-info)" format={v=>v.toFixed(v<1?3:1)} unit="Gbps" ariaLabel="Switch transmit traffic history"/></div></div>
    <label className="sw-select-label">Temperature sensor<select value={sensor} onChange={e=>setSensor(e.target.value)}>{device.sensors.filter(s=>s.kind==='temperature').map(s=><option key={s.name} value={s.name}>{s.label}</option>)}</select></label>
    <LineAreaChart points={chart(sensor)} color="var(--color-warning)" format={v=>v.toFixed(0)} unit="°C" ariaLabel="Switch temperature history"/>
    </>}
