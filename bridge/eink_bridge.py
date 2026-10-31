@@ -71,14 +71,14 @@ TEXT_SCRIM = 0.88
 TEXT_CONTRAST_FLOOR = 96
 
 # Typography sizes (pixels).
-TITLE_SIZE = 20
-SUBTITLE_SIZE = 13
-HEADLINE_LABEL_SIZE = 15
+TITLE_SIZE = 22
+SUBTITLE_SIZE = 15
+HEADLINE_LABEL_SIZE = 17
 HEADLINE_VALUE_SIZE = 64
-STAT_SIZE = 14
-STAT_VALUE_SIZE = 15
-ROW_SIZE = 13
-FOOTER_SIZE = 11
+STAT_SIZE = 16
+STAT_VALUE_SIZE = 18
+ROW_SIZE = 15
+FOOTER_SIZE = 12
 
 # Noto Sans CJK first (production Linux), then macOS CJK fonts and DejaVu so the
 # renderer still produces readable output on a developer machine.
