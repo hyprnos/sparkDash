@@ -249,7 +249,8 @@ export function createEinkRuntime({
     enabled: config.enabled,
     device: config.device,
     intervalMinutes: config.intervalMinutes,
-    nextRunAt: config.enabled ? lastAttemptAt + config.intervalMinutes * 60_000 : null,
+    nextRunAt:
+      config.enabled && lastAttemptAt ? lastAttemptAt + config.intervalMinutes * 60_000 : null,
     lastAttemptAt: lastAttemptAt || null,
     lastOkAt: lastOkAt || null,
     lastError,
