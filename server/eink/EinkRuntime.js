@@ -20,6 +20,7 @@ export const MIN_INTERVAL_MINUTES = 5;
 export const MAX_INTERVAL_MINUTES = 1440;
 const MAX_BACKGROUND_BYTES = 4 * 1024 * 1024;
 const TICK_MS = 60_000;
+const RETRY_AFTER_ERROR_MS = 5 * 60_000;
 const BRIDGE_TIMEOUT_MS = 120_000;
 
 export const DEFAULT_CONFIG = Object.freeze({
@@ -31,6 +32,12 @@ export const DEFAULT_CONFIG = Object.freeze({
   sections: { headline: true, stats: true, rows: true },
   background: null,
   backgroundDim: 0.35,
+  /** Drawn as the tag's top line; empty falls back to "sparkDash". */
+  title: "sparkDash",
+  /** Footer override; "{time}" expands to the render time. Empty keeps the interval note. */
+  footer: "",
+  /** "scrim" | "plate" | "off" — how text is kept readable over a background photo. */
+  textProtection: "scrim",
 });
 
 function clampNumber(value, min, max, fallback) {
@@ -64,6 +71,13 @@ export function normalizeConfig(patch = {}, base = DEFAULT_CONFIG) {
       patch.backgroundDim === undefined
         ? base.backgroundDim
         : Math.min(0.9, Math.max(0, Number(patch.backgroundDim) || 0)),
+    title:
+      patch.title === undefined ? base.title : String(patch.title).trim().slice(0, 24),
+    footer:
+      patch.footer === undefined ? base.footer : String(patch.footer).trim().slice(0, 48),
+    textProtection: ["scrim", "plate", "off"].includes(patch.textProtection)
+      ? patch.textProtection
+      : base.textProtection,
   };
   if (patch.device && typeof patch.device === "object") {
     next.device = {
@@ -170,18 +184,21 @@ export function buildScene({ snapshot, config, now = Date.now(), timeZone = "Asi
   stats.push({ label: "输入", value: formatCompact(promptTokens) });
   stats.push({ label: "输出", value: formatCompact(completionTokens) });
 
+  const stamp = clockLabel(now, timeZone);
+  const footer = config.footer ? config.footer.replace(/\{time\}/gi, stamp) : `每 ${config.intervalMinutes} 分钟刷新`;
   const scene = {
-    title: "sparkDash",
-    subtitle: clockLabel(now, timeZone),
+    title: config.title || "sparkDash",
+    subtitle: stamp,
     headline: { label: "今日 Token", value: formatCompact(total) },
     stats: config.sections.stats ? stats.slice(0, 3) : [],
     rows: config.sections.rows
       ? rows.map(([label, value]) => ({ label, value: formatCompact(value), ratio: rowMax ? value / rowMax : 0 }))
       : [],
-    footer: `每 ${config.intervalMinutes} 分钟刷新`,
+    footer,
     pigment: config.pigment,
     theme: config.theme,
     backgroundDim: config.backgroundDim,
+    textProtection: config.textProtection,
   };
   if (!config.sections.headline) scene.headline = { label: "今日 Token", value: formatCompact(total) };
   return scene;
@@ -303,7 +320,12 @@ export function createEinkRuntime({
 
   const tick = () => {
     if (!config.enabled || busy) return;
-    if (now() - lastAttemptAt < config.intervalMinutes * 60_000) return;
+    // After a failure, try again sooner than the full interval: a tag that was
+    // asleep or holding a stale link recovers long before the next slot.
+    const waitMs = lastError
+      ? Math.min(config.intervalMinutes * 60_000, RETRY_AFTER_ERROR_MS)
+      : config.intervalMinutes * 60_000;
+    if (now() - lastAttemptAt < waitMs) return;
     display("schedule").catch(() => {
       /* already recorded in lastError */
     });

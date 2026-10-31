@@ -317,6 +317,43 @@ export function EinkPage() {
           </div>
           <div className="eink-row">
             <label className="field">
+              <span>标题文案</span>
+              <input
+                type="text"
+                maxLength={24}
+                value={config.title}
+                onChange={(e) => setConfig({ ...config, title: e.target.value })}
+              />
+            </label>
+            <label className="field">
+              <span>页脚文案（留空用默认，{"{time}"} 表示刷新时间）</span>
+              <input
+                type="text"
+                maxLength={48}
+                placeholder="留空 = 每 N 分钟刷新"
+                value={config.footer}
+                onChange={(e) => setConfig({ ...config, footer: e.target.value })}
+              />
+            </label>
+            <label className="field">
+              <span>背景处理（文字优先）</span>
+              <select
+                value={config.textProtection}
+                onChange={(e) =>
+                  setConfig({
+                    ...config,
+                    textProtection: e.target.value === "plate" ? "plate" : e.target.value === "off" ? "off" : "scrim",
+                  })
+                }
+              >
+                <option value="scrim">淡化背景，保文字清晰</option>
+                <option value="plate">文字区整块留白</option>
+                <option value="off">不处理（背景可能切字）</option>
+              </select>
+            </label>
+          </div>
+          <div className="eink-row">
+            <label className="field">
               <span>背景图</span>
               <input
                 type="file"

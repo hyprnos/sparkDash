@@ -23,6 +23,7 @@ import io
 import json
 import logging
 import os
+import subprocess
 import re
 import sys
 import threading
@@ -64,6 +65,8 @@ ROW_GAP = 2
 DIM_INK_RATIO = 0.93
 # Draw the scene at N x and scale down; keeps small CJK text legible.
 SUPERSAMPLE = 2
+# Blend factor of the text-column scrim over a background photo.
+TEXT_SCRIM = 0.88
 
 # Typography sizes (pixels).
 TITLE_SIZE = 20
@@ -238,6 +241,9 @@ class SceneSpec:
     theme: str = "dark"
     background: Optional[str] = None
     background_dim: float = 0.35
+    # "scrim" washes the photo behind the text column, "plate" replaces it with a
+    # solid plate, "off" draws text straight on the photo (legibility suffers).
+    text_protection: str = "scrim"
 
     @property
     def pigment(self) -> Tuple[int, int, int]:
@@ -293,6 +299,10 @@ def parse_scene(raw: Any) -> SceneSpec:
     except (TypeError, ValueError):
         background_dim = 0.35
 
+    protection = _as_text(raw.get("textProtection")).lower()
+    if protection not in ("scrim", "plate", "off"):
+        protection = "scrim"
+
     background = raw.get("background")
     background_path: Optional[str] = None
     if isinstance(background, str) and background.strip():
@@ -336,6 +346,7 @@ def parse_scene(raw: Any) -> SceneSpec:
         theme=theme,
         background=background_path,
         background_dim=_clamp(background_dim, 0.0, 1.0),
+        text_protection=protection,
     )
 
 
@@ -408,6 +419,21 @@ def _ink_height(draw: Any, text: str, font: Any) -> int:
     return bbox[3] - bbox[1]
 
 
+def _protect_text_area(image: Image.Image, spec: SceneSpec) -> Image.Image:
+    """Keep type readable on top of a photo: wash or replace the content area.
+
+    A three-ink panel cannot show a photo and fine text at the same time — the
+    error diffusion that renders the photo also eats the thin glyph strokes, so
+    the text column gets a solid (or nearly solid) theme-coloured backing.
+    """
+    inset = max(2, MARGIN // 3)
+    box = (inset, inset, CANVAS_W - inset, CANVAS_H - inset)
+    region = image.crop(box)
+    flat = Image.new("RGB", region.size, _ink_colours(spec)[2])
+    image.paste(flat if spec.text_protection == "plate" else Image.blend(region, flat, TEXT_SCRIM), box)
+    return image
+
+
 def render_scene(spec: SceneSpec) -> Image.Image:
     """Draw ``spec`` onto a 400x300 RGB canvas (not yet palette-quantised).
 
@@ -417,6 +443,8 @@ def render_scene(spec: SceneSpec) -> Image.Image:
     """
     scale = SUPERSAMPLE
     image = _base_image(spec)
+    if spec.background and spec.text_protection != "off":
+        image = _protect_text_area(image, spec)
     if scale > 1:
         image = image.resize((CANVAS_W * scale, CANVAS_H * scale), Image.LANCZOS)
     draw = ImageDraw.Draw(image)
@@ -836,8 +864,30 @@ def push_planes(bw_plane: bytes, color_plane: bytes, address: str, name: str) ->
         except Exception as first:  # noqa: BLE001 - re-raised if the retry fails too
             LOGGER.warning("display attempt 1 failed (%s); retrying", first)
             time.sleep(2.0)
+            # A stored address can go stale when the tag re-advertises after sleep,
+            # so rebuild it from the advertised name before the last attempt.
+            # BlueZ keeps a half-open link when a transfer is cut short, and a
+            # connected tag stops advertising — clear it before looking again.
+            if address:
+                try:
+                    subprocess.run(
+                        ["bluetoothctl", "disconnect", address],
+                        capture_output=True,
+                        timeout=10,
+                        check=False,
+                    )
+                    LOGGER.info("cleared stale link to %s", address)
+                except (OSError, subprocess.SubprocessError):
+                    pass
+            retry_address = address
+            if name:
+                try:
+                    retry_address = asyncio.run(_discover_address(name))
+                    LOGGER.info("re-resolved %s to %s", name, retry_address)
+                except Exception:
+                    retry_address = address
             try:
-                result = asyncio.run(_push_planes_async(bw_plane, color_plane, address, name))
+                result = asyncio.run(_push_planes_async(bw_plane, color_plane, retry_address, name))
             except Exception:
                 raise first from None
     elapsed_ms = int(round((time.monotonic() - started) * 1000))

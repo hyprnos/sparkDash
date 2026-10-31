@@ -19,6 +19,9 @@ export interface EinkConfig {
   sections: { headline: boolean; stats: boolean; rows: boolean };
   background: { name: string } | null;
   backgroundDim: number;
+  title: string;
+  footer: string;
+  textProtection: "scrim" | "plate" | "off";
 }
 
 export interface EinkStatus {
