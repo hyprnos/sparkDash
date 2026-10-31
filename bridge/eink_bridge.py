@@ -243,9 +243,10 @@ class SceneSpec:
     theme: str = "dark"
     background: Optional[str] = None
     background_dim: float = 0.35
-    # "scrim" washes the photo behind the text column, "plate" replaces it with a
-    # solid plate, "off" draws text straight on the photo (legibility suffers).
-    text_protection: str = "band"
+    # "halo" outlines each glyph (the photo keeps its detail), "scrim" washes the
+    # content area, "plate" replaces it, "off" draws straight on the photo.
+    text_protection: str = "auto"
+    halo_width: int = 2
 
     @property
     def pigment(self) -> Tuple[int, int, int]:
@@ -302,8 +303,15 @@ def parse_scene(raw: Any) -> SceneSpec:
         background_dim = 0.35
 
     protection = _as_text(raw.get("textProtection")).lower()
-    if protection not in ("band", "halo", "scrim", "plate", "off"):
-        protection = "band"
+    if protection == "band":  # older configs used a rectangular band
+        protection = "halo"
+    if protection not in ("auto", "halo", "scrim", "plate", "off"):
+        protection = "auto"
+    try:
+        halo_width = int(round(float(raw.get("haloWidth", 2))))
+    except (TypeError, ValueError):
+        halo_width = 2
+    halo_width = max(1, min(4, halo_width))
 
     background = raw.get("background")
     background_path: Optional[str] = None
@@ -349,6 +357,7 @@ def parse_scene(raw: Any) -> SceneSpec:
         background=background_path,
         background_dim=_clamp(background_dim, 0.0, 1.0),
         text_protection=protection,
+        halo_width=halo_width,
     )
 
 
@@ -477,21 +486,39 @@ def render_scene(spec: SceneSpec) -> Image.Image:
         """
         if not value:
             return 0
+        font_size = getattr(font, "size", ROW_SIZE * scale)
+        if spec.background and spec.text_protection in ("halo", "auto"):
+            big = font_size >= HEADLINE_VALUE_SIZE * scale * 0.8
+            if big or spec.text_protection == "halo":
+                # Big type: a ring that follows the glyph outline, never a filled
+                # block. Small type: a 1px ring only — a thicker one would eat the
+                # thin strokes of a 13px glyph.
+                width = max(2, int(round(font_size * 0.05))) if big else 1 * scale
+                if spec.text_protection == "halo" and not big:
+                    width = min(spec.halo_width * scale, max(1, int(round(font_size * 0.08))))
+                return _draw_top(draw, xy, value, font, fill, halo=base, halo_width=width)
+            # "auto" keeps small labels on a tight strip instead of an outline.
+            bbox = draw.textbbox((0, 0), value, font=font)
+            pad = 1 * scale
+            draw.rectangle(
+                [
+                    max(0, xy[0] - pad),
+                    max(0, xy[1] - pad),
+                    min(CANVAS_W * scale, xy[0] + (bbox[2] - bbox[0]) + pad),
+                    min(CANVAS_H * scale, xy[1] + (bbox[3] - bbox[1]) + pad),
+                ],
+                fill=base,
+            )
+            # A half-pixel self-stroke keeps thin strokes solid: the dither that
+            # renders the photo would otherwise break a 13px glyph into dots.
+            return _draw_top(draw, xy, value, font, fill, halo=fill, halo_width=max(1, int(round(scale * 0.5))))
         if spec.background and spec.text_protection == "band" and band:
             bbox = draw.textbbox((0, 0), value, font=font)
             pad = 2 * scale
-            left = max(0, xy[0] - pad)
-            top = max(0, xy[1] - pad)
-            right = min(CANVAS_W * scale, xy[0] + (bbox[2] - bbox[0]) + pad)
-            bottom = min(CANVAS_H * scale, xy[1] + (bbox[3] - bbox[1]) + pad)
-            if right > left and bottom > top:
-                # Only step in where the photo would swallow the glyphs: a light
-                # picture keeps its full detail, dark patches get a backing strip.
-                patch = image.crop((left, top, right, bottom)).convert("L")
-                mean = sum(patch.getdata()) / max(1, len(patch.getdata()))
-                ink_lum = 0 if sum(fill) < 400 else 255
-                if abs(mean - ink_lum) < TEXT_CONTRAST_FLOOR:
-                    draw.rectangle([left, top, right, bottom], fill=base)
+            draw.rectangle(
+                [max(0, xy[0] - pad), max(0, xy[1] - pad), xy[0] + (bbox[2] - bbox[0]) + pad, xy[1] + (bbox[3] - bbox[1]) + pad],
+                fill=base,
+            )
             return _draw_top(draw, xy, value, font, fill)
         return _draw_top(
             draw,

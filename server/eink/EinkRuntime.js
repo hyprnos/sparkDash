@@ -36,8 +36,10 @@ export const DEFAULT_CONFIG = Object.freeze({
   title: "sparkDash",
   /** Footer override; "{time}" expands to the render time. Empty keeps the interval note. */
   footer: "",
-  /** "band" | "halo" | "scrim" | "plate" | "off" — text-over-photo handling. */
-  textProtection: "band",
+  /** "auto" | "halo" | "scrim" | "plate" | "off" — text-over-photo handling. */
+  textProtection: "auto",
+  /** Outline thickness in panel pixels (1-4); the ring follows the glyph shape. */
+  haloWidth: 3,
 });
 
 function clampNumber(value, min, max, fallback) {
@@ -75,9 +77,13 @@ export function normalizeConfig(patch = {}, base = DEFAULT_CONFIG) {
       patch.title === undefined ? base.title : String(patch.title).trim().slice(0, 24),
     footer:
       patch.footer === undefined ? base.footer : String(patch.footer).trim().slice(0, 48),
-    textProtection: ["band", "halo", "scrim", "plate", "off"].includes(patch.textProtection)
+    textProtection: ["auto", "halo", "scrim", "plate", "off"].includes(patch.textProtection)
       ? patch.textProtection
-      : base.textProtection,
+      : patch.textProtection === "band"
+        ? "halo"
+        : base.textProtection,
+    haloWidth:
+      patch.haloWidth === undefined ? base.haloWidth : clampNumber(patch.haloWidth, 1, 4, base.haloWidth),
   };
   if (patch.device && typeof patch.device === "object") {
     next.device = {
@@ -199,6 +205,7 @@ export function buildScene({ snapshot, config, now = Date.now(), timeZone = "Asi
     theme: config.theme,
     backgroundDim: config.backgroundDim,
     textProtection: config.textProtection,
+    haloWidth: config.haloWidth,
   };
   if (!config.sections.headline) scene.headline = { label: "今日 Token", value: formatCompact(total) };
   return scene;

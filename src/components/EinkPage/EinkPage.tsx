@@ -341,12 +341,22 @@ export function EinkPage() {
                 value={config.textProtection}
                 onChange={(e) => setConfig({ ...config, textProtection: e.target.value as EinkConfig["textProtection"] })}
               >
-                <option value="band">智能描底：只压暗处的字，背景保持原样</option>
-                <option value="halo">文字描边（背景完全不动）</option>
+                <option value="auto">智能：小字紧贴描底，大字只描一圈</option>
+                <option value="halo">全部文字描边（背景完全不动）</option>
                 <option value="scrim">淡化背景（整体压淡）</option>
                 <option value="plate">文字区整块留白</option>
                 <option value="off">不处理（背景可能切字）</option>
               </select>
+            </label>
+            <label className="field">
+              <span>描边粗细（1-4 像素）</span>
+              <input
+                type="number"
+                min={1}
+                max={4}
+                value={config.haloWidth}
+                onChange={(e) => setConfig({ ...config, haloWidth: Number(e.target.value) || 2 })}
+              />
             </label>
           </div>
           <div className="eink-row">
