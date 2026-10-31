@@ -886,9 +886,10 @@ _DITHER_ALIASES: Dict[str, str] = {
 # still push a neighbour far enough to paint a stripe of the wrong ink.
 _ERROR_CLAMP = 0.5
 
-# Full-strength amplitude of an ordered mask, in linear-light units. It stops
-# just short of the half-distance between black and white (0.4436), so a solid
-# ink area stays solid while a grey ramp keeps its local average.
+# Full-strength amplitude of an ordered mask, in linear-light units. It is wide
+# enough to reach every ink from any starting tone (the black/white gap is
+# 0.4436), so a grey ramp keeps its local average instead of clipping. Flat ink
+# areas are protected by the exact-ink guard in _quantise_ordered, not by this.
 _ORDERED_BIAS = 0.44
 
 
@@ -1180,8 +1181,8 @@ def render_scene_image(raw_scene: Any) -> Tuple[Image.Image, SceneSpec]:
     if canvas.size != (CANVAS_W, CANVAS_H):  # defensive: layout must never resize
         canvas = canvas.resize((CANVAS_W, CANVAS_H), Image.Resampling.LANCZOS)
     # The canvas is already palette-exact (render_scene dithered the photo and
-    # painted the UI in exact inks), so this pass only repairs a stray colour.
-    # It must not dither again: an ordered mask would flip exact pixels.
+    # painted the UI in exact inks), so this pass only repairs a stray colour;
+    # dithering again would re-dither the photo and nibble at the glyph edges.
     quantised = dither_to_palette(canvas, spec.pigment, "none", 0.0)
     return quantised, spec
 
@@ -1523,11 +1524,16 @@ def _settings_headers(spec: SceneSpec) -> Dict[str, str]:
     ``POST /render`` answers with a PNG, so a header block is the only additive
     way to echo the settings on that route.
     """
-    headers: Dict[str, str] = {}
-    for key, value in applied_settings(spec).items():
-        name = re.sub(r"(?<!^)(?=[A-Z])", "-", key).lower()
-        headers["X-Eink-" + name] = str(value)
-    return headers
+    settings = applied_settings(spec)
+    return {
+        "X-Eink-Dither-Algorithm": str(settings["ditherAlgorithm"]),
+        "X-Eink-Dither-Strength": str(settings["ditherStrength"]),
+        "X-Eink-Background-Zoom": str(settings["backgroundZoom"]),
+        "X-Eink-Background-Offset-X": str(settings["backgroundOffsetX"]),
+        "X-Eink-Background-Offset-Y": str(settings["backgroundOffsetY"]),
+        "X-Eink-Background-Brightness": str(settings["backgroundBrightness"]),
+        "X-Eink-Background-Contrast": str(settings["backgroundContrast"]),
+    }
 
 
 class BridgeHandler(BaseHTTPRequestHandler):
