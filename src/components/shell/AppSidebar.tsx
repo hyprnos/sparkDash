@@ -19,9 +19,9 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import type { AuthMode, SparkSnapshot } from "../../api/types";
 import { isWorkerSpark } from "../../api/sparkRole";
-import { ACTIVITY_ID, COST_ID, ENERGY_ID, OVERVIEW_ID, SHOWCASE_ID, TEMPS_ID, TOKENS_ID, benchId, idToPath } from "../../constants";
+import { ACTIVITY_ID, COST_ID, EINK_ID, ENERGY_ID, OVERVIEW_ID, SHOWCASE_ID, TEMPS_ID, TOKENS_ID, benchId, idToPath } from "../../constants";
 import { BENCH_TYPES } from "../bench/benchCatalog";
-import { BoltIcon, ChevronDownIcon, CoinsIcon, GearIcon, GithubIcon, GlobeIcon, GridIcon, ListIcon, PanelLeftIcon, PlusIcon, SearchIcon, TerminalIcon, ThermometerIcon, TokensIcon, XLogoIcon } from "../ui/icons";
+import { BoltIcon, ChevronDownIcon, CoinsIcon, GearIcon, GithubIcon, GlobeIcon, GridIcon, ImageIcon, ListIcon, PanelLeftIcon, PlusIcon, SearchIcon, TerminalIcon, ThermometerIcon, TokensIcon, XLogoIcon } from "../ui/icons";
 import { OpenAccessChip } from "../OpenAccessChip";
 import { ThemeSwitch } from "../ThemeSwitch";
 import { isThrottling, railSubLabel } from "./sparkSummary";
@@ -339,6 +339,15 @@ export function AppSidebar({
           >
             <CoinsIcon className="h-4 w-4" />
             <span className="rail-item__name">Cost compare</span>
+          </a>
+          <a
+            href={idToPath(EINK_ID)}
+            className={`rail-item ${activeId === EINK_ID ? "is-active" : ""}`}
+            onClick={inApp(() => onSelect(EINK_ID))}
+            aria-current={activeId === EINK_ID ? "page" : undefined}
+          >
+            <ImageIcon className="h-4 w-4" />
+            <span className="rail-item__name">E-paper</span>
           </a>
           <a
             href={idToPath(ENERGY_ID)}

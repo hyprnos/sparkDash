@@ -59,6 +59,7 @@ import {
   llmTokenLedger,
 } from "./llmtokens/LlmTokenRuntime.js";
 import { closeLlmStreamAgent } from "./collectors/LlmStreaming.js";
+import { createEinkRuntime } from "./eink/EinkRuntime.js";
 import { compareSemver, getLatestRelease } from "./collectors/HermesReleases.js";
 import { createModelPricesHandler } from "./prices/ModelPrices.js";
 import { ALERTS_JSON_PATH, FLEET_ENERGY_JSON_PATH, FLEET_ENERGY_MONTHLY_JSON_PATH, MAX_ACTIVE_BENCH_JOBS, METRICS_HISTORY_JSON_PATH } from "./config.js";
@@ -578,6 +579,13 @@ function clientKey(req) {
 // ─── REST API ────────────────────────────────────────────
 registerFleetEnergyRoute(app, fleetEnergyTracker);
 registerLlmTokenTotalsRoute(app, llmTokenLedger);
+// Bluetooth e-paper tag: configuration + scheduled push through the host bridge.
+const einkRuntime = createEinkRuntime({
+  app,
+  ledgerSnapshot: (range) => llmTokenLedger.snapshot(range),
+  configPath: process.env.EINK_CONFIG_PATH || path.join(ROOT, "config", "eink.json"),
+  configHostDir: process.env.EINK_CONFIG_HOST_DIR || null,
+});
 app.get("/api/model-prices", createModelPricesHandler());
 registerSwitchRoutes(app);
 registerAlertRoutes(app, alertsRuntime);
@@ -2454,6 +2462,7 @@ if (!startupPreflight.fatal) {
     occupancy.start();
     fleetEnergyRuntime.start();
     llmTokenRuntime.start();
+    einkRuntime.start();
   });
 } else {
   process.exitCode = 1;
@@ -2507,6 +2516,7 @@ async function shutdown(signal) {
     console.error("[sparkDash] failed to flush LLM daily history:", err.message);
   }
   llmTokenRuntime.stop();
+  einkRuntime.stop();
   try {
     await occupancy.stop();
   } catch (err) {

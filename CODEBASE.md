@@ -18,6 +18,8 @@ The package uses ESM throughout. `server/index.js` runs directly in Node and cre
 | `server/health/`, `server/alerts/`, `server/events/` | Findings, optional notifications and bounded activity history |
 | `server/llmlaunch/`, `server/tooleval/`, `server/gpuclock/` | Model launcher jobs, tool evaluation and GPU-clock management |
 | `server/prices/` | Opt-in hosted-model price catalog and offline cache |
+| `server/eink/` | E-paper tag configuration, scene building and refresh schedule |
+| `bridge/` | Host-side Python renderer/BLE bridge for the e-paper tag (runs outside the container) |
 | `src/api/` | API clients and browser-facing data types |
 | `src/hooks/` | Snapshot subscription, metric history and UI hooks |
 | `src/components/` | Shell, overview, unit panels and feature pages |

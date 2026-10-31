@@ -1,0 +1,170 @@
+.eink-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding-bottom: 32px;
+}
+
+.eink-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.eink-head h1 {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-text-strong);
+}
+
+.eink-head p {
+  margin: 0;
+  max-width: 62ch;
+  font-size: 13px;
+  color: var(--color-muted);
+}
+
+.eink-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--color-muted-strong);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+.eink-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.eink-note--error {
+  color: var(--color-danger);
+}
+
+.eink-note--ok {
+  color: var(--color-muted-strong);
+}
+
+.eink-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 14px;
+}
+
+.eink-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+}
+
+.eink-card h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--color-muted-strong);
+}
+
+.eink-card--preview {
+  grid-column: span 1;
+}
+
+.eink-meta {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.eink-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.eink-actions .btn.is-active {
+  border-color: var(--color-accent);
+  color: var(--color-accent-text);
+}
+
+.eink-devices {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.eink-device {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  font-size: 12px;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.eink-device:hover:not(:disabled) {
+  border-color: var(--color-border-strong);
+}
+
+.eink-device.is-active {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.eink-device__rssi {
+  color: var(--color-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.eink-fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.eink-fieldset label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--color-muted-strong);
+}
+
+.eink-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.eink-preview {
+  display: block;
+  width: 100%;
+  max-width: 400px;
+  aspect-ratio: 4 / 3;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: #141414;
+  image-rendering: pixelated;
+}

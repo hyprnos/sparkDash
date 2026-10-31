@@ -1,0 +1,21 @@
+[Unit]
+Description=sparkDash e-ink bridge (render 400x300 scenes, push to NRF_EPD tag over BLE)
+Documentation=file:/home/spark001/sparkDash/bridge/README.md
+After=network-online.target bluetooth.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=spark001
+Group=spark001
+WorkingDirectory=/home/spark001/sparkDash/bridge
+ExecStart=/home/spark001/sparkDash/bridge/.venv/bin/python eink_bridge.py --host 127.0.0.1 --port 8790
+Restart=always
+RestartSec=3
+Environment=PYTHONUNBUFFERED=1
+StandardOutput=journal
+StandardError=journal
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target

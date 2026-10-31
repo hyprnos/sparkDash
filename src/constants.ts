@@ -8,6 +8,8 @@ export const ACTIVITY_ID = "__activity__";
 export const SHOWCASE_ID = "__showcase__";
 /** Cost compare page: fleet token usage priced as a hosted API model. */
 export const COST_ID = "__cost__";
+/** E-paper page: fleet token summary pushed to a Bluetooth shelf tag. */
+export const EINK_ID = "__eink__";
 /** Benchmark pages: the active id is this prefix + the benchmark type (decode, tool-eval, …). */
 export const BENCH_PREFIX = "__bench__:";
 
@@ -19,6 +21,7 @@ const FIXED_PATHS: Record<string, string> = {
   [ACTIVITY_ID]: "/activity",
   [SHOWCASE_ID]: "/showcase",
   [COST_ID]: "/cost",
+  [EINK_ID]: "/eink",
 };
 
 export function benchId(type: string): string {

@@ -49,3 +49,7 @@ config/metrics-history.json.corrupt-*
 config/fleet-energy.scope-*.json
 config/*.tmp
 config/*.json.*.tmp
+config/eink.json
+config/eink.json.*
+config/eink-assets/
+bridge/.venv/

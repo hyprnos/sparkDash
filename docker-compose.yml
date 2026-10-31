@@ -64,6 +64,10 @@ services:
       # id_ed25519 is a symlink here, so mount the explicit cluster key.
       - ${HOME}/.ssh/id_ed25519_cluster:/root/.ssh/id_ed25519:ro
     environment:
+      # Host path of the mounted ./config, so the host-side e-paper bridge can
+      # read uploaded backgrounds. Loopback-only bridge URL by design.
+      - EINK_CONFIG_HOST_DIR=${EINK_CONFIG_HOST_DIR:-${HOME}/sparkDash/config}
+      - EINK_BRIDGE_URL=${EINK_BRIDGE_URL:-http://127.0.0.1:8790}
       # Secure default: host-networked service listens only on loopback.
       # See docs/REMOTE-ACCESS.md; direct non-loopback binds fail closed.
       - BIND_HOST=${BIND_HOST:-127.0.0.1}

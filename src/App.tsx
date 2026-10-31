@@ -38,6 +38,7 @@ import {
   ThermometerIcon,
   BotIcon,
   CoinsIcon,
+  ImageIcon,
 } from "./components/ui/icons";
 import { ConnectionBanner } from "./components/ui/ConnectionBanner";
 import { ErrorBanner } from "./components/ui/ErrorBanner";
@@ -49,6 +50,7 @@ import {
   TEMPS_ID,
   TOKENS_ID,
   COST_ID,
+  EINK_ID,
   benchId,
   benchTypeOf,
   idToPath,
@@ -57,6 +59,7 @@ import {
 } from "./constants";
 import { TokensPage } from "./components/TokensPage/TokensPage";
 import { CostPage } from "./components/CostPage/CostPage";
+import { EinkPage } from "./components/EinkPage/EinkPage";
 import { EnergyPage } from "./components/EnergyPage/EnergyPage";
 import { TempsPage } from "./components/TempsPage/TempsPage";
 import { ActivityPage } from "./components/ActivityPage/ActivityPage";
@@ -463,6 +466,7 @@ function DashboardApp() {
     cmds.push(
       { id: "nav:tokens", group: "Go to", label: "Token totals", hint: "Page", icon: <TokensIcon className="h-4 w-4" />, keywords: "llm tokens generated prompt cached usage", run: () => navigate(TOKENS_ID) },
       { id: "nav:cost", group: "Go to", label: "Cost compare", hint: "Page", icon: <CoinsIcon className="h-4 w-4" />, keywords: "cost price money usd dollars api hosted opus sonnet gpt gemini compare", run: () => navigate(COST_ID) },
+      { id: "nav:eink", group: "Go to", label: "E-paper", hint: "Page", icon: <ImageIcon className="h-4 w-4" />, keywords: "eink e-paper epaper bluetooth tag display shelf refresh", run: () => navigate(EINK_ID) },
       { id: "nav:energy", group: "Go to", label: "Fleet energy", hint: "Page", icon: <BoltIcon className="h-4 w-4" />, keywords: "power kwh watts cost electricity", run: () => navigate(ENERGY_ID) },
       { id: "nav:temps", group: "Go to", label: "Temps", hint: "Page", icon: <ThermometerIcon className="h-4 w-4" />, keywords: "gpu temperature thermal temps heat cooling", run: () => navigate(TEMPS_ID) },
       { id: "nav:showcase", group: "Go to", label: "Showcase", hint: "Page", icon: <TerminalIcon className="h-4 w-4" />, keywords: "prompts terminals stream demo", run: () => navigate(SHOWCASE_ID) },
@@ -569,6 +573,8 @@ function DashboardApp() {
                 <TokensPage sparks={displaySparks} onSelectSpark={navigate} />
               ) : activeId === COST_ID ? (
                 <CostPage />
+              ) : activeId === EINK_ID ? (
+                <EinkPage />
               ) : activeId === ENERGY_ID ? (
                 <EnergyPage sparks={displaySparks} settings={settings} onSelectSpark={navigate} />
               ) : activeId === TEMPS_ID ? (
