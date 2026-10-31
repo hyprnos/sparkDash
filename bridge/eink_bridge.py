@@ -33,7 +33,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 from urllib.parse import parse_qs, urlsplit
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 LOGGER = logging.getLogger("eink-bridge")
 
@@ -135,6 +135,9 @@ BLE_LOCK = threading.Lock()
 # --------------------------------------------------------------------------- #
 # Font handling and text fitting
 # --------------------------------------------------------------------------- #
+
+
+_FONT_BOLD: Dict[int, bool] = {}
 
 
 @functools.lru_cache(maxsize=128)
@@ -459,6 +462,47 @@ def _protect_text_area(image: Image.Image, spec: SceneSpec) -> Image.Image:
     return image
 
 
+def _checker_rect(
+    image: Image.Image,
+    box: Tuple[int, int, int, int],
+    ink: Tuple[int, int, int],
+    ground: Tuple[int, int, int],
+) -> None:
+    """Fill a rectangle with a 1 px checker of two palette colours (grey track)."""
+    x0, y0, x1, y1 = box
+    for y in range(max(0, y0), min(CANVAS_H, y1)):
+        for x in range(max(0, x0), min(CANVAS_W, x1)):
+            image.putpixel((x, y), ink if (x + y) & 1 else ground)
+
+
+def _paste_text(
+    image: Image.Image,
+    xy: Tuple[float, float],
+    value: str,
+    size: int,
+    bold: bool,
+    fill: Tuple[int, int, int],
+    ring: Optional[Tuple[int, int, int]],
+    ring_w: int,
+) -> None:
+    """Rasterise one text run at panel resolution from a 1-bit glyph mask."""
+    size = max(6, int(size))
+    font = load_font(size, bold)
+    bbox = font.getbbox(value)
+    pad = max(0, ring_w) + 1
+    width = max(1, bbox[2] - bbox[0] + 2 * pad)
+    height = max(1, bbox[3] - bbox[1] + 2 * pad)
+    layer = Image.new("L", (width, height), 0)
+    ImageDraw.Draw(layer).text((pad - bbox[0], pad - bbox[1]), value, font=font, fill=255)
+    mask = layer.point(lambda value: 255 if value >= 128 else 0)
+    x = int(round(xy[0])) - pad
+    y = int(round(xy[1])) - pad
+    if ring is not None and ring_w > 0:
+        ring_mask = mask.filter(ImageFilter.MaxFilter(2 * ring_w + 1))
+        image.paste(ring, (x, y), ring_mask)
+    image.paste(fill, (x, y), mask)
+
+
 def render_scene(spec: SceneSpec) -> Image.Image:
     """Draw ``spec`` onto a 400x300 RGB canvas (not yet palette-quantised).
 
@@ -478,14 +522,37 @@ def render_scene(spec: SceneSpec) -> Image.Image:
     margin = MARGIN * scale
     halo = base if (spec.background and spec.text_protection == "halo") else None
 
-    def tdraw(xy, value, font, fill, width=1, band=True):
-        """Draw text over a photo without washing the photo.
+    text_items: List[Dict[str, Any]] = []
+    bar_items: List[Dict[str, Any]] = []
 
-        "band" paints a tight theme-coloured strip behind this line only, so the
-        picture stays at full strength between lines; "halo" outlines the glyphs.
+    def tdraw(xy, value, font, fill, width=1, band=True):
+        """Queue one text run; it is rasterised at panel resolution at the end.
+
+        Text is drawn last, at 1x, from a hard-thresholded glyph mask: on a
+        three-ink panel an antialiased edge either dissolves into the dither or
+        closes the counters of a 16 px CJK glyph, and neither reads as text.
         """
         if not value:
             return 0
+        bbox = draw.textbbox((0, 0), value, font=font)
+        size2x = getattr(font, "size", ROW_SIZE * scale)
+        ring_color = None
+        ring_w = 0
+        if spec.background and spec.text_protection in ("auto", "halo"):
+            ring_color = base
+            ring_w = max(1, min(spec.halo_width, int(round(size2x / scale * 0.06)))) * scale
+        text_items.append(
+            {
+                "xy": xy,
+                "value": value,
+                "size": size2x,
+                "bold": _FONT_BOLD.get(id(font), False),
+                "fill": fill,
+                "ring": ring_color,
+                "ring_w": ring_w,
+            }
+        )
+        return bbox[3] - bbox[1]
         if spec.background and spec.text_protection in ("auto", "halo"):
             # One glyph-shaped ring, sized against the glyph: ~6% of the font is a
             # "one size bigger" outline, while a thicker ring would close the
@@ -581,10 +648,10 @@ def render_scene(spec: SceneSpec) -> Image.Image:
             bar_max = max(0, int(CANVAS_W * scale - margin - value_w - 8 * scale - bar_x))
             bar_top = y + int((line_h - bar_h) / 2)
             if bar_max > 0:
-                draw.rectangle([bar_x, bar_top, bar_x + bar_max, bar_top + bar_h], fill=track)
+                bar_items.append({"box": (bar_x, bar_top, bar_x + bar_max, bar_top + bar_h), "filled": 0})
                 filled = int(round(bar_max * max(0.0, min(1.0, row.ratio))))
                 if filled > 0:
-                    draw.rectangle([bar_x, bar_top, bar_x + filled, bar_top + bar_h], fill=pigment)
+                    bar_items[-1]["filled"] = filled
             if row.value:
                 tdraw((CANVAS_W * scale - margin - value_w - 2 * scale, y),
                     row.value,
@@ -600,7 +667,32 @@ def render_scene(spec: SceneSpec) -> Image.Image:
         tdraw((margin, CANVAS_H * scale - margin - height), text, font, dim)
 
     if scale > 1:
-        image = image.resize((CANVAS_W, CANVAS_H), Image.LANCZOS)
+        base_1x = image.resize((CANVAS_W, CANVAS_H), Image.LANCZOS)
+    else:
+        base_1x = image.copy()
+
+    # Only the background is error-diffused. The UI is then painted on top with
+    # exact palette colours, so no dither can eat a glyph stroke.
+    image = quantize_to_palette(base_1x, spec.pigment)
+
+    for bar in bar_items:
+        x0, y0, x1, y1 = (int(round(value / scale)) for value in bar["box"])
+        _checker_rect(image, (x0, y0, x1, y1), fg, base)
+        filled = int(round(bar["filled"] / scale))
+        if filled > 0:
+            image.paste(pigment, (x0, y0, min(x1, x0 + filled), y1))
+
+    for item in text_items:
+        _paste_text(
+            image,
+            (item["xy"][0] / scale, item["xy"][1] / scale),
+            item["value"],
+            int(round(item["size"] / scale)),
+            item["bold"],
+            item["fill"],
+            item["ring"],
+            int(round(item["ring_w"] / scale)),
+        )
     return image
 
 
