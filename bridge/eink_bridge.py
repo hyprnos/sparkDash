@@ -497,21 +497,29 @@ def render_scene(spec: SceneSpec) -> Image.Image:
                 if spec.text_protection == "halo" and not big:
                     width = min(spec.halo_width * scale, max(1, int(round(font_size * 0.08))))
                 return _draw_top(draw, xy, value, font, fill, halo=base, halo_width=width)
-            # "auto" keeps small labels on a tight strip instead of an outline.
-            bbox = draw.textbbox((0, 0), value, font=font)
-            pad = 1 * scale
-            draw.rectangle(
-                [
-                    max(0, xy[0] - pad),
-                    max(0, xy[1] - pad),
-                    min(CANVAS_W * scale, xy[0] + (bbox[2] - bbox[0]) + pad),
-                    min(CANVAS_H * scale, xy[1] + (bbox[3] - bbox[1]) + pad),
-                ],
-                fill=base,
+            # Small labels: a 1px glyph ring plus a same-colour self-stroke. No
+            # rectangles — a filled strip would show up as a straight cut through
+            # the photo.
+            thin = max(1, int(round(scale * spec.halo_width * 0.5)))
+            draw.text(
+                xy,
+                value,
+                font=font,
+                fill=fill,
+                stroke_width=thin,
+                stroke_fill=base,
             )
-            # A half-pixel self-stroke keeps thin strokes solid: the dither that
-            # renders the photo would otherwise break a 13px glyph into dots.
-            return _draw_top(draw, xy, value, font, fill, halo=fill, halo_width=max(1, int(round(scale * 0.5))))
+            bbox = draw.textbbox((0, 0), value, font=font)
+            _draw_top(
+                draw,
+                (xy[0] - bbox[0], xy[1] - bbox[1]),
+                value,
+                font,
+                fill,
+                halo=fill,
+                halo_width=max(1, int(round(scale * 0.5))),
+            )
+            return bbox[3] - bbox[1]
         if spec.background and spec.text_protection == "band" and band:
             bbox = draw.textbbox((0, 0), value, font=font)
             pad = 2 * scale
