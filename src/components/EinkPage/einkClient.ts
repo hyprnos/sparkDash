@@ -21,7 +21,7 @@ export interface EinkConfig {
   backgroundDim: number;
   title: string;
   footer: string;
-  textProtection: "scrim" | "plate" | "off";
+  textProtection: "band" | "halo" | "scrim" | "plate" | "off";
 }
 
 export interface EinkStatus {

@@ -339,14 +339,11 @@ export function EinkPage() {
               <span>背景处理（文字优先）</span>
               <select
                 value={config.textProtection}
-                onChange={(e) =>
-                  setConfig({
-                    ...config,
-                    textProtection: e.target.value === "plate" ? "plate" : e.target.value === "off" ? "off" : "scrim",
-                  })
-                }
+                onChange={(e) => setConfig({ ...config, textProtection: e.target.value as EinkConfig["textProtection"] })}
               >
-                <option value="scrim">淡化背景，保文字清晰</option>
+                <option value="band">智能描底：只压暗处的字，背景保持原样</option>
+                <option value="halo">文字描边（背景完全不动）</option>
+                <option value="scrim">淡化背景（整体压淡）</option>
                 <option value="plate">文字区整块留白</option>
                 <option value="off">不处理（背景可能切字）</option>
               </select>

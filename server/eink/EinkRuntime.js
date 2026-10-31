@@ -36,8 +36,8 @@ export const DEFAULT_CONFIG = Object.freeze({
   title: "sparkDash",
   /** Footer override; "{time}" expands to the render time. Empty keeps the interval note. */
   footer: "",
-  /** "scrim" | "plate" | "off" — how text is kept readable over a background photo. */
-  textProtection: "scrim",
+  /** "band" | "halo" | "scrim" | "plate" | "off" — text-over-photo handling. */
+  textProtection: "band",
 });
 
 function clampNumber(value, min, max, fallback) {
@@ -75,7 +75,7 @@ export function normalizeConfig(patch = {}, base = DEFAULT_CONFIG) {
       patch.title === undefined ? base.title : String(patch.title).trim().slice(0, 24),
     footer:
       patch.footer === undefined ? base.footer : String(patch.footer).trim().slice(0, 48),
-    textProtection: ["scrim", "plate", "off"].includes(patch.textProtection)
+    textProtection: ["band", "halo", "scrim", "plate", "off"].includes(patch.textProtection)
       ? patch.textProtection
       : base.textProtection,
   };

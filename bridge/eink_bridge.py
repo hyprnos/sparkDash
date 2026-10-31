@@ -67,6 +67,8 @@ DIM_INK_RATIO = 0.93
 SUPERSAMPLE = 2
 # Blend factor of the text-column scrim over a background photo.
 TEXT_SCRIM = 0.88
+# Below this luminance gap the photo would swallow the glyphs; add a backing strip.
+TEXT_CONTRAST_FLOOR = 96
 
 # Typography sizes (pixels).
 TITLE_SIZE = 20
@@ -243,7 +245,7 @@ class SceneSpec:
     background_dim: float = 0.35
     # "scrim" washes the photo behind the text column, "plate" replaces it with a
     # solid plate, "off" draws text straight on the photo (legibility suffers).
-    text_protection: str = "scrim"
+    text_protection: str = "band"
 
     @property
     def pigment(self) -> Tuple[int, int, int]:
@@ -300,8 +302,8 @@ def parse_scene(raw: Any) -> SceneSpec:
         background_dim = 0.35
 
     protection = _as_text(raw.get("textProtection")).lower()
-    if protection not in ("scrim", "plate", "off"):
-        protection = "scrim"
+    if protection not in ("band", "halo", "scrim", "plate", "off"):
+        protection = "band"
 
     background = raw.get("background")
     background_path: Optional[str] = None
@@ -397,7 +399,15 @@ def _ink_colours(spec: SceneSpec) -> Tuple[Tuple[int, int, int], Tuple[int, int,
     return COLOR_BLACK, mix(COLOR_BLACK, COLOR_WHITE, DIM_INK_RATIO), COLOR_WHITE
 
 
-def _draw_top(draw: Any, xy: Tuple[int, int], text: str, font: Any, fill: Tuple[int, int, int]) -> int:
+def _draw_top(
+    draw: Any,
+    xy: Tuple[int, int],
+    text: str,
+    font: Any,
+    fill: Tuple[int, int, int],
+    halo: Optional[Tuple[int, int, int]] = None,
+    halo_width: int = 0,
+) -> int:
     """Draw ``text`` so its first ink pixel starts at ``xy``; return the ink height.
 
     PIL anchors glyphs on the font's ascent box, and the CJK faces ship a large
@@ -408,7 +418,13 @@ def _draw_top(draw: Any, xy: Tuple[int, int], text: str, font: Any, fill: Tuple[
     if not text:
         return 0
     bbox = draw.textbbox((0, 0), text, font=font)
-    draw.text((xy[0] - bbox[0], xy[1] - bbox[1]), text, font=font, fill=fill)
+    pos = (xy[0] - bbox[0], xy[1] - bbox[1])
+    if halo is not None and halo_width > 0:
+        # Thin theme-coloured ring under the glyphs: the photo keeps its detail
+        # everywhere else, the type keeps a clean edge.
+        draw.text(pos, text, font=font, fill=fill, stroke_width=halo_width, stroke_fill=halo)
+    else:
+        draw.text(pos, text, font=font, fill=fill)
     return bbox[3] - bbox[1]
 
 
@@ -443,7 +459,7 @@ def render_scene(spec: SceneSpec) -> Image.Image:
     """
     scale = SUPERSAMPLE
     image = _base_image(spec)
-    if spec.background and spec.text_protection != "off":
+    if spec.background and spec.text_protection in ("scrim", "plate"):
         image = _protect_text_area(image, spec)
     if scale > 1:
         image = image.resize((CANVAS_W * scale, CANVAS_H * scale), Image.LANCZOS)
@@ -451,6 +467,41 @@ def render_scene(spec: SceneSpec) -> Image.Image:
     fg, dim, base = _ink_colours(spec)
     pigment = spec.pigment
     margin = MARGIN * scale
+    halo = base if (spec.background and spec.text_protection == "halo") else None
+
+    def tdraw(xy, value, font, fill, width=1, band=True):
+        """Draw text over a photo without washing the photo.
+
+        "band" paints a tight theme-coloured strip behind this line only, so the
+        picture stays at full strength between lines; "halo" outlines the glyphs.
+        """
+        if not value:
+            return 0
+        if spec.background and spec.text_protection == "band" and band:
+            bbox = draw.textbbox((0, 0), value, font=font)
+            pad = 2 * scale
+            left = max(0, xy[0] - pad)
+            top = max(0, xy[1] - pad)
+            right = min(CANVAS_W * scale, xy[0] + (bbox[2] - bbox[0]) + pad)
+            bottom = min(CANVAS_H * scale, xy[1] + (bbox[3] - bbox[1]) + pad)
+            if right > left and bottom > top:
+                # Only step in where the photo would swallow the glyphs: a light
+                # picture keeps its full detail, dark patches get a backing strip.
+                patch = image.crop((left, top, right, bottom)).convert("L")
+                mean = sum(patch.getdata()) / max(1, len(patch.getdata()))
+                ink_lum = 0 if sum(fill) < 400 else 255
+                if abs(mean - ink_lum) < TEXT_CONTRAST_FLOOR:
+                    draw.rectangle([left, top, right, bottom], fill=base)
+            return _draw_top(draw, xy, value, font, fill)
+        return _draw_top(
+            draw,
+            xy,
+            value,
+            font,
+            fill,
+            halo=halo,
+            halo_width=max(1, int(round(scale * width))) if halo is not None else 0,
+        )
     content_w = (CANVAS_W - 2 * MARGIN) * scale
 
     footer_h = (FOOTER_SIZE + 6) * scale if spec.footer else 0
@@ -459,14 +510,14 @@ def render_scene(spec: SceneSpec) -> Image.Image:
 
     if spec.title:
         font = load_font(TITLE_SIZE * scale, True)
-        cursor += _draw_top(draw, (margin, cursor), truncate_text(spec.title, font, content_w), font, fg) + 2 * scale
+        cursor += tdraw((margin, cursor), truncate_text(spec.title, font, content_w), font, fg) + 2 * scale
     if spec.subtitle:
         font = load_font(SUBTITLE_SIZE * scale, True)
-        cursor += _draw_top(draw, (margin, cursor), truncate_text(spec.subtitle, font, content_w), font, dim) + 8 * scale
+        cursor += tdraw((margin, cursor), truncate_text(spec.subtitle, font, content_w), font, dim) + 8 * scale
 
     if spec.headline_label:
         font = load_font(HEADLINE_LABEL_SIZE * scale, True)
-        cursor += _draw_top(draw, (margin, cursor), truncate_text(spec.headline_label, font, content_w), font, fg) + 2 * scale
+        cursor += tdraw((margin, cursor), truncate_text(spec.headline_label, font, content_w), font, fg) + 2 * scale
     value_font, value_text = fit_font(
         spec.headline_value,
         content_w,
@@ -474,7 +525,7 @@ def render_scene(spec: SceneSpec) -> Image.Image:
         (HEADLINE_VALUE_SIZE // 2) * scale,
         bold=True,
     )
-    cursor += _draw_top(draw, (margin, cursor), value_text, value_font, pigment) + 8 * scale
+    cursor += tdraw((margin, cursor), value_text, value_font, pigment) + 8 * scale
 
     if spec.stats:
         cell_w = content_w / 3.0
@@ -487,9 +538,9 @@ def render_scene(spec: SceneSpec) -> Image.Image:
             x = margin + int(round(cell_w * index))
             y = stats_top
             if stat.label:
-                y += _draw_top(draw, (x, y), truncate_text(stat.label, label_font, inner), label_font, fg) + 4 * scale
+                y += tdraw((x, y), truncate_text(stat.label, label_font, inner), label_font, fg) + 4 * scale
             if stat.value:
-                y += _draw_top(draw, (x, y), truncate_text(stat.value, value_font_stat, inner), value_font_stat, fg)
+                y += tdraw((x, y), truncate_text(stat.value, value_font_stat, inner), value_font_stat, fg)
             cell_h = max(cell_h, y - stats_top)
         cursor = stats_top + cell_h + 16 * scale
 
@@ -509,7 +560,7 @@ def render_scene(spec: SceneSpec) -> Image.Image:
             if row.label:
                 label_text = truncate_text(row.label, row_font, content_w * 0.45)
                 label_w = text_width(row_font, label_text)
-                _draw_top(draw, (margin, y), label_text, row_font, fg)
+                tdraw((margin, y), label_text, row_font, fg)
             bar_x = margin + int(label_w) + 8 * scale
             bar_max = max(0, int(CANVAS_W * scale - margin - value_w - 8 * scale - bar_x))
             bar_top = y + int((line_h - bar_h) / 2)
@@ -519,9 +570,7 @@ def render_scene(spec: SceneSpec) -> Image.Image:
                 if filled > 0:
                     draw.rectangle([bar_x, bar_top, bar_x + filled, bar_top + bar_h], fill=pigment)
             if row.value:
-                _draw_top(
-                    draw,
-                    (CANVAS_W * scale - margin - value_w - 2 * scale, y),
+                tdraw((CANVAS_W * scale - margin - value_w - 2 * scale, y),
                     row.value,
                     value_font_row,
                     fg,
@@ -532,7 +581,7 @@ def render_scene(spec: SceneSpec) -> Image.Image:
         font = load_font(FOOTER_SIZE * scale, True)
         text = truncate_text(spec.footer, font, content_w)
         height = _ink_height(draw, text, font)
-        _draw_top(draw, (margin, CANVAS_H * scale - margin - height), text, font, dim)
+        tdraw((margin, CANVAS_H * scale - margin - height), text, font, dim)
 
     if scale > 1:
         image = image.resize((CANVAS_W, CANVAS_H), Image.LANCZOS)
