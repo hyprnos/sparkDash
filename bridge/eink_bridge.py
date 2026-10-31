@@ -487,8 +487,11 @@ def render_scene(spec: SceneSpec) -> Image.Image:
         if not value:
             return 0
         if spec.background and spec.text_protection in ("auto", "halo"):
-            # One glyph-shaped ring, no rectangle and no extra thickening: the
-            # photo keeps every pixel it had, the type only gets "a size bigger".
+            # One glyph-shaped ring, sized against the glyph: ~6% of the font is a
+            # "one size bigger" outline, while a thicker ring would close the
+            # counters of 13-14 px CJK and nibble the right edge of an M.
+            font_size = getattr(font, "size", ROW_SIZE * scale) / scale
+            ring = max(1, min(spec.halo_width, int(round(font_size * 0.06))))
             return _draw_top(
                 draw,
                 xy,
@@ -496,7 +499,7 @@ def render_scene(spec: SceneSpec) -> Image.Image:
                 font,
                 fill,
                 halo=base,
-                halo_width=max(1, int(round(scale * spec.halo_width))),
+                halo_width=max(1, int(round(ring * scale))),
             )
         if spec.background and spec.text_protection == "band" and band:
             bbox = draw.textbbox((0, 0), value, font=font)
