@@ -829,7 +829,17 @@ def push_planes(bw_plane: bytes, color_plane: bytes, address: str, name: str) ->
         raise ValueError("bit planes must be exactly %d bytes" % PLANE_SIZE)
     started = time.monotonic()
     with BLE_LOCK:
-        result = asyncio.run(_push_planes_async(bw_plane, color_plane, address, name))
+        # A tag that is mid-connection or just woke up can miss the first attempt;
+        # one retry keeps a scheduled refresh from being dropped for that.
+        try:
+            result = asyncio.run(_push_planes_async(bw_plane, color_plane, address, name))
+        except Exception as first:  # noqa: BLE001 - re-raised if the retry fails too
+            LOGGER.warning("display attempt 1 failed (%s); retrying", first)
+            time.sleep(2.0)
+            try:
+                result = asyncio.run(_push_planes_async(bw_plane, color_plane, address, name))
+            except Exception:
+                raise first from None
     elapsed_ms = int(round((time.monotonic() - started) * 1000))
     return {
         "ok": True,
