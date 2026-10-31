@@ -52,7 +52,7 @@ export const DEFAULT_CONFIG = Object.freeze({
   intervalMinutes: 30,
   pigment: "yellow",
   theme: "dark",
-  sections: { headline: true, stats: true, rows: true },
+  sections: { headline: true, stats: true, rows: true, cost: true },
   background: null,
   backgroundDim: 0.35,
   /** Drawn as the tag's top line; empty falls back to "sparkDash". */
@@ -110,6 +110,7 @@ export function normalizeConfig(patch = {}, base = DEFAULT_CONFIG) {
     pigment: ["yellow", "red"].includes(patch.pigment) ? patch.pigment : base.pigment,
     theme: ["dark", "light"].includes(patch.theme) ? patch.theme : base.theme,
     sections: { ...base.sections },
+    pricing: { ...(base.pricing || DEFAULT_CONFIG.pricing) },
     background: patch.background === undefined ? base.background : normalizeBackground(patch.background),
     backgroundDim:
       patch.backgroundDim === undefined

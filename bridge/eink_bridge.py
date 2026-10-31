@@ -1103,6 +1103,7 @@ def _quantise_ordered(
 ) -> Image.Image:
     """Nearest-colour quantisation through an ordered threshold mask."""
     palette, palette_linear = _palette_linear(pigment)
+    inks = frozenset(palette)
     src = image.convert("RGB")
     width, height = src.size
     px = src.load()
@@ -1115,6 +1116,12 @@ def _quantise_ordered(
         mask_row = mask[y % size]
         for x in range(width):
             r, g, b = px[x, y]
+            # A pixel that already is an exact ink stays put. A flat theme
+            # colour or a text plate is painted on purpose, and the wide mask
+            # bias would otherwise sprinkle it with the pigment ink.
+            if (r, g, b) in inks:
+                opx[x, y] = (r, g, b)
+                continue
             delta = (mask_row[x % size] * 2.0 - 1.0) * bias
             lr = linear[r] + delta
             lg = linear[g] + delta

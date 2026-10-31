@@ -69,6 +69,7 @@ test("normalizeConfig clamps the interval and drops unknown pigment values", () 
     headline: true,
     stats: true,
     rows: false,
+    cost: true,
   });
 });
 
