@@ -333,11 +333,17 @@ export function createEinkRuntime({
 
   app.post("/api/eink/preview", async (req, res) => {
     try {
-      const scene = req.body?.scene || sceneFromLedger();
-      const merged = { ...sceneFromLedger(), ...scene };
-      const background = hostBackgroundPath(config, configHostDir);
-      if (background && !merged.background) merged.background = background;
-      const png = await callBridge("/render", { scene: merged }, { raw: true, timeoutMs: 30_000 });
+      // The preview must show the form being edited, not the last saved config.
+      const effective = normalizeConfig(req.body?.config || {}, config);
+      const scene = buildScene({
+        snapshot: ledgerSnapshot("today"),
+        config: effective,
+        now: now(),
+        timeZone,
+      });
+      const background = hostBackgroundPath(effective, configHostDir);
+      if (background) scene.background = background;
+      const png = await callBridge("/render", { scene }, { raw: true, timeoutMs: 30_000 });
       res.set("Cache-Control", "no-store").type("png").send(png);
     } catch (err) {
       res.status(502).json({ ok: false, error: err?.message || String(err) });

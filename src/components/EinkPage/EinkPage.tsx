@@ -40,14 +40,17 @@ export function EinkPage() {
     setPreviewUrl(url);
   }, []);
 
-  const loadPreview = useCallback(async () => {
-    try {
-      replacePreview(await fetchEinkPreview());
-    } catch (err) {
-      replacePreview(null);
-      setError((err as Error).message);
-    }
-  }, [replacePreview]);
+  const loadPreview = useCallback(
+    async (patch?: Partial<EinkConfig>) => {
+      try {
+        replacePreview(await fetchEinkPreview(patch));
+      } catch (err) {
+        replacePreview(null);
+        setError((err as Error).message);
+      }
+    },
+    [replacePreview]
+  );
 
   const load = useCallback(async () => {
     try {
@@ -66,6 +69,14 @@ export function EinkPage() {
     return () => replacePreview(null);
   }, [load, replacePreview]);
 
+  // Keep the preview in step with the form, including unsaved edits: the panel
+  // frame the user is about to push is always the one shown.
+  useEffect(() => {
+    if (!config) return;
+    const timer = setTimeout(() => void loadPreview(config), 450);
+    return () => clearTimeout(timer);
+  }, [config, loadPreview]);
+
   const persist = useCallback(
     async (patch: Partial<EinkConfig>) => {
       setBusy("save");
@@ -75,7 +86,7 @@ export function EinkPage() {
         setConfig(payload.config);
         setStatus(payload.status);
         setNotice("配置已保存");
-        await loadPreview();
+        await loadPreview(payload.config);
       } catch (err) {
         setError((err as Error).message);
       } finally {
@@ -105,6 +116,12 @@ export function EinkPage() {
     setError(null);
     setNotice(null);
     try {
+      // Push what the form shows: persist the edits first, then refresh the panel.
+      if (config) {
+        const saved = await saveEinkConfig(config);
+        setConfig(saved.config);
+        setStatus(saved.status);
+      }
       const result = await pushEinkNow();
       setStatus(result.status);
       setNotice(`已推送到墨水屏，用时 ${(result.durationMs / 1000).toFixed(1)} 秒`);

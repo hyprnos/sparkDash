@@ -69,12 +69,12 @@ export async function fetchEinkDevices(): Promise<EinkDevice[]> {
   return payload.devices ?? [];
 }
 
-/** Ask the bridge to render the current scene; resolves to an object URL for <img>. */
-export async function fetchEinkPreview(): Promise<string> {
+/** Render the given (possibly unsaved) configuration; resolves to an object URL for <img>. */
+export async function fetchEinkPreview(patch?: Partial<EinkConfig>): Promise<string> {
   const res = await fetch("/api/eink/preview", {
     method: "POST",
     headers: { "content-type": "application/json", ...authHeaders() },
-    body: "{}",
+    body: JSON.stringify(patch ? { config: patch } : {}),
   });
   if (!res.ok) {
     if (res.status === 401) reportAuthRequired();
