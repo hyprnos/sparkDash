@@ -486,33 +486,18 @@ def render_scene(spec: SceneSpec) -> Image.Image:
         """
         if not value:
             return 0
-        font_size = getattr(font, "size", ROW_SIZE * scale)
-        if spec.background and spec.text_protection in ("halo", "auto"):
-            big = font_size >= HEADLINE_VALUE_SIZE * scale * 0.8
-            if big or spec.text_protection == "halo":
-                # Big type: a ring that follows the glyph outline, never a filled
-                # block. Small type: a 1px ring only — a thicker one would eat the
-                # thin strokes of a 13px glyph.
-                width = max(2, int(round(font_size * 0.05))) if big else 1 * scale
-                if spec.text_protection == "halo" and not big:
-                    width = min(spec.halo_width * scale, max(1, int(round(font_size * 0.08))))
-                return _draw_top(draw, xy, value, font, fill, halo=base, halo_width=width)
-            # Small labels: one base-coloured ring plus a same-colour self-stroke.
-            # Both passes use the measured ink origin so nothing ghosts, and no
-            # rectangle is drawn — a strip would cut straight through the photo.
-            bbox = draw.textbbox((0, 0), value, font=font)
-            pos = (xy[0] - bbox[0], xy[1] - bbox[1])
-            ring = max(2, int(round(scale * spec.halo_width * 0.5)))
-            draw.text(pos, value, font=font, fill=fill, stroke_width=ring, stroke_fill=base)
-            draw.text(
-                pos,
+        if spec.background and spec.text_protection in ("auto", "halo"):
+            # One glyph-shaped ring, no rectangle and no extra thickening: the
+            # photo keeps every pixel it had, the type only gets "a size bigger".
+            return _draw_top(
+                draw,
+                xy,
                 value,
-                font=font,
-                fill=fill,
-                stroke_width=max(1, int(round(scale * 0.5))),
-                stroke_fill=fill,
+                font,
+                fill,
+                halo=base,
+                halo_width=max(1, int(round(scale * spec.halo_width))),
             )
-            return bbox[3] - bbox[1]
         if spec.background and spec.text_protection == "band" and band:
             bbox = draw.textbbox((0, 0), value, font=font)
             pad = 2 * scale
