@@ -497,27 +497,20 @@ def render_scene(spec: SceneSpec) -> Image.Image:
                 if spec.text_protection == "halo" and not big:
                     width = min(spec.halo_width * scale, max(1, int(round(font_size * 0.08))))
                 return _draw_top(draw, xy, value, font, fill, halo=base, halo_width=width)
-            # Small labels: a 1px glyph ring plus a same-colour self-stroke. No
-            # rectangles — a filled strip would show up as a straight cut through
-            # the photo.
-            thin = max(1, int(round(scale * spec.halo_width * 0.5)))
+            # Small labels: one base-coloured ring plus a same-colour self-stroke.
+            # Both passes use the measured ink origin so nothing ghosts, and no
+            # rectangle is drawn — a strip would cut straight through the photo.
+            bbox = draw.textbbox((0, 0), value, font=font)
+            pos = (xy[0] - bbox[0], xy[1] - bbox[1])
+            ring = max(2, int(round(scale * spec.halo_width * 0.5)))
+            draw.text(pos, value, font=font, fill=fill, stroke_width=ring, stroke_fill=base)
             draw.text(
-                xy,
+                pos,
                 value,
                 font=font,
                 fill=fill,
-                stroke_width=thin,
-                stroke_fill=base,
-            )
-            bbox = draw.textbbox((0, 0), value, font=font)
-            _draw_top(
-                draw,
-                (xy[0] - bbox[0], xy[1] - bbox[1]),
-                value,
-                font,
-                fill,
-                halo=fill,
-                halo_width=max(1, int(round(scale * 0.5))),
+                stroke_width=max(1, int(round(scale * 0.5))),
+                stroke_fill=fill,
             )
             return bbox[3] - bbox[1]
         if spec.background and spec.text_protection == "band" and band:
