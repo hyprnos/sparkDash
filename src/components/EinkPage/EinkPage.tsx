@@ -2,7 +2,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import "../../styles/eink.css";
 import {
   clearEinkBackground,
+  fetchEinkAlgorithms,
   fetchEinkConfig,
+  fetchEinkPricing,
+  refreshEinkPricing,
   fetchEinkDevices,
   fetchEinkPreview,
   pushEinkNow,
@@ -10,6 +13,7 @@ import {
   uploadEinkBackground,
   type EinkConfig,
   type EinkDevice,
+  type EinkPriceModel,
   type EinkStatus,
 } from "./einkClient";
 
@@ -28,6 +32,8 @@ export function EinkPage() {
   const [config, setConfig] = useState<EinkConfig | null>(null);
   const [status, setStatus] = useState<EinkStatus | null>(null);
   const [devices, setDevices] = useState<EinkDevice[]>([]);
+  const [algorithms, setAlgorithms] = useState<string[]>(["floyd-steinberg"]);
+  const [priceModels, setPriceModels] = useState<EinkPriceModel[]>([]);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -63,6 +69,15 @@ export function EinkPage() {
       setError((err as Error).message);
     }
   }, [loadPreview]);
+
+  useEffect(() => {
+    void fetchEinkAlgorithms().then((list) => {
+      if (list.length) setAlgorithms(list);
+    });
+    void fetchEinkPricing()
+      .then((payload) => setPriceModels(payload.models))
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     void load();
@@ -104,6 +119,22 @@ export function EinkPage() {
       const found = await fetchEinkDevices();
       setDevices(found);
       setNotice(found.length ? `发现 ${found.length} 台设备` : "没扫到墨水屏；确认它没有连在手机上，且距离在几米内");
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }, []);
+
+  const syncPrices = useCallback(async () => {
+    setBusy("pricing");
+    setError(null);
+    setNotice(null);
+    try {
+      const payload = await refreshEinkPricing();
+      setPriceModels(payload.models);
+      setConfig((current) => (current ? { ...current, pricing: payload.pricing } : current));
+      setNotice("已同步官网价格");
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -292,6 +323,14 @@ export function EinkPage() {
               />
               <span>每台 Spark 的用量条</span>
             </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={config.sections.cost}
+                onChange={(e) => setConfig({ ...config, sections: { ...config.sections, cost: e.target.checked } })}
+              />
+              <span>云价换算（元）</span>
+            </label>
           </fieldset>
           <div className="eink-row">
             <label className="field">
@@ -313,6 +352,87 @@ export function EinkPage() {
                 <option value="dark">深色</option>
                 <option value="light">浅色</option>
               </select>
+            </label>
+          </div>
+          <div className="eink-sliders">
+            <label className="field">
+              <span>背景缩放 {config.backgroundZoom.toFixed(2)}×</span>
+              <input
+                type="range"
+                min={1}
+                max={4}
+                step={0.05}
+                value={config.backgroundZoom}
+                onChange={(e) => setConfig({ ...config, backgroundZoom: Number(e.target.value) })}
+              />
+            </label>
+            <label className="field">
+              <span>左右平移 {config.backgroundOffsetX.toFixed(2)}</span>
+              <input
+                type="range"
+                min={-1}
+                max={1}
+                step={0.02}
+                value={config.backgroundOffsetX}
+                onChange={(e) => setConfig({ ...config, backgroundOffsetX: Number(e.target.value) })}
+              />
+            </label>
+            <label className="field">
+              <span>上下平移 {config.backgroundOffsetY.toFixed(2)}</span>
+              <input
+                type="range"
+                min={-1}
+                max={1}
+                step={0.02}
+                value={config.backgroundOffsetY}
+                onChange={(e) => setConfig({ ...config, backgroundOffsetY: Number(e.target.value) })}
+              />
+            </label>
+            <label className="field">
+              <span>亮度 {config.backgroundBrightness}</span>
+              <input
+                type="range"
+                min={-100}
+                max={100}
+                step={1}
+                value={config.backgroundBrightness}
+                onChange={(e) => setConfig({ ...config, backgroundBrightness: Number(e.target.value) })}
+              />
+            </label>
+            <label className="field">
+              <span>对比度 {config.backgroundContrast}</span>
+              <input
+                type="range"
+                min={-100}
+                max={100}
+                step={1}
+                value={config.backgroundContrast}
+                onChange={(e) => setConfig({ ...config, backgroundContrast: Number(e.target.value) })}
+              />
+            </label>
+            <label className="field">
+              <span>抖动算法</span>
+              <select
+                value={config.ditherAlgorithm}
+                onChange={(e) => setConfig({ ...config, ditherAlgorithm: e.target.value })}
+              >
+                {algorithms.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="field">
+              <span>抖动强度 {Math.round(config.ditherStrength * 100)}%</span>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={config.ditherStrength}
+                onChange={(e) => setConfig({ ...config, ditherStrength: Number(e.target.value) })}
+              />
             </label>
           </div>
           <div className="eink-row">
@@ -343,7 +463,6 @@ export function EinkPage() {
               >
                 <option value="auto">智能：小字紧贴描底，大字只描一圈</option>
                 <option value="halo">全部文字描边（背景完全不动）</option>
-                <option value="scrim">淡化背景（整体压淡）</option>
                 <option value="plate">文字区整块留白</option>
                 <option value="off">不处理（背景可能切字）</option>
               </select>
@@ -383,6 +502,105 @@ export function EinkPage() {
               {busy === "push" ? "推送中…" : "立即刷新"}
             </button>
           </div>
+        </div>
+
+        <div className="panel eink-card">
+          <h2>成本换算（元 / 百万 tokens）</h2>
+          <div className="eink-row">
+            <label className="field">
+              <span>对照模型</span>
+              <select
+                value={config.pricing.modelId}
+                onChange={(e) => setConfig({ ...config, pricing: { ...config.pricing, modelId: e.target.value } })}
+              >
+                {priceModels.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.label}
+                  </option>
+                ))}
+                <option value="custom">自定义单价</option>
+              </select>
+            </label>
+            <label className="field">
+              <span>时段</span>
+              <select
+                value={config.pricing.tariff}
+                onChange={(e) =>
+                  setConfig({
+                    ...config,
+                    pricing: { ...config.pricing, tariff: e.target.value as "auto" | "peak" | "off-peak" },
+                  })
+                }
+              >
+                <option value="auto">自动（按北京时间）</option>
+                <option value="off-peak">空闲时段</option>
+                <option value="peak">高峰时段</option>
+              </select>
+            </label>
+          </div>
+          {config.pricing.modelId === "custom" ? (
+            <div className="eink-row">
+              <label className="field">
+                <span>名称</span>
+                <input
+                  type="text"
+                  maxLength={40}
+                  value={config.pricing.label}
+                  onChange={(e) => setConfig({ ...config, pricing: { ...config.pricing, label: e.target.value } })}
+                />
+              </label>
+              <label className="field">
+                <span>缓存命中（元/M）</span>
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={config.pricing.cacheHitPrice}
+                  onChange={(e) =>
+                    setConfig({ ...config, pricing: { ...config.pricing, cacheHitPrice: Number(e.target.value) } })
+                  }
+                />
+              </label>
+              <label className="field">
+                <span>缓存未命中（元/M）</span>
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={config.pricing.cacheMissPrice}
+                  onChange={(e) =>
+                    setConfig({ ...config, pricing: { ...config.pricing, cacheMissPrice: Number(e.target.value) } })
+                  }
+                />
+              </label>
+              <label className="field">
+                <span>输出（元/M）</span>
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={config.pricing.outputPrice}
+                  onChange={(e) =>
+                    setConfig({ ...config, pricing: { ...config.pricing, outputPrice: Number(e.target.value) } })
+                  }
+                />
+              </label>
+            </div>
+          ) : null}
+          <div className="eink-actions">
+            <button
+              type="button"
+              className="btn btn--sm"
+              onClick={() => void syncPrices()}
+              disabled={busy !== null}
+            >
+              {busy === "pricing" ? "同步中…" : "从官网同步价格"}
+            </button>
+            <span className="eink-meta">
+              {config.pricing.updatedAt ? `更新于 ${fmtTime(config.pricing.updatedAt)}` : "尚未同步过官网价格"}
+            </span>
+          </div>
+          <p className="eink-meta">按今日 token 量折算，勾选“云价换算”后显示在墨水屏上。</p>
         </div>
 
         <div className="panel eink-card eink-card--preview">

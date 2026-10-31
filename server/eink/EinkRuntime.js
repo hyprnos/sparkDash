@@ -12,6 +12,16 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
+import {
+  OFFICIAL_MODELS,
+  OFFICIAL_SOURCE,
+  applyOfficialPricing,
+  computeCost,
+  formatCny,
+  parseOfficialPricing,
+  resolveRates,
+} from "./Pricing.js";
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..", "..");
 
@@ -19,6 +29,19 @@ const ROOT = path.resolve(__dirname, "..", "..");
 export const MIN_INTERVAL_MINUTES = 5;
 export const MAX_INTERVAL_MINUTES = 1440;
 const MAX_BACKGROUND_BYTES = 4 * 1024 * 1024;
+/** Kept in step with bridge/eink_bridge.py; the bridge reports its own list too. */
+const DITHER_ALGORITHMS = [
+  "none",
+  "floyd-steinberg",
+  "jarvis",
+  "stucki",
+  "burkes",
+  "sierra",
+  "sierra-lite",
+  "atkinson",
+  "bayer8",
+  "blue-noise",
+];
 const TICK_MS = 60_000;
 const RETRY_AFTER_ERROR_MS = 5 * 60_000;
 const BRIDGE_TIMEOUT_MS = 120_000;
@@ -36,8 +59,27 @@ export const DEFAULT_CONFIG = Object.freeze({
   title: "sparkDash",
   /** Footer override; "{time}" expands to the render time. Empty keeps the interval note. */
   footer: "",
-  /** "auto" | "halo" | "scrim" | "plate" | "off" — text-over-photo handling. */
+  /** "auto" | "halo" | "plate" | "off" — text-over-photo handling. */
   textProtection: "auto",
+  /** Background photo transform: 1.0 = cover fit, pan is a fraction of the canvas. */
+  backgroundZoom: 1,
+  backgroundOffsetX: 0,
+  backgroundOffsetY: 0,
+  backgroundBrightness: 0,
+  backgroundContrast: 0,
+  /** Dither engine for the photo (the UI layer is never dithered). */
+  ditherAlgorithm: "floyd-steinberg",
+  ditherStrength: 1,
+  /** Hosted-API price used to price today's tokens (CNY per 1M tokens). */
+  pricing: {
+    modelId: "deepseek-flash",
+    tariff: "auto",
+    label: "",
+    cacheHitPrice: 0,
+    cacheMissPrice: 0,
+    outputPrice: 0,
+    updatedAt: null,
+  },
   /** Outline thickness in panel pixels (1-4); the ring follows the glyph shape. */
   haloWidth: 3,
 });
@@ -77,11 +119,39 @@ export function normalizeConfig(patch = {}, base = DEFAULT_CONFIG) {
       patch.title === undefined ? base.title : String(patch.title).trim().slice(0, 24),
     footer:
       patch.footer === undefined ? base.footer : String(patch.footer).trim().slice(0, 48),
-    textProtection: ["auto", "halo", "scrim", "plate", "off"].includes(patch.textProtection)
+    textProtection: ["auto", "halo", "plate", "off"].includes(patch.textProtection)
       ? patch.textProtection
-      : patch.textProtection === "band"
-        ? "halo"
+      : patch.textProtection === "band" || patch.textProtection === "scrim"
+        ? "auto"
         : base.textProtection,
+    backgroundZoom:
+      patch.backgroundZoom === undefined
+        ? base.backgroundZoom
+        : Math.min(4, Math.max(1, Number(patch.backgroundZoom) || 1)),
+    backgroundOffsetX:
+      patch.backgroundOffsetX === undefined
+        ? base.backgroundOffsetX
+        : Math.min(1, Math.max(-1, Number(patch.backgroundOffsetX) || 0)),
+    backgroundOffsetY:
+      patch.backgroundOffsetY === undefined
+        ? base.backgroundOffsetY
+        : Math.min(1, Math.max(-1, Number(patch.backgroundOffsetY) || 0)),
+    backgroundBrightness:
+      patch.backgroundBrightness === undefined
+        ? base.backgroundBrightness
+        : clampNumber(patch.backgroundBrightness, -100, 100, base.backgroundBrightness),
+    backgroundContrast:
+      patch.backgroundContrast === undefined
+        ? base.backgroundContrast
+        : clampNumber(patch.backgroundContrast, -100, 100, base.backgroundContrast),
+    ditherAlgorithm:
+      typeof patch.ditherAlgorithm === "string" && DITHER_ALGORITHMS.includes(patch.ditherAlgorithm)
+        ? patch.ditherAlgorithm
+        : base.ditherAlgorithm,
+    ditherStrength:
+      patch.ditherStrength === undefined
+        ? base.ditherStrength
+        : Math.min(1, Math.max(0, Number(patch.ditherStrength))),
     haloWidth:
       patch.haloWidth === undefined ? base.haloWidth : clampNumber(patch.haloWidth, 1, 4, base.haloWidth),
   };
@@ -89,6 +159,19 @@ export function normalizeConfig(patch = {}, base = DEFAULT_CONFIG) {
     next.device = {
       address: typeof patch.device.address === "string" ? patch.device.address.trim() : base.device.address,
       name: typeof patch.device.name === "string" ? patch.device.name.trim() : base.device.name,
+    };
+  }
+  if (patch.pricing && typeof patch.pricing === "object") {
+    const source = patch.pricing;
+    const basePricing = base.pricing || DEFAULT_CONFIG.pricing;
+    next.pricing = {
+      modelId: typeof source.modelId === "string" ? source.modelId : basePricing.modelId,
+      tariff: ["auto", "peak", "off-peak"].includes(source.tariff) ? source.tariff : basePricing.tariff,
+      label: typeof source.label === "string" ? source.label.slice(0, 40) : basePricing.label,
+      cacheHitPrice: Math.max(0, Number(source.cacheHitPrice) || 0),
+      cacheMissPrice: Math.max(0, Number(source.cacheMissPrice) || 0),
+      outputPrice: Math.max(0, Number(source.outputPrice) || 0),
+      updatedAt: Number(source.updatedAt) || basePricing.updatedAt,
     };
   }
   if (patch.sections && typeof patch.sections === "object") {
@@ -192,6 +275,11 @@ export function buildScene({ snapshot, config, now = Date.now(), timeZone = "Asi
 
   const stamp = clockLabel(now, timeZone);
   const footer = config.footer ? config.footer.replace(/\{time\}/gi, stamp) : `每 ${config.intervalMinutes} 分钟刷新`;
+  const rates = resolveRates(config.pricing, { now: new Date(now) });
+  const costValue = formatCny(
+    computeCost({ promptTokens, completionTokens, cachedTokens }, rates)
+  );
+
   const scene = {
     title: config.title || "sparkDash",
     subtitle: stamp,
@@ -206,6 +294,14 @@ export function buildScene({ snapshot, config, now = Date.now(), timeZone = "Asi
     backgroundDim: config.backgroundDim,
     textProtection: config.textProtection,
     haloWidth: config.haloWidth,
+    backgroundZoom: config.backgroundZoom,
+    backgroundOffsetX: config.backgroundOffsetX,
+    backgroundOffsetY: config.backgroundOffsetY,
+    backgroundBrightness: config.backgroundBrightness,
+    backgroundContrast: config.backgroundContrast,
+    ditherAlgorithm: config.ditherAlgorithm,
+    ditherStrength: config.ditherStrength,
+    cost: config.sections.cost ? { label: "云价", value: costValue, tariff: rates.tariff, source: rates.source } : null,
   };
   if (!config.sections.headline) scene.headline = { label: "今日 Token", value: formatCompact(total) };
   return scene;
@@ -350,6 +446,33 @@ export function createEinkRuntime({
   });
 
   app.get("/api/eink/status", (_req, res) => res.json(status()));
+
+  app.get("/api/eink/pricing", (_req, res) =>
+    res.json({ models: OFFICIAL_MODELS, pricing: config.pricing, source: OFFICIAL_SOURCE })
+  );
+
+  app.post("/api/eink/pricing/refresh", async (_req, res) => {
+    try {
+      const response = await fetchImpl(OFFICIAL_SOURCE, { signal: AbortSignal.timeout(15_000) });
+      if (!response.ok) throw new Error(`官网返回 HTTP ${response.status}`);
+      const html = await response.text();
+      const parsed = parseOfficialPricing(html);
+      if (!applyOfficialPricing(parsed)) throw new Error("没在官网页面里找到价格表");
+      config = saveConfig(configPath, normalizeConfig({ pricing: { updatedAt: now() } }, config));
+      res.json({ ok: true, models: OFFICIAL_MODELS, pricing: config.pricing });
+    } catch (err) {
+      res.status(502).json({ ok: false, error: err?.message || String(err), models: OFFICIAL_MODELS });
+    }
+  });
+
+  app.get("/api/eink/algorithms", async (_req, res) => {
+    try {
+      const payload = await callBridge("/algorithms");
+      res.json({ algorithms: Array.isArray(payload?.algorithms) ? payload.algorithms : DITHER_ALGORITHMS });
+    } catch {
+      res.json({ algorithms: DITHER_ALGORITHMS });
+    }
+  });
 
   app.get("/api/eink/devices", async (req, res) => {
     try {

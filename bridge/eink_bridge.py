@@ -18,11 +18,14 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import base64
 import functools
 import io
 import json
 import logging
+import math
 import os
+import random
 import subprocess
 import re
 import sys
@@ -65,8 +68,6 @@ ROW_GAP = 2
 DIM_INK_RATIO = 0.93
 # Draw the scene at N x and scale down; keeps small CJK text legible.
 SUPERSAMPLE = 2
-# Blend factor of the text-column scrim over a background photo.
-TEXT_SCRIM = 0.88
 # Below this luminance gap the photo would swallow the glyphs; add a backing strip.
 TEXT_CONTRAST_FLOOR = 96
 
@@ -237,6 +238,8 @@ class SceneSpec:
 
     headline_value: str
     headline_label: str = ""
+    cost_label: str = ""
+    cost_value: str = ""
     title: str = ""
     subtitle: str = ""
     stats: List[Stat] = field(default_factory=list)
@@ -246,10 +249,22 @@ class SceneSpec:
     theme: str = "dark"
     background: Optional[str] = None
     background_dim: float = 0.35
-    # "halo" outlines each glyph (the photo keeps its detail), "scrim" washes the
-    # content area, "plate" replaces it, "off" draws straight on the photo.
+    # Background photo transform: "zoom" multiplies the cover-fit scale, the
+    # offsets pan the crop window by a fraction of the canvas, "brightness" is
+    # added per channel and "contrast" is applied around mid-grey.
+    background_zoom: float = 1.0
+    background_offset_x: float = 0.0
+    background_offset_y: float = 0.0
+    background_brightness: int = 0
+    background_contrast: int = 0
+    # "halo" outlines each glyph (the photo keeps its detail), "plate" replaces
+    # the content area with the base colour, "off" draws straight on the photo.
     text_protection: str = "auto"
     halo_width: int = 2
+    # Dither engine for the photo. The UI layer is painted afterwards with exact
+    # palette colours, so no dither can eat a glyph stroke.
+    dither_algorithm: str = "floyd-steinberg"
+    dither_strength: float = 1.0
 
     @property
     def pigment(self) -> Tuple[int, int, int]:
@@ -274,6 +289,24 @@ def _as_text(value: Any) -> str:
 def _clamp(value: float, low: float, high: float) -> float:
     """Clamp ``value`` into ``[low, high]``."""
     return max(low, min(high, value))
+
+
+def _as_float(value: Any, default: float) -> float:
+    """Coerce a JSON scalar to ``float``, falling back to ``default``.
+
+    ``None``, booleans, non-numeric strings and non-finite numbers all fall
+    back, so a scene built by hand (``1e9``, ``"wide"``, ``null``) still renders
+    instead of taking the request down.
+    """
+    if value is None or isinstance(value, bool):
+        return default
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return default
+    if math.isnan(number) or math.isinf(number):
+        return default
+    return number
 
 
 def parse_scene(raw: Any) -> SceneSpec:
@@ -308,13 +341,27 @@ def parse_scene(raw: Any) -> SceneSpec:
     protection = _as_text(raw.get("textProtection")).lower()
     if protection == "band":  # older configs used a rectangular band
         protection = "halo"
-    if protection not in ("auto", "halo", "scrim", "plate", "off"):
+    if protection == "scrim":  # removed: the wash made the photo unrecognisable
+        protection = "auto"
+    if protection not in ("auto", "halo", "plate", "off"):
         protection = "auto"
     try:
         halo_width = int(round(float(raw.get("haloWidth", 2))))
     except (TypeError, ValueError):
         halo_width = 2
     halo_width = max(1, min(4, halo_width))
+
+    background_zoom = _clamp(_as_float(raw.get("backgroundZoom"), 1.0), 1.0, 4.0)
+    background_offset_x = _clamp(_as_float(raw.get("backgroundOffsetX"), 0.0), -1.0, 1.0)
+    background_offset_y = _clamp(_as_float(raw.get("backgroundOffsetY"), 0.0), -1.0, 1.0)
+    background_brightness = int(
+        round(_clamp(_as_float(raw.get("backgroundBrightness"), 0.0), -100.0, 100.0))
+    )
+    background_contrast = int(
+        round(_clamp(_as_float(raw.get("backgroundContrast"), 0.0), -100.0, 100.0))
+    )
+    dither_algorithm = normalise_dither_algorithm(raw.get("ditherAlgorithm"))
+    dither_strength = _clamp(_as_float(raw.get("ditherStrength"), 1.0), 0.0, 1.0)
 
     background = raw.get("background")
     background_path: Optional[str] = None
@@ -350,6 +397,8 @@ def parse_scene(raw: Any) -> SceneSpec:
     return SceneSpec(
         headline_value=headline_value,
         headline_label=_as_text(headline.get("label")),
+        cost_label=_as_text((raw.get("cost") or {}).get("label")) if isinstance(raw.get("cost"), dict) else "",
+        cost_value=_as_text((raw.get("cost") or {}).get("value")) if isinstance(raw.get("cost"), dict) else "",
         title=_as_text(raw.get("title")),
         subtitle=_as_text(raw.get("subtitle")),
         stats=stats,
@@ -359,8 +408,15 @@ def parse_scene(raw: Any) -> SceneSpec:
         theme=theme,
         background=background_path,
         background_dim=_clamp(background_dim, 0.0, 1.0),
+        background_zoom=background_zoom,
+        background_offset_x=background_offset_x,
+        background_offset_y=background_offset_y,
+        background_brightness=background_brightness,
+        background_contrast=background_contrast,
         text_protection=protection,
         halo_width=halo_width,
+        dither_algorithm=dither_algorithm,
+        dither_strength=dither_strength,
     )
 
 
@@ -369,18 +425,77 @@ def parse_scene(raw: Any) -> SceneSpec:
 # --------------------------------------------------------------------------- #
 
 
-def _cover_fit(path: str, size: Tuple[int, int]) -> Image.Image:
-    """Open ``path``, cover-fit it to ``size`` (centre crop) and return greyscale RGB."""
+def _load_photo(path: str) -> Image.Image:
+    """Open ``path`` and return it as RGB (the file handle is released here)."""
     with Image.open(path) as handle:
         img = handle.convert("RGB")
+    return img
+
+
+def _apply_levels(photo: Image.Image, brightness: int, contrast: int) -> Image.Image:
+    """Apply additive brightness and a mid-grey centred contrast curve.
+
+    Both values arrive pre-clamped from ``parse_scene``; the contrast factor is
+    clamped again here so a hand-built ``SceneSpec`` cannot collapse the photo
+    to flat grey.
+    """
+    if brightness == 0 and contrast == 0:
+        return photo
+    factor = _clamp(1.0 + contrast / 100.0, 0.2, 3.0)
+    lut = [
+        int(round(_clamp((value - 128) * factor + 128 + brightness, 0.0, 255.0)))
+        for value in range(256)
+    ]
+    return photo.point(lut * 3)
+
+
+def _transform_photo(
+    photo: Image.Image,
+    zoom: float,
+    offset_x: float,
+    offset_y: float,
+    size: Tuple[int, int],
+) -> Image.Image:
+    """Zoom around the drawn centre and pan the crop window over the photo.
+
+    ``zoom`` multiplies the cover-fit scale and ``offset_*`` shifts the window by
+    a fraction of the canvas width/height. The window is clamped inside the
+    photo, so panning never shows an empty border and never needs a fill colour.
+    """
+    if zoom <= 1.0 and offset_x == 0.0 and offset_y == 0.0:
+        return photo
     target_w, target_h = size
-    src_w, src_h = img.size
+    src_w, src_h = photo.size
     if src_w <= 0 or src_h <= 0:
-        raise ValueError(f"background image has no pixels: {path}")
+        return photo
+    scale = max(target_w / src_w, target_h / src_h) * max(1.0, zoom)
+    window_w = min(float(src_w), target_w / scale)
+    window_h = min(float(src_h), target_h / scale)
+    centre_x = src_w / 2.0 + offset_x * (target_w / scale)
+    centre_y = src_h / 2.0 + offset_y * (target_h / scale)
+    left = _clamp(centre_x - window_w / 2.0, 0.0, max(0.0, src_w - window_w))
+    top = _clamp(centre_y - window_h / 2.0, 0.0, max(0.0, src_h - window_h))
+    box = (
+        int(round(left)),
+        int(round(top)),
+        int(round(min(float(src_w), left + window_w))),
+        int(round(min(float(src_h), top + window_h))),
+    )
+    if box[2] - box[0] < 1 or box[3] - box[1] < 1:
+        return photo
+    return photo.crop(box)
+
+
+def _cover_fit(photo: Image.Image, size: Tuple[int, int]) -> Image.Image:
+    """Cover-fit ``photo`` to ``size`` (centre crop) and return greyscale RGB."""
+    target_w, target_h = size
+    src_w, src_h = photo.size
+    if src_w <= 0 or src_h <= 0:
+        raise ValueError("background image has no pixels")
     scale = max(target_w / src_w, target_h / src_h)
     new_w = max(target_w, int(round(src_w * scale)))
     new_h = max(target_h, int(round(src_h * scale)))
-    img = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+    img = photo.resize((new_w, new_h), Image.Resampling.LANCZOS)
     left = max(0, (new_w - target_w) // 2)
     top = max(0, (new_h - target_h) // 2)
     img = img.crop((left, top, left + target_w, top + target_h))
@@ -397,7 +512,19 @@ def _base_image(spec: SceneSpec) -> Image.Image:
     if not spec.background:
         return base
     try:
-        photo = _cover_fit(spec.background, (CANVAS_W, CANVAS_H))
+        photo = _load_photo(spec.background)
+        # Levels first, then the crop window, then the cover fit: the transform
+        # has to see the tone curve the user asked for, and the blend with the
+        # theme colour stays the very last step.
+        photo = _apply_levels(photo, spec.background_brightness, spec.background_contrast)
+        photo = _transform_photo(
+            photo,
+            spec.background_zoom,
+            spec.background_offset_x,
+            spec.background_offset_y,
+            (CANVAS_W, CANVAS_H),
+        )
+        photo = _cover_fit(photo, (CANVAS_W, CANVAS_H))
     except (OSError, ValueError) as exc:
         LOGGER.warning("background %s unreadable: %s", spec.background, exc)
         return base
@@ -448,17 +575,17 @@ def _ink_height(draw: Any, text: str, font: Any) -> int:
 
 
 def _protect_text_area(image: Image.Image, spec: SceneSpec) -> Image.Image:
-    """Keep type readable on top of a photo: wash or replace the content area.
+    """Keep type readable on top of a photo by replacing the content area.
 
     A three-ink panel cannot show a photo and fine text at the same time — the
-    error diffusion that renders the photo also eats the thin glyph strokes, so
-    the text column gets a solid (or nearly solid) theme-coloured backing.
+    dither that renders the photo also eats the thin glyph strokes, so "plate"
+    paints the content area in the theme's base colour and the photo stays
+    visible only around it.
     """
     inset = max(2, MARGIN // 3)
     box = (inset, inset, CANVAS_W - inset, CANVAS_H - inset)
-    region = image.crop(box)
-    flat = Image.new("RGB", region.size, _ink_colours(spec)[2])
-    image.paste(flat if spec.text_protection == "plate" else Image.blend(region, flat, TEXT_SCRIM), box)
+    flat = Image.new("RGB", (box[2] - box[0], box[3] - box[1]), _ink_colours(spec)[2])
+    image.paste(flat, box)
     return image
 
 
@@ -512,7 +639,7 @@ def render_scene(spec: SceneSpec) -> Image.Image:
     """
     scale = SUPERSAMPLE
     image = _base_image(spec)
-    if spec.background and spec.text_protection in ("scrim", "plate"):
+    if spec.background and spec.text_protection == "plate":
         image = _protect_text_area(image, spec)
     if scale > 1:
         image = image.resize((CANVAS_W * scale, CANVAS_H * scale), Image.LANCZOS)
@@ -553,38 +680,6 @@ def render_scene(spec: SceneSpec) -> Image.Image:
             }
         )
         return bbox[3] - bbox[1]
-        if spec.background and spec.text_protection in ("auto", "halo"):
-            # One glyph-shaped ring, sized against the glyph: ~6% of the font is a
-            # "one size bigger" outline, while a thicker ring would close the
-            # counters of 13-14 px CJK and nibble the right edge of an M.
-            font_size = getattr(font, "size", ROW_SIZE * scale) / scale
-            ring = max(1, min(spec.halo_width, int(round(font_size * 0.06))))
-            return _draw_top(
-                draw,
-                xy,
-                value,
-                font,
-                fill,
-                halo=base,
-                halo_width=max(1, int(round(ring * scale))),
-            )
-        if spec.background and spec.text_protection == "band" and band:
-            bbox = draw.textbbox((0, 0), value, font=font)
-            pad = 2 * scale
-            draw.rectangle(
-                [max(0, xy[0] - pad), max(0, xy[1] - pad), xy[0] + (bbox[2] - bbox[0]) + pad, xy[1] + (bbox[3] - bbox[1]) + pad],
-                fill=base,
-            )
-            return _draw_top(draw, xy, value, font, fill)
-        return _draw_top(
-            draw,
-            xy,
-            value,
-            font,
-            fill,
-            halo=halo,
-            halo_width=max(1, int(round(scale * width))) if halo is not None else 0,
-        )
     content_w = (CANVAS_W - 2 * MARGIN) * scale
 
     footer_h = (FOOTER_SIZE + 6) * scale if spec.footer else 0
@@ -598,9 +693,19 @@ def render_scene(spec: SceneSpec) -> Image.Image:
         font = load_font(SUBTITLE_SIZE * scale, True)
         cursor += tdraw((margin, cursor), truncate_text(spec.subtitle, font, content_w), font, dim) + 8 * scale
 
-    if spec.headline_label:
+    if spec.headline_label or spec.cost_value:
         font = load_font(HEADLINE_LABEL_SIZE * scale, True)
-        cursor += tdraw((margin, cursor), truncate_text(spec.headline_label, font, content_w), font, fg) + 2 * scale
+        if spec.cost_value:
+            cost_text = f"{spec.cost_label} {spec.cost_value}".strip()
+            cost_w = text_width(font, cost_text)
+            tdraw((CANVAS_W * scale - margin - cost_w, cursor), cost_text, font, pigment, width=2)
+        if spec.headline_label:
+            cursor += tdraw(
+                (margin, cursor),
+                truncate_text(spec.headline_label, font, content_w),
+                font,
+                fg,
+            ) + 2 * scale
     value_font, value_text = fit_font(
         spec.headline_value,
         content_w,
@@ -671,9 +776,9 @@ def render_scene(spec: SceneSpec) -> Image.Image:
     else:
         base_1x = image.copy()
 
-    # Only the background is error-diffused. The UI is then painted on top with
-    # exact palette colours, so no dither can eat a glyph stroke.
-    image = quantize_to_palette(base_1x, spec.pigment)
+    # Only the background is dithered. The UI is then painted on top with exact
+    # palette colours, so no dither can eat a glyph stroke.
+    image = dither_to_palette(base_1x, spec.pigment, spec.dither_algorithm, spec.dither_strength)
 
     for bar in bar_items:
         x0, y0, x1, y1 = (int(round(value / scale)) for value in bar["box"])
@@ -696,75 +801,369 @@ def render_scene(spec: SceneSpec) -> Image.Image:
     return image
 
 
+# --------------------------------------------------------------------------- #
+# Dither engine
+# --------------------------------------------------------------------------- #
+
+# Wire order of GET /algorithms: the settings UI shows this list verbatim.
+DITHER_ALGORITHMS: Tuple[str, ...] = (
+    "none",
+    "floyd-steinberg",
+    "jarvis",
+    "stucki",
+    "burkes",
+    "sierra",
+    "sierra-lite",
+    "atkinson",
+    "bayer8",
+    "blue-noise",
+)
+DEFAULT_DITHER_ALGORITHM = "floyd-steinberg"
+
+# Published diffusion kernels as (dx, dy, weight) plus the divisor that
+# normalises them. Atkinson is the odd one out: 6/8 of the error is diffused and
+# the remaining 2/8 is deliberately discarded, so it keeps a divisor of 8 while
+# carrying only six unit weights.
+_DITHER_KERNELS: Dict[str, Tuple[float, Tuple[Tuple[int, int, float], ...]]] = {
+    "floyd-steinberg": (16.0, ((1, 0, 7.0), (-1, 1, 3.0), (0, 1, 5.0), (1, 1, 1.0))),
+    "jarvis": (
+        48.0,
+        (
+            (1, 0, 7.0), (2, 0, 5.0),
+            (-2, 1, 3.0), (-1, 1, 5.0), (0, 1, 7.0), (1, 1, 5.0), (2, 1, 3.0),
+            (-2, 2, 1.0), (-1, 2, 3.0), (0, 2, 5.0), (1, 2, 3.0), (2, 2, 1.0),
+        ),
+    ),
+    "stucki": (
+        42.0,
+        (
+            (1, 0, 8.0), (2, 0, 4.0),
+            (-2, 1, 2.0), (-1, 1, 4.0), (0, 1, 8.0), (1, 1, 4.0), (2, 1, 2.0),
+            (-2, 2, 1.0), (-1, 2, 2.0), (0, 2, 4.0), (1, 2, 2.0), (2, 2, 1.0),
+        ),
+    ),
+    "burkes": (
+        32.0,
+        (
+            (1, 0, 8.0), (2, 0, 4.0),
+            (-2, 1, 2.0), (-1, 1, 4.0), (0, 1, 8.0), (1, 1, 4.0), (2, 1, 2.0),
+        ),
+    ),
+    "sierra": (
+        32.0,
+        (
+            (1, 0, 5.0), (2, 0, 3.0),
+            (-2, 1, 2.0), (-1, 1, 4.0), (0, 1, 5.0), (1, 1, 4.0), (2, 1, 2.0),
+            (-1, 2, 2.0), (0, 2, 3.0), (1, 2, 2.0),
+        ),
+    ),
+    "sierra-lite": (4.0, ((1, 0, 2.0), (-1, 1, 1.0), (0, 1, 1.0))),
+    "atkinson": (
+        8.0,
+        ((1, 0, 1.0), (2, 0, 1.0), (-1, 1, 1.0), (0, 1, 1.0), (1, 1, 1.0), (0, 2, 1.0)),
+    ),
+}
+
+# Spelling variants a config or a hand-written request may arrive with.
+_DITHER_ALIASES: Dict[str, str] = {
+    "fs": "floyd-steinberg",
+    "floyd_steinberg": "floyd-steinberg",
+    "floydsteinberg": "floyd-steinberg",
+    "jjn": "jarvis",
+    "jarvis-judice-ninke": "jarvis",
+    "sierra3": "sierra",
+    "sierra-3": "sierra",
+    "two-row-sierra": "sierra-lite",
+    "bayer": "bayer8",
+    "bayer-8": "bayer8",
+    "blue_noise": "blue-noise",
+    "bluenoise": "blue-noise",
+    "off": "none",
+}
+
+# Diffused error is clamped to this many linear-light units per channel. The
+# published kernels bound the error on their own, but a clipped highlight can
+# still push a neighbour far enough to paint a stripe of the wrong ink.
+_ERROR_CLAMP = 0.5
+
+# Full-strength amplitude of an ordered mask, in linear-light units. It stops
+# just short of the half-distance between black and white (0.4436), so a solid
+# ink area stays solid while a grey ramp keeps its local average.
+_ORDERED_BIAS = 0.44
+
+
+def normalise_dither_algorithm(value: Any) -> str:
+    """Return a canonical dither algorithm name; unknown input falls back."""
+    if not isinstance(value, str):
+        return DEFAULT_DITHER_ALGORITHM
+    name = _DITHER_ALIASES.get(value.strip().lower(), value.strip().lower())
+    if name in DITHER_ALGORITHMS:
+        return name
+    return DEFAULT_DITHER_ALGORITHM
+
+
+def _bayer_matrix(order: int) -> List[List[float]]:
+    """Return the classic 2**order Bayer threshold matrix, normalised to [0, 1)."""
+    matrix = [[0]]
+    for _ in range(order):
+        size = len(matrix)
+        grown = [[0] * (size * 2) for _ in range(size * 2)]
+        for y in range(size):
+            for x in range(size):
+                base = matrix[y][x] * 4
+                grown[y][x] = base
+                grown[y][x + size] = base + 2
+                grown[y + size][x] = base + 3
+                grown[y + size][x + size] = base + 1
+        matrix = grown
+    cells = float(len(matrix) * len(matrix))
+    return [[value / cells for value in row] for row in matrix]
+
+
+def _void_and_cluster_mask(size: int, sigma: float, seed: int) -> List[List[float]]:
+    """Rank every cell of a ``size`` x ``size`` torus with void-and-cluster.
+
+    The ranking is what an ordered dither needs as a threshold mask: filling
+    cells in ascending order reproduces a prototype whose gaps are as even as a
+    blue-noise spectrum allows. The torus, the Gaussian cluster energy and the
+    prototype-then-strip/fill schedule follow "The void-and-cluster method for
+    dither array generation" (Ulichney, 1993); a shuffled mask would keep its
+    low-frequency grain and read as blotches on the panel.
+
+    Generation is a one-off at import and runs in a fraction of a second, so the
+    mask is not shipped as a literal.
+    """
+    total = size * size
+    half = total // 2
+    rng = random.Random(seed)
+
+    # Gaussian clustering energy over the torus, centre cell excluded: a pixel
+    # must not count itself when the cluster energy is measured.
+    radius = max(1, int(round(3.0 * sigma)))
+    offsets = [
+        (dy, dx, math.exp(-(dx * dx + dy * dy) / (2.0 * sigma * sigma)))
+        for dy in range(-radius, radius + 1)
+        for dx in range(-radius, radius + 1)
+        if dx or dy
+    ]
+    neighbours = [
+        [(((y + dy) % size) * size + ((x + dx) % size), weight) for dy, dx, weight in offsets]
+        for y in range(size)
+        for x in range(size)
+    ]
+
+    energy = [0.0] * total
+    filled = bytearray(total)
+    # The argmax/argmin scans are the hot path: keep two masked views of the
+    # energy so each scan is one builtin pass instead of a Python loop.
+    cluster_energy = [-math.inf] * total
+    void_energy = [math.inf] * total
+
+    def set_cell(index: int, on: bool) -> None:
+        """Place or clear one pixel and update the surrounding energy."""
+        filled[index] = 1 if on else 0
+        sign = 1.0 if on else -1.0
+        if on:
+            cluster_energy[index] = energy[index]
+            void_energy[index] = math.inf
+        else:
+            cluster_energy[index] = -math.inf
+            void_energy[index] = energy[index]
+        for other, weight in neighbours[index]:
+            value = energy[other] + sign * weight
+            energy[other] = value
+            if filled[other]:
+                cluster_energy[other] = value
+            else:
+                void_energy[other] = value
+
+    cells = list(range(total))
+    rng.shuffle(cells)
+    for index in cells[:half]:
+        set_cell(index, True)
+
+    # Relax the random half-density seed into a homogeneous prototype.
+    for _ in range(total * 8):
+        cluster = cluster_energy.index(max(cluster_energy))
+        set_cell(cluster, False)
+        void = void_energy.index(min(void_energy))
+        if void == cluster:
+            set_cell(cluster, True)
+            break
+        set_cell(void, True)
+    prototype = [index for index in range(total) if filled[index]]
+
+    rank = [0] * total
+    # Phase one: strip the prototype, so the pixels that survive longest rank
+    # lowest and turn into the first ink dots of a threshold sweep.
+    for value in range(half - 1, -1, -1):
+        cluster = cluster_energy.index(max(cluster_energy))
+        set_cell(cluster, False)
+        rank[cluster] = value
+    # Phase two: restore the prototype and fill its voids in order.
+    for index in range(total):
+        if filled[index]:
+            set_cell(index, False)
+    for index in prototype:
+        set_cell(index, True)
+    for value in range(half, total):
+        void = void_energy.index(min(void_energy))
+        set_cell(void, True)
+        rank[void] = value
+    divisor = float(total)
+    return [[rank[y * size + x] / divisor for x in range(size)] for y in range(size)]
+
+
+_BAYER8 = _bayer_matrix(3)
+# 64x64 travels with the module so every render is reproducible; if the import
+# budget ever has to shrink, _BLUE_NOISE_SIZE = 32 costs a tenth of the time.
+_BLUE_NOISE_SIZE = 64
+_BLUE_NOISE = _void_and_cluster_mask(_BLUE_NOISE_SIZE, 1.5, 0x5EED)
+
 _LINEAR = [(value / 255.0) ** 2.2 for value in range(256)]
 
 
-def quantize_to_palette(image: Image.Image, pigment: Tuple[int, int, int]) -> Image.Image:
-    """Map ``image`` onto black/white/pigment with Floyd-Steinberg error diffusion.
-
-    The nearest palette entry is chosen by Euclidean distance in approximately
-    linear RGB space, and the quantisation error is diffused in the same space.
-    The returned image contains only the three palette colours.
-    """
+def _palette_linear(
+    pigment: Tuple[int, int, int],
+) -> Tuple[List[Tuple[int, int, int]], List[Tuple[float, float, float]]]:
+    """Return the three scene inks plus their linear-light coordinates."""
     palette: List[Tuple[int, int, int]] = [COLOR_BLACK, COLOR_WHITE, pigment]
-    palette_linear = [(_LINEAR[c[0]], _LINEAR[c[1]], _LINEAR[c[2]]) for c in palette]
+    return palette, [(_LINEAR[c[0]], _LINEAR[c[1]], _LINEAR[c[2]]) for c in palette]
 
+
+def _quantise_diffusion(
+    image: Image.Image,
+    pigment: Tuple[int, int, int],
+    weights: Sequence[Tuple[int, int, float]],
+) -> Image.Image:
+    """Nearest-colour quantisation with an optional error-diffusion kernel.
+
+    ``weights`` holds already-normalised ``(dx, dy, weight)`` offsets; an empty
+    sequence gives plain nearest-colour thresholding. The error buffer rolls one
+    row per scanline, so even the two-row kernels stay O(width) in memory.
+    """
+    palette, palette_linear = _palette_linear(pigment)
     src = image.convert("RGB")
     width, height = src.size
     px = src.load()
     out = Image.new("RGB", (width, height))
     opx = out.load()
 
-    # Work buffer of linear-light values with room for diffused error.
-    work: List[List[float]] = [[0.0] * (width * 3) for _ in range(height)]
-
-    right_w, down_left_w, down_w, down_right_w = 7.0 / 16.0, 3.0 / 16.0, 5.0 / 16.0, 1.0 / 16.0
+    rows = 1 + max((dy for _dx, dy, _weight in weights), default=0)
+    buffer: List[List[float]] = [[0.0] * (width * 3) for _ in range(rows)]
+    linear = _LINEAR
+    clamp = _ERROR_CLAMP
 
     for y in range(height):
-        row_y = work[y]
-        row_next = work[y + 1] if y + 1 < height else None
+        current = buffer[0]
         for x in range(width):
             r, g, b = px[x, y]
             i = x * 3
-            lr = _LINEAR[r] + row_y[i]
-            lg = _LINEAR[g] + row_y[i + 1]
-            lb = _LINEAR[b] + row_y[i + 2]
+            lr = linear[r] + current[i]
+            lg = linear[g] + current[i + 1]
+            lb = linear[b] + current[i + 2]
 
             best_idx = 0
-            best_dist = None
+            best_dist = -1.0
             for idx, (pr, pg, pb) in enumerate(palette_linear):
                 dist = (lr - pr) ** 2 + (lg - pg) ** 2 + (lb - pb) ** 2
-                if best_dist is None or dist < best_dist:
+                if best_dist < 0.0 or dist < best_dist:
                     best_dist = dist
                     best_idx = idx
-            chosen = palette[best_idx]
-            opx[x, y] = chosen
+            opx[x, y] = palette[best_idx]
 
+            if not weights:
+                continue
             pr, pg, pb = palette_linear[best_idx]
             er, eg, eb = lr - pr, lg - pg, lb - pb
             if er == 0.0 and eg == 0.0 and eb == 0.0:
                 continue
-            if x + 1 < width:
-                j = i + 3
-                row_y[j] += er * right_w
-                row_y[j + 1] += eg * right_w
-                row_y[j + 2] += eb * right_w
-            if row_next is not None:
-                if x > 0:
-                    j = i - 3
-                    row_next[j] += er * down_left_w
-                    row_next[j + 1] += eg * down_left_w
-                    row_next[j + 2] += eb * down_left_w
-                j = i
-                row_next[j] += er * down_w
-                row_next[j + 1] += eg * down_w
-                row_next[j + 2] += eb * down_w
-                if x + 1 < width:
-                    j = i + 3
-                    row_next[j] += er * down_right_w
-                    row_next[j + 1] += eg * down_right_w
-                    row_next[j + 2] += eb * down_right_w
+            for dx, dy, weight in weights:
+                tx = x + dx
+                if tx < 0 or tx >= width:
+                    continue
+                target = buffer[dy]
+                j = tx * 3
+                nr = target[j] + er * weight
+                ng = target[j + 1] + eg * weight
+                nb = target[j + 2] + eb * weight
+                target[j] = clamp if nr > clamp else (-clamp if nr < -clamp else nr)
+                target[j + 1] = clamp if ng > clamp else (-clamp if ng < -clamp else ng)
+                target[j + 2] = clamp if nb > clamp else (-clamp if nb < -clamp else nb)
+        buffer.pop(0)
+        buffer.append([0.0] * (width * 3))
     return out
+
+
+def _quantise_ordered(
+    image: Image.Image,
+    pigment: Tuple[int, int, int],
+    mask: Sequence[Sequence[float]],
+    bias: float,
+) -> Image.Image:
+    """Nearest-colour quantisation through an ordered threshold mask."""
+    palette, palette_linear = _palette_linear(pigment)
+    src = image.convert("RGB")
+    width, height = src.size
+    px = src.load()
+    out = Image.new("RGB", (width, height))
+    opx = out.load()
+    linear = _LINEAR
+    size = len(mask)
+
+    for y in range(height):
+        mask_row = mask[y % size]
+        for x in range(width):
+            r, g, b = px[x, y]
+            delta = (mask_row[x % size] * 2.0 - 1.0) * bias
+            lr = linear[r] + delta
+            lg = linear[g] + delta
+            lb = linear[b] + delta
+
+            best_idx = 0
+            best_dist = -1.0
+            for idx, (pr, pg, pb) in enumerate(palette_linear):
+                dist = (lr - pr) ** 2 + (lg - pg) ** 2 + (lb - pb) ** 2
+                if best_dist < 0.0 or dist < best_dist:
+                    best_dist = dist
+                    best_idx = idx
+            opx[x, y] = palette[best_idx]
+    return out
+
+
+def dither_to_palette(
+    image: Image.Image,
+    pigment: Tuple[int, int, int],
+    algorithm: str = DEFAULT_DITHER_ALGORITHM,
+    strength: float = 1.0,
+) -> Image.Image:
+    """Map ``image`` onto black/white/pigment with the selected dither engine.
+
+    The nearest palette entry is chosen by Euclidean distance in approximately
+    linear RGB space. ``strength`` scales the diffused error or, for the ordered
+    masks, the intensity bias; at 0.0 the result is a plain nearest-colour
+    threshold. Every returned pixel is exactly one of the three palette colours:
+    the panel has no greys, and the plane packer treats anything else as black.
+    """
+    name = normalise_dither_algorithm(algorithm)
+    level = _clamp(_as_float(strength, 1.0), 0.0, 1.0)
+    if name in ("bayer8", "blue-noise") and level > 0.0:
+        mask = _BAYER8 if name == "bayer8" else _BLUE_NOISE
+        return _quantise_ordered(image, pigment, mask, level * _ORDERED_BIAS)
+    if name == "none" or level <= 0.0:
+        return _quantise_diffusion(image, pigment, ())
+    divider, offsets = _DITHER_KERNELS[name]
+    weights = tuple((dx, dy, weight / divider * level) for dx, dy, weight in offsets)
+    return _quantise_diffusion(image, pigment, weights)
+
+
+def quantize_to_palette(image: Image.Image, pigment: Tuple[int, int, int]) -> Image.Image:
+    """Map ``image`` onto black/white/pigment with Floyd-Steinberg error diffusion.
+
+    Kept as the stable entry point for callers that do not care about the
+    engine: full-strength Floyd-Steinberg, the scene default.
+    """
+    return dither_to_palette(image, pigment, DEFAULT_DITHER_ALGORITHM, 1.0)
 
 
 def render_scene_image(raw_scene: Any) -> Tuple[Image.Image, SceneSpec]:
@@ -773,16 +1172,24 @@ def render_scene_image(raw_scene: Any) -> Tuple[Image.Image, SceneSpec]:
     canvas = render_scene(spec)
     if canvas.size != (CANVAS_W, CANVAS_H):  # defensive: layout must never resize
         canvas = canvas.resize((CANVAS_W, CANVAS_H), Image.Resampling.LANCZOS)
-    quantised = quantize_to_palette(canvas, spec.pigment)
+    # The canvas is already palette-exact (render_scene dithered the photo and
+    # painted the UI in exact inks), so this pass only repairs a stray colour.
+    # It must not dither again: an ordered mask would flip exact pixels.
+    quantised = dither_to_palette(canvas, spec.pigment, "none", 0.0)
     return quantised, spec
+
+
+def _png_bytes(image: Image.Image) -> bytes:
+    """Serialise a rendered scene to PNG bytes."""
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    return buffer.getvalue()
 
 
 def render_png(raw_scene: Any) -> bytes:
     """Render ``raw_scene`` and return the quantised PNG bytes."""
     image, _spec = render_scene_image(raw_scene)
-    buffer = io.BytesIO()
-    image.save(buffer, format="PNG")
-    return buffer.getvalue()
+    return _png_bytes(image)
 
 
 # --------------------------------------------------------------------------- #
@@ -1086,8 +1493,38 @@ def _json_bytes(payload: Any) -> bytes:
     return json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
 
 
+def applied_settings(spec: SceneSpec) -> Dict[str, Any]:
+    """Return the render settings that were actually applied to a scene.
+
+    The values come back from ``parse_scene`` clamped, not from the request, so
+    a caller that sent an absurd number still learns what the tag received.
+    """
+    return {
+        "ditherAlgorithm": spec.dither_algorithm,
+        "ditherStrength": round(spec.dither_strength, 3),
+        "backgroundZoom": round(spec.background_zoom, 3),
+        "backgroundOffsetX": round(spec.background_offset_x, 3),
+        "backgroundOffsetY": round(spec.background_offset_y, 3),
+        "backgroundBrightness": spec.background_brightness,
+        "backgroundContrast": spec.background_contrast,
+    }
+
+
+def _settings_headers(spec: SceneSpec) -> Dict[str, str]:
+    """Return the applied settings as ``X-Eink-*`` response headers.
+
+    ``POST /render`` answers with a PNG, so a header block is the only additive
+    way to echo the settings on that route.
+    """
+    headers: Dict[str, str] = {}
+    for key, value in applied_settings(spec).items():
+        name = re.sub(r"(?<!^)(?=[A-Z])", "-", key).lower()
+        headers["X-Eink-" + name] = str(value)
+    return headers
+
+
 class BridgeHandler(BaseHTTPRequestHandler):
-    """HTTP handler for /health, /devices, /render and /display."""
+    """HTTP handler for /health, /devices, /algorithms, /render and /display."""
 
     server_version = "sparkDash-eink-bridge/" + VERSION
     sys_version = ""
@@ -1109,12 +1546,14 @@ class BridgeHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def _send_png(self, data: bytes) -> None:
-        """Write a PNG response."""
+    def _send_png(self, data: bytes, extra_headers: Optional[Dict[str, str]] = None) -> None:
+        """Write a PNG response, optionally with extra headers."""
         self.send_response(200)
         self.send_header("Content-Type", "image/png")
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Cache-Control", "no-store")
+        for name, value in (extra_headers or {}).items():
+            self.send_header(name, value)
         self.end_headers()
         self.wfile.write(data)
 
@@ -1143,7 +1582,7 @@ class BridgeHandler(BaseHTTPRequestHandler):
     # -- routes -----------------------------------------------------------
 
     def do_GET(self) -> None:
-        """Handle GET /health and GET /devices."""
+        """Handle GET /health, GET /devices and GET /algorithms."""
         parsed = urlsplit(self.path)
         path = parsed.path.rstrip("/") or "/"
         if path == "/health":
@@ -1156,6 +1595,9 @@ class BridgeHandler(BaseHTTPRequestHandler):
                     "lastError": LAST_ERROR[0],
                 },
             )
+            return
+        if path == "/algorithms":
+            self._send_json(200, {"ok": True, "algorithms": list(DITHER_ALGORITHMS)})
             return
         if path == "/devices":
             query = parse_qs(parsed.query)
@@ -1187,7 +1629,10 @@ class BridgeHandler(BaseHTTPRequestHandler):
         try:
             payload = self._read_json()
             scene = payload.get("scene") if isinstance(payload, dict) else None
-            data = render_png(scene)
+            # "meta": true swaps the PNG body for JSON so a caller can show the
+            # settings next to the preview; the default stays a bare PNG.
+            want_meta = isinstance(payload, dict) and payload.get("meta") is True
+            image, spec = render_scene_image(scene)
         except ValueError as exc:
             self._send_json(400, {"ok": False, "error": str(exc)})
             return
@@ -1196,7 +1641,18 @@ class BridgeHandler(BaseHTTPRequestHandler):
             LOGGER.exception("render failed")
             self._send_json(500, {"ok": False, "error": str(exc)})
             return
-        self._send_png(data)
+        data = _png_bytes(image)
+        if want_meta:
+            self._send_json(
+                200,
+                {
+                    "ok": True,
+                    "settings": applied_settings(spec),
+                    "pngBase64": base64.b64encode(data).decode("ascii"),
+                },
+            )
+            return
+        self._send_png(data, _settings_headers(spec))
 
     def _post_display(self) -> None:
         """Render the scene and push it to the tag; always 500 on failure."""
@@ -1214,6 +1670,7 @@ class BridgeHandler(BaseHTTPRequestHandler):
                 raise ValueError("device.address or device.name is required")
 
             image, spec = render_scene_image(scene)
+            settings = applied_settings(spec)
             bw_plane, color_plane = build_planes(image, spec.pigment)
             result = push_planes(bw_plane, color_plane, address, name)
         except Exception as exc:
@@ -1222,11 +1679,20 @@ class BridgeHandler(BaseHTTPRequestHandler):
             self._send_json(500, {"ok": False, "error": str(exc) or exc.__class__.__name__})
             return
         LOGGER.info(
-            "display ok: %sms battery=%s chunks=%s",
+            "display ok: %sms battery=%s chunks=%s dither=%s strength=%s zoom=%s offsetX=%s "
+            "offsetY=%s brightness=%s contrast=%s",
             result.get("ms"),
             result.get("batteryMv"),
             result.get("chunks"),
+            settings["ditherAlgorithm"],
+            settings["ditherStrength"],
+            settings["backgroundZoom"],
+            settings["backgroundOffsetX"],
+            settings["backgroundOffsetY"],
+            settings["backgroundBrightness"],
+            settings["backgroundContrast"],
         )
+        result.update(settings)
         self._send_json(200, result)
 
 

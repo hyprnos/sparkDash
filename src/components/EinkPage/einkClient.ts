@@ -10,19 +10,46 @@ export interface EinkDevice {
   rssi?: number;
 }
 
+export interface EinkPricing {
+  modelId: string;
+  tariff: "auto" | "peak" | "off-peak";
+  label: string;
+  cacheHitPrice: number;
+  cacheMissPrice: number;
+  outputPrice: number;
+  updatedAt: number | null;
+}
+
+export interface EinkPriceModel {
+  id: string;
+  label: string;
+  currency: string;
+  cacheHit: { offPeak: number; peak: number };
+  cacheMiss: { offPeak: number; peak: number };
+  output: { offPeak: number; peak: number };
+}
+
 export interface EinkConfig {
   enabled: boolean;
   device: { address: string; name: string };
   intervalMinutes: number;
   pigment: "yellow" | "red";
   theme: "dark" | "light";
-  sections: { headline: boolean; stats: boolean; rows: boolean };
+  sections: { headline: boolean; stats: boolean; rows: boolean; cost: boolean };
   background: { name: string } | null;
   backgroundDim: number;
   title: string;
   footer: string;
-  textProtection: "auto" | "halo" | "scrim" | "plate" | "off";
+  textProtection: "auto" | "halo" | "plate" | "off";
   haloWidth: number;
+  backgroundZoom: number;
+  backgroundOffsetX: number;
+  backgroundOffsetY: number;
+  backgroundBrightness: number;
+  backgroundContrast: number;
+  ditherAlgorithm: string;
+  ditherStrength: number;
+  pricing: EinkPricing;
 }
 
 export interface EinkStatus {
@@ -102,4 +129,19 @@ export function uploadEinkBackground(dataUrl: string): Promise<EinkConfigRespons
 
 export function clearEinkBackground(): Promise<EinkConfigResponse> {
   return apiFetch<EinkConfigResponse>("/api/eink/background", { method: "DELETE" });
+}
+/** Dither algorithms the bridge can run; falls back to the server's list. */
+export async function fetchEinkAlgorithms(): Promise<string[]> {
+  const payload = await apiFetch<{ algorithms?: string[] }>("/api/eink/algorithms");
+  return payload.algorithms ?? [];
+}
+
+export function fetchEinkPricing(): Promise<{ models: EinkPriceModel[]; pricing: EinkPricing }> {
+  return apiFetch<{ models: EinkPriceModel[]; pricing: EinkPricing }>("/api/eink/pricing");
+}
+
+export function refreshEinkPricing(): Promise<{ ok: boolean; models: EinkPriceModel[]; pricing: EinkPricing }> {
+  return apiFetch<{ ok: boolean; models: EinkPriceModel[]; pricing: EinkPricing }>("/api/eink/pricing/refresh", {
+    method: "POST",
+  });
 }

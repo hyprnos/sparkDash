@@ -168,3 +168,12 @@
   background: #141414;
   image-rendering: pixelated;
 }
+.eink-sliders {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px 12px;
+}
+
+.eink-sliders input[type="range"] {
+  width: 100%;
+}
