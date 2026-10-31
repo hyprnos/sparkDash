@@ -97,7 +97,9 @@ export function EinkPage() {
       setBusy("save");
       setError(null);
       try {
-        const payload = await saveEinkConfig(patch);
+        // Always send the whole form: a bare patch would leave every other
+        // unsaved edit behind (and the response then reset the form to it).
+        const payload = await saveEinkConfig({ ...(config as EinkConfig), ...patch });
         setConfig(payload.config);
         setStatus(payload.status);
         setNotice("配置已保存");
@@ -108,7 +110,7 @@ export function EinkPage() {
         setBusy(null);
       }
     },
-    [loadPreview]
+    [config, loadPreview]
   );
 
   const scan = useCallback(async () => {
