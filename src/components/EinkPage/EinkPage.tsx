@@ -34,6 +34,7 @@ export function EinkPage() {
   const [devices, setDevices] = useState<EinkDevice[]>([]);
   const [algorithms, setAlgorithms] = useState<string[]>(["floyd-steinberg"]);
   const [priceModels, setPriceModels] = useState<EinkPriceModel[]>([]);
+  const [savedSignature, setSavedSignature] = useState<string>("");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +63,7 @@ export function EinkPage() {
     try {
       const payload = await fetchEinkConfig();
       setConfig(payload.config);
+      setSavedSignature(JSON.stringify(payload.config));
       setStatus(payload.status);
       setError(null);
       await loadPreview();
@@ -101,6 +103,7 @@ export function EinkPage() {
         // unsaved edit behind (and the response then reset the form to it).
         const payload = await saveEinkConfig({ ...(config as EinkConfig), ...patch });
         setConfig(payload.config);
+        setSavedSignature(JSON.stringify(payload.config));
         setStatus(payload.status);
         setNotice("配置已保存");
         await loadPreview(payload.config);
@@ -157,7 +160,11 @@ export function EinkPage() {
       }
       const result = await pushEinkNow();
       setStatus(result.status);
-      setNotice(`已推送到墨水屏，用时 ${(result.durationMs / 1000).toFixed(1)} 秒`);
+      const pushed = (result as { scene?: { ditherAlgorithm?: string } }).scene;
+      setNotice(
+        `已推送到墨水屏（抖动：${pushed?.ditherAlgorithm ?? config?.ditherAlgorithm ?? "?"}），用时 ${(result.durationMs / 1000).toFixed(1)} 秒`
+      );
+      setSavedSignature(JSON.stringify(config));
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -606,7 +613,14 @@ export function EinkPage() {
         </div>
 
         <div className="panel eink-card eink-card--preview">
-          <h2>预览（与屏幕一致）</h2>
+          <h2>
+            预览
+            {savedSignature && config && JSON.stringify(config) !== savedSignature ? (
+              <span className="eink-badge">表单有未保存修改，屏上仍是上次推送的画面</span>
+            ) : (
+              <span className="eink-badge eink-badge--ok">屏上内容与此一致</span>
+            )}
+          </h2>
           {previewUrl ? (
             <img className="eink-preview" src={previewUrl} alt="墨水屏预览" />
           ) : (
