@@ -10,6 +10,7 @@ import {
   formatCompact,
   loadConfig,
   localDaySnapshot,
+  zonedMidnight,
   normalizeConfig,
   saveConfig,
 } from "../EinkRuntime.js";
@@ -103,4 +104,15 @@ test("localDaySnapshot only counts buckets of the current local day", () => {
   assert.equal(snapshot.series[0].totals.promptTokens, 20, "yesterday's buckets must not leak into today");
   assert.equal(snapshot.series[0].totals.completionTokens, 5);
   assert.ok(snapshot.since <= now);
+});
+
+test("local midnight ignores the millisecond part of the clock", () => {
+  /* 00:38:39.360 Beijing — the fraction used to push midnight past the 16:00Z
+     bucket boundary and hide the current hour. */
+  const now = Date.UTC(2026, 10, 1, 16, 38, 39, 360);
+  assert.equal(zonedMidnight(now, "Asia/Shanghai"), Date.UTC(2026, 10, 1, 16, 0, 0, 0));
+  const history = {
+    hour: [{ t: "2026-11-01T16", sparkId: "spark001", promptTokens: 10, completionTokens: 1, cacheReported: true }],
+  };
+  assert.equal(localDaySnapshot(history, { now, timeZone: "Asia/Shanghai" }).series[0].totals.promptTokens, 10);
 });

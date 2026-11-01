@@ -247,7 +247,9 @@ export function zonedMidnight(nowMs, timeZone) {
   const parts = format.formatToParts(new Date(nowMs));
   const read = (type) => Number(parts.find((part) => part.type === type)?.value);
   const wallClock = Date.UTC(read("year"), read("month") - 1, read("day"), read("hour"), read("minute"), read("second"));
-  const offset = wallClock - nowMs;
+  /* Compare whole seconds: carrying the millisecond part into the zone offset
+     pushed midnight past the bucket boundary and hid the current hour. */
+  const offset = wallClock - Math.floor(nowMs / 1000) * 1000;
   return Date.UTC(read("year"), read("month") - 1, read("day")) - offset;
 }
 
