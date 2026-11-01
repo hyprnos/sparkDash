@@ -9,6 +9,7 @@ import {
   buildScene,
   formatCompact,
   loadConfig,
+  localDaySnapshot,
   normalizeConfig,
   saveConfig,
 } from "../EinkRuntime.js";
@@ -86,4 +87,20 @@ test("formatCompact keeps the number short enough for the panel", () => {
   assert.equal(formatCompact(12_345), "12.3K");
   assert.equal(formatCompact(4_500_000), "4.5M");
   assert.equal(formatCompact(2_400_000_000), "2.4B");
+});
+test("localDaySnapshot only counts buckets of the current local day", () => {
+  /* 2026-11-02 00:30 Beijing = 2026-11-01T16:30Z; local midnight is 16:00Z. */
+  const now = Date.UTC(2026, 10, 1, 16, 30);
+  const history = {
+    hour: [
+      { t: "2026-11-01T14", sparkId: "spark001", promptTokens: 900, completionTokens: 100, cachedTokens: 0, cacheReported: true },
+      { t: "2026-11-01T15", sparkId: "spark001", promptTokens: 500, completionTokens: 50, cachedTokens: 0, cacheReported: true },
+      { t: "2026-11-01T16", sparkId: "spark001", promptTokens: 20, completionTokens: 5, cachedTokens: 4, cacheReported: true },
+    ],
+  };
+  const snapshot = localDaySnapshot(history, { now, timeZone: "Asia/Shanghai" });
+  assert.equal(snapshot.series.length, 1);
+  assert.equal(snapshot.series[0].totals.promptTokens, 20, "yesterday's buckets must not leak into today");
+  assert.equal(snapshot.series[0].totals.completionTokens, 5);
+  assert.ok(snapshot.since <= now);
 });

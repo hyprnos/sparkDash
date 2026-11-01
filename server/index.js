@@ -583,6 +583,7 @@ registerLlmTokenTotalsRoute(app, llmTokenLedger);
 const einkRuntime = createEinkRuntime({
   app,
   ledgerSnapshot: (range) => llmTokenLedger.snapshot(range),
+  ledgerHistory: () => llmTokenLedger.history(),
   configPath: process.env.EINK_CONFIG_PATH || path.join(ROOT, "config", "eink.json"),
   configHostDir: process.env.EINK_CONFIG_HOST_DIR || null,
 });

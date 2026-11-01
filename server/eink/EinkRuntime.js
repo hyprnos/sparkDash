@@ -229,6 +229,67 @@ function clockLabel(now, timeZone) {
 }
 
 /**
+ * Epoch millis of local midnight in ``timeZone`` for the instant ``nowMs``.
+ * The ledger's own "today" range is a rolling 24 h window, which keeps showing
+ * yesterday's usage right after midnight — the tag wants the calendar day.
+ */
+export function zonedMidnight(nowMs, timeZone) {
+  const format = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+  const parts = format.formatToParts(new Date(nowMs));
+  const read = (type) => Number(parts.find((part) => part.type === type)?.value);
+  const wallClock = Date.UTC(read("year"), read("month") - 1, read("day"), read("hour"), read("minute"), read("second"));
+  const offset = wallClock - nowMs;
+  return Date.UTC(read("year"), read("month") - 1, read("day")) - offset;
+}
+
+/** "2026-11-01T16" → epoch millis of that UTC hour. */
+export function bucketStartMs(key) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2})$/.exec(String(key || ""));
+  if (!match) return NaN;
+  return Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]), Number(match[4]));
+}
+
+/**
+ * Sum the ledger's hourly buckets that fall into the local calendar day that
+ * contains ``nowMs``, so the tag clears at local midnight instead of on a
+ * rolling 24 h window.
+ */
+export function localDaySnapshot(history, { now = Date.now(), timeZone = "Asia/Shanghai" } = {}) {
+  const since = zonedMidnight(now, timeZone);
+  const perSpark = new Map();
+  let cachedReported = false;
+  for (const bucket of Array.isArray(history?.hour) ? history.hour : []) {
+    const start = bucketStartMs(bucket.t);
+    if (!Number.isFinite(start) || start < since || start > now) continue;
+    const key = typeof bucket.sparkId === "string" && bucket.sparkId ? bucket.sparkId : "unknown";
+    const current = perSpark.get(key) || { promptTokens: 0, completionTokens: 0, cachedTokens: 0, cacheReported: false };
+    current.promptTokens += Number(bucket.promptTokens) || 0;
+    current.completionTokens += Number(bucket.completionTokens) || 0;
+    current.cachedTokens += Number(bucket.cachedTokens) || 0;
+    if (bucket.cacheReported) {
+      current.cacheReported = true;
+      cachedReported = true;
+    }
+    perSpark.set(key, current);
+  }
+  return {
+    range: "today-local",
+    since,
+    cacheReported: cachedReported,
+    series: [...perSpark.entries()].map(([sparkId, totals]) => ({ sparkId, port: 0, totals })),
+  };
+}
+
+/**
  * Build the scene the bridge renders. Only aggregate numbers leave this function —
  * the tag shows a summary, never per-model detail.
  *
@@ -328,6 +389,7 @@ function hostBackgroundPath(config, configHostDir) {
 export function createEinkRuntime({
   app,
   ledgerSnapshot,
+  ledgerHistory = null,
   configPath = path.join(ROOT, "config", "eink.json"),
   configHostDir = process.env.EINK_CONFIG_HOST_DIR || null,
   bridgeUrl = process.env.EINK_BRIDGE_URL || "http://127.0.0.1:8790",
@@ -363,8 +425,19 @@ export function createEinkRuntime({
     bridgeUrl,
   });
 
+  function tokensForToday() {
+    if (ledgerHistory) {
+      try {
+        return localDaySnapshot(ledgerHistory(), { now: now(), timeZone });
+      } catch {
+        /* fall through to the rolling window */
+      }
+    }
+    return ledgerSnapshot("today");
+  }
+
   function sceneFromLedger() {
-    return buildScene({ snapshot: ledgerSnapshot("today"), config, now: now(), timeZone });
+    return buildScene({ snapshot: tokensForToday(), config, now: now(), timeZone });
   }
 
   async function callBridge(pathname, body, { timeoutMs = BRIDGE_TIMEOUT_MS, raw = false } = {}) {
@@ -490,7 +563,7 @@ export function createEinkRuntime({
       // The preview must show the form being edited, not the last saved config.
       const effective = normalizeConfig(req.body?.config || {}, config);
       const scene = buildScene({
-        snapshot: ledgerSnapshot("today"),
+        snapshot: tokensForToday(),
         config: effective,
         now: now(),
         timeZone,
