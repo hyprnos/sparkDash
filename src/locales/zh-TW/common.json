@@ -1,0 +1,59 @@
+{
+  "appTitle": "sparkDash — 多 DGX Spark 監控儀表板",
+  "brand": "sparkDash 總覽",
+  "fleetNavigation": "機群導覽",
+  "primaryNavigation": "主要導覽",
+  "hideSidebar": "隱藏側邊欄",
+  "hideSidebarShortcut": "隱藏側邊欄 (Ctrl+B)",
+  "showSidebar": "顯示側邊欄",
+  "showSidebarShortcut": "顯示側邊欄 (Ctrl+B)",
+  "openCommandPalette": "開啟指令面板",
+  "addSparkHost": "新增 Spark / GPU 主機",
+  "chooseSpark": "選擇 Spark",
+  "sortable": "可拖曳排序",
+  "dragTitle": "{{name}}。拖曳可重新排序（鍵盤：M）。",
+  "dragTitleOffline": "{{name}}（離線）。拖曳可重新排序（鍵盤：M）。",
+  "dragInstructions": "按 Enter 開啟此 Spark。若要重新排序，請按 M，用方向鍵移動，然後按 Enter 放置或按 Escape 取消。",
+  "live": "即時",
+  "livePoll": "即時 · {{seconds}} 秒輪詢",
+  "reconnecting": "正在重新連線…",
+  "credit": "由 Mia's AI Lab 打造",
+  "creditWebsite": "Mia's AI Lab 網站",
+  "creditGithub": "GitHub 上的 sparkDash",
+  "creditX": "Mia's AI Lab 的 X",
+  "status": {
+    "off": "離線",
+    "worker": "工作節點",
+    "prefilling": "預填中",
+    "decoding": "解碼中"
+  },
+  "noFleet": {
+    "title": "尚未註冊 Spark",
+    "help": "新增 DGX Spark 或 GPU 主機即可開始監控。",
+    "add": "新增 Spark"
+  },
+  "palette": {
+    "dialog": "指令面板",
+    "search": "搜尋指令",
+    "placeholder": "跳至 Spark、執行操作、開啟設定…",
+    "list": "指令",
+    "empty": "沒有符合「{{query}}」的結果。",
+    "moveHint": "↑↓ 移動",
+    "openHint": "↵ 開啟",
+    "closeHint": "Esc 關閉"
+  },
+  "install": {
+    "label": "安裝 sparkDash",
+    "title": "安裝 sparkDash",
+    "help": "加入主畫面，即可獲得全螢幕、類應用程式的儀表板。",
+    "action": "安裝",
+    "iosTitle": "在 iPhone 上安裝 sparkDash",
+    "iosHelp": "點一下 Safari 中的 <b>分享</b> 圖示 ⬆︎，然後選擇<b>加入主畫面</b>。",
+    "dismiss": "關閉"
+  },
+  "errors": {
+    "loadSettings": "無法載入設定：{{message}}。請重新整理後再試。",
+    "refreshSparks": "無法重新整理 Sparks：{{message}}。目前仍顯示先前的資料。",
+    "saveOrder": "無法儲存 Spark 順序：{{message}}。已還原先前的順序。"
+  }
+}

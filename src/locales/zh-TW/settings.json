@@ -1,0 +1,51 @@
+{
+  "dialog": { "title": "設定", "close": "關閉", "loading": "正在載入…", "cancel": "取消", "save": "儲存", "saving": "正在儲存..." },
+  "appearance": { "title": "外觀", "help": "會立即套用至此裝置，並儲存於此瀏覽器中。", "theme": "主題", "white": "白色", "light": "淺色", "dark": "深色", "oled": "OLED" },
+  "refresh": { "title": "重新整理頻率", "help": "輪詢每個節點的 GPU、CPU、記憶體、網路與 LLM 指標，以及儀表板更新的頻率。遠端節點透過 SSH 輪詢，因此 1 秒的負載最高；儲存與存活狀態有各自較慢的檢查。", "interval": "輪詢間隔", "oneSecond": "1秒", "twoSeconds": "2秒", "fiveSeconds": "5秒", "tenSeconds": "10秒" },
+  "temperature": { "title": "溫度單位", "aria": "溫度單位" },
+  "timeZone": { "title": "時區", "help": "Tokens、Energy 與 Activity 圖表中的小時與日期界線及標籤。留空時跟隨此瀏覽器（{{timeZone}}）。每日 Token 分組與每月能源總量維持 UTC。", "placeholder": "瀏覽器預設值", "inputTitle": "留空時跟隨此瀏覽器（{{timeZone}}）", "useBrowser": "使用瀏覽器設定", "unknown": "未知的時區。請試試 Europe/Paris。" },
+  "defaultLlmPort": { "title": "預設 LLM 連接埠", "help": "新增 Spark 時預先填入（1–65535）。" },
+  "toggles": {
+    "hideOffline": { "title": "隱藏離線 Spark", "help": "在 Overview 中自動隱藏離線 Spark。" },
+    "hideWorkers": { "title": "隱藏工作節點", "help": "從 Overview 與側邊欄移除 Worker 角色的 Spark。直接 URL 與批次電源 / Hermes 操作仍會包含它們。" },
+    "overviewSearch": { "title": "顯示搜尋與狀態篩選", "help": "Overview 搜尋欄與狀態下拉式選單（全部 / 上線 / 離線 / 問題）。預設關閉。" },
+    "benchShareImage": { "title": "基準測試分享圖片", "help": "decode/prefill 的 Copy results 按鈕會多出一個選單，可選擇 Copy as text / Copy as image（分享卡片）。關閉後會保留純文字按鈕。" },
+    "vramBreakdown": { "title": "詳細 VRAM 明細", "help": "VRAM 長條會將記憶體拆分為 LLM 引擎、系統與可用，並在可用記憶體偏低時顯示琥珀色或紅色，而不是依高百分比顯示。關閉後會使用單一百分比長條。" },
+    "prometheus": { "title": "Prometheus 指標", "help": "提供各節點指標供 Prometheus / Grafana 從 {{origin}}/metrics 抓取。預設關閉。" },
+    "intelVramSudo": { "title": "透過 sudo 讀取 Intel Arc VRAM", "help": "在各主機上以 sudo -n 從僅 root 可讀的 debugfs 讀取精確的 Intel Arc VRAM 使用量。預設關閉：此時 VRAM 顯示 PCI BAR 大小，且不會以 sudo 執行任何操作。" },
+    "metricsHistory": { "title": "指標歷史", "help": "在伺服器上為每個節點保留 48 小時的 1 分鐘與 30 天的 15 分鐘歷史（GPU、記憶體餘量、CPU、網路、LLM tok/s 與 KV；每節點磁碟最多約 1 MB），並在每個節點頁面的 History 面板中繪製圖表。預設關閉。" },
+    "fleetEnergy": { "title": "顯示機群能耗", "help": "Overview 卡片顯示滾動的機群功耗估算。完整的 Fleet energy 頁面隨時可從側邊欄開啟。" },
+    "llmTokenTotals": { "title": "顯示 LLM Token 總計", "help": "Overview 卡片顯示每個模型的累計提示 / 生成 Token。完整的 Token totals 頁面隨時可從側邊欄開啟。" },
+    "recentActivity": { "title": "顯示最近活動", "help": "Overview 卡片顯示最新的健康與核心事件。完整的 Activity 頁面隨時可從側邊欄開啟。" },
+    "fleetDecode": { "title": "顯示機群解碼磚", "help": "Overview 磚顯示機群總生成 tok/s。" },
+    "fleetPower": { "title": "顯示機群功耗磚", "help": "Overview 磚顯示機群總功耗。" },
+    "memoryInUse": { "title": "顯示已用記憶體磚", "help": "Overview 磚顯示機群已用記憶體總量。" },
+    "tokens24Hours": { "title": "顯示最近 24 小時 Token 磚", "help": "Overview 磚顯示最近 24 小時生成的 Token（尚未追蹤 Token 時顯示上線節點數）。" },
+    "fleetExceptions": { "title": "顯示作用中的機群異常", "help": "Overview 列顯示離線主機、GPU 降頻、磁碟、LLM 與 Tailnet 警示。預設關閉。" },
+    "benchDebugTraces": { "title": "儲存基準測試除錯追蹤", "help": "在基準測試歷史中儲存 prompts、HTTP/completion ID、內容預覽與 GPU 樣本。預設關閉；會產生更大的歷史檔案。" }
+  },
+  "electricityPrice": { "title": "電價", "help": "每 kWh 的價格，用於 Fleet energy 頁面上的預估成本。留空可隱藏成本。", "currency": "貨幣符號" },
+  "alertNotifications": { "title": "警示通知", "help": "當 Health 發現與 Overview 異常持續一段時間後，以及它們解除時，傳送到 ntfy、Discord、Slack 或 webhook。預設關閉。", "on": "開啟", "off": "關閉", "configure": "設定…" },
+  "browserAlerts": { "tabBadge": { "title": "分頁徽章", "help": "分頁標題會顯示作用中的機群警示數量——離線節點、降頻、儲存、LLM 與 Health——例如“(2) sparkDash”，圖示會出現紅色（嚴重）或琥珀色圓點。即使「顯示作用中的機群異常」關閉，也會計入全部警示。僅限此瀏覽器；立即儲存。" }, "desktop": { "title": "桌面通知", "help": "此頁面開啟期間，當機群警示變為作用中（任何類型，與分頁徽章相同）時傳送通知。僅限此瀏覽器；立即儲存。", "blocked": "此網站的通知已被封鎖。請在瀏覽器的網站設定中允許通知，然後再次開啟此選項。", "refused": "此瀏覽器拒絕了通知權限要求。", "insecure": "瀏覽器只允許在 HTTPS 或 localhost 上使用通知，而此頁面是純 HTTP。請使用 SSH 通道、Tailscale Serve 或 HTTPS 代理，或在警示通知中使用 ntfy 頻道。", "unsupported": "此瀏覽器不支援桌面通知。", "withdrawn": "瀏覽器中的權限已被撤回；重新允許前不會顯示任何內容。" } },
+  "accessToken": { "title": "存取權杖", "help": "此瀏覽器保存的伺服器權杖副本，會傳送給已要求權杖的伺服器。它無法開啟保護：請在主機的 .env 中設定 SPARKDASH_TOKEN 並重新建立容器。僅儲存於此瀏覽器。", "set": "已設定", "notSet": "未設定", "change": "變更", "add": "新增權杖", "clear": "清除" },
+  "about": { "version": "sparkDash v{{version}}", "github": "GitHub MiaAI-Lab" },
+  "sessionAge": { "title": "工作階段時限", "help": "隱藏早於此時間的 Harness 工作階段。最長可選 14 天，沒有「不限」選項。", "aria": "工作階段時限" },
+  "harnessSessions": { "title": "Harness 工作階段", "help": "每台機器上的輔助程式會列出 OpenClaw、OpenCode、oh-my-pi、Hermes 與 DeepSeek Harness。儀表板只儲存輔助程式位址與權杖。", "setup": "設定" },
+  "mqtt": {
+    "publishingTitle": "MQTT 發佈",
+    "publishingHelp": "將活動串流事件與各節點讀數在變更時發佈到你的 MQTT 代理（Home Assistant、Node-RED 等）。預設關閉。README 的 MQTT 章節列出所有主題。",
+    "brokerUrlTitle": "MQTT 代理位址",
+    "brokerUrlHelp": "mqtt://host:1883；TLS 用 mqtts://；websocket 代理用 ws(s)://。密碼從 SPARKDASH_MQTT_PASSWORD 環境變數讀取，絕不會寫入 settings.json。",
+    "usernameTitle": "MQTT 使用者名稱",
+    "usernameHelp": "若代理允許匿名發佈，可留空。",
+    "usernamePlaceholder": "留空",
+    "topicPrefixTitle": "MQTT 主題前綴",
+    "topicPrefixHelp": "所有發佈內容的主題根：PREFIX/events、PREFIX/status/… 與 PREFIX/metrics/…"
+  },
+  "gpuClock": { "title": "GPU 時脈上限", "help": "同時為所有 Spark 設定 GPU 繪圖時脈上限（nvidia-smi -lgc）：選擇目標狀態——全速或 1800–2400 MHz——然後儲存即可套用。離線或沒有 GPU 的節點會被略過並回報。" },
+  "errors": {
+    "invalidTimeZone": "\"{{timeZone}}\" 不是已知的時區（例如 Europe/Paris），或清空此欄位以跟隨瀏覽器。",
+    "mqttUrl": "\"{{url}}\" 不是代理位址——請使用 mqtt://host:1883（或 mqtts://、ws://、wss://），或清空此欄位。",
+    "mqttCredentials": "請從代理位址中移除使用者名稱與密碼：使用者名稱請填到「MQTT 使用者名稱」，密碼請放入 SPARKDASH_MQTT_PASSWORD 環境變數。"
+  }
+}

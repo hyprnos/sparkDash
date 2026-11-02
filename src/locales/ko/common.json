@@ -1,0 +1,59 @@
+{
+  "appTitle": "sparkDash — 다중 DGX Spark 모니터링 대시보드",
+  "brand": "sparkDash 개요",
+  "fleetNavigation": "플릿 탐색",
+  "primaryNavigation": "기본 탐색",
+  "hideSidebar": "사이드바 숨기기",
+  "hideSidebarShortcut": "사이드바 숨기기 (Ctrl+B)",
+  "showSidebar": "사이드바 표시",
+  "showSidebarShortcut": "사이드바 표시 (Ctrl+B)",
+  "openCommandPalette": "명령 팔레트 열기",
+  "addSparkHost": "Spark / GPU 호스트 추가",
+  "chooseSpark": "Spark 선택",
+  "sortable": "순서 변경 가능",
+  "dragTitle": "{{name}}. 드래그하여 순서 변경(키보드: M).",
+  "dragTitleOffline": "{{name}}(오프라인). 드래그하여 순서 변경(키보드: M).",
+  "dragInstructions": "Enter 키로 이 Spark를 엽니다. 순서를 바꾸려면 M을 누르고 방향 키로 이동한 뒤 Enter로 놓거나 Escape로 취소하세요.",
+  "live": "실시간",
+  "livePoll": "실시간 · {{seconds}}초 폴링",
+  "reconnecting": "다시 연결하는 중…",
+  "credit": "Mia's AI Lab 제작",
+  "creditWebsite": "Mia's AI Lab 웹사이트",
+  "creditGithub": "GitHub의 sparkDash",
+  "creditX": "X의 Mia's AI Lab",
+  "status": {
+    "off": "오프라인",
+    "worker": "워커",
+    "prefilling": "프리필 중",
+    "decoding": "디코딩 중"
+  },
+  "noFleet": {
+    "title": "등록된 Spark가 없습니다",
+    "help": "DGX Spark 또는 GPU 호스트를 추가하여 모니터링을 시작하세요.",
+    "add": "Spark 추가"
+  },
+  "palette": {
+    "dialog": "명령 팔레트",
+    "search": "명령 검색",
+    "placeholder": "Spark로 이동, 작업 실행, 설정 열기…",
+    "list": "명령",
+    "empty": "“{{query}}”와 일치하는 항목이 없습니다.",
+    "moveHint": "↑↓ 이동",
+    "openHint": "↵ 열기",
+    "closeHint": "Esc 닫기"
+  },
+  "install": {
+    "label": "sparkDash 설치",
+    "title": "sparkDash 설치",
+    "help": "홈 화면에 추가하면 전체 화면 앱 같은 대시보드를 사용할 수 있습니다.",
+    "action": "설치",
+    "iosTitle": "iPhone에 sparkDash 설치",
+    "iosHelp": "Safari에서 <b>공유</b> 아이콘 ⬆︎을 탭한 다음 <b>홈 화면에 추가</b>를 선택하세요.",
+    "dismiss": "닫기"
+  },
+  "errors": {
+    "loadSettings": "설정을 불러오지 못했습니다: {{message}}. 새로 고친 뒤 다시 시도하세요.",
+    "refreshSparks": "Sparks를 새로 고치지 못했습니다: {{message}}. 이전 데이터를 계속 표시합니다.",
+    "saveOrder": "Spark 순서를 저장하지 못했습니다: {{message}}. 이전 순서로 되돌렸습니다."
+  }
+}

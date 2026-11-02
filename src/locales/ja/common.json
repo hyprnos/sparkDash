@@ -1,0 +1,59 @@
+{
+  "appTitle": "sparkDash — マルチ DGX Spark 監視ダッシュボード",
+  "brand": "sparkDash の概要",
+  "fleetNavigation": "フリートのナビゲーション",
+  "primaryNavigation": "メインナビゲーション",
+  "hideSidebar": "サイドバーを隠す",
+  "hideSidebarShortcut": "サイドバーを隠す (Ctrl+B)",
+  "showSidebar": "サイドバーを表示",
+  "showSidebarShortcut": "サイドバーを表示 (Ctrl+B)",
+  "openCommandPalette": "コマンドパレットを開く",
+  "addSparkHost": "Spark / GPU ホストを追加",
+  "chooseSpark": "Spark を選択",
+  "sortable": "並べ替え可能",
+  "dragTitle": "{{name}}。ドラッグで並べ替え（キーボード: M）。",
+  "dragTitleOffline": "{{name}}（オフライン）。ドラッグで並べ替え（キーボード: M）。",
+  "dragInstructions": "Enter でこの Spark を開きます。並べ替えるには M を押し、矢印キーで移動してから Enter で確定、Escape でキャンセルします。",
+  "live": "ライブ",
+  "livePoll": "ライブ · {{seconds}} 秒間隔のポーリング",
+  "reconnecting": "再接続しています…",
+  "credit": "Mia's AI Lab 製",
+  "creditWebsite": "Mia's AI Lab のウェブサイト",
+  "creditGithub": "GitHub の sparkDash",
+  "creditX": "X の Mia's AI Lab",
+  "status": {
+    "off": "オフライン",
+    "worker": "ワーカー",
+    "prefilling": "プリフィル中",
+    "decoding": "デコード中"
+  },
+  "noFleet": {
+    "title": "Spark が登録されていません",
+    "help": "DGX Spark または GPU ホストを追加して監視を開始してください。",
+    "add": "Spark を追加"
+  },
+  "palette": {
+    "dialog": "コマンドパレット",
+    "search": "コマンドを検索",
+    "placeholder": "Spark へ移動、アクションの実行、設定を開く…",
+    "list": "コマンド",
+    "empty": "「{{query}}」に一致する項目はありません。",
+    "moveHint": "↑↓ 移動",
+    "openHint": "↵ 開く",
+    "closeHint": "Esc 閉じる"
+  },
+  "install": {
+    "label": "sparkDash をインストール",
+    "title": "sparkDash をインストール",
+    "help": "ホーム画面に追加すると、全画面のアプリのようなダッシュボードになります。",
+    "action": "インストール",
+    "iosTitle": "iPhone に sparkDash をインストール",
+    "iosHelp": "Safari の <b>共有</b> アイコン ⬆︎ をタップし、<b>ホーム画面に追加</b> を選びます。",
+    "dismiss": "閉じる"
+  },
+  "errors": {
+    "loadSettings": "設定を読み込めませんでした: {{message}}。再読み込みしてから再試行してください。",
+    "refreshSparks": "Sparks を更新できませんでした: {{message}}。以前のデータを表示しています。",
+    "saveOrder": "Spark の順序を保存できませんでした: {{message}}。以前の順序に戻しました。"
+  }
+}

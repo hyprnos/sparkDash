@@ -1,0 +1,51 @@
+{
+  "dialog": { "title": "설정", "close": "닫기", "loading": "불러오는 중…", "cancel": "취소", "save": "저장", "saving": "저장 중..." },
+  "appearance": { "title": "모양", "help": "이 기기에 즉시 적용되고 이 브라우저에 저장됩니다.", "theme": "테마", "white": "화이트", "light": "라이트", "dark": "다크", "oled": "OLED" },
+  "refresh": { "title": "새로 고침 주기", "help": "각 유닛의 GPU, CPU, 메모리, 네트워크, LLM 지표를 폴링하는 주기와 대시보드가 업데이트되는 주기입니다. 원격 유닛은 SSH로 폴링하므로 1초가 가장 부담이 큽니다. 스토리지와 연결 상태는 별도의 느린 검사를 유지합니다.", "interval": "폴링 간격", "oneSecond": "1초", "twoSeconds": "2초", "fiveSeconds": "5초", "tenSeconds": "10초" },
+  "temperature": { "title": "온도 단위", "aria": "온도 단위" },
+  "timeZone": { "title": "시간대", "help": "Tokens, Energy, Activity 차트의 시간 및 일자 경계와 레이블입니다. 비워 두면 이 브라우저({{timeZone}})를 따릅니다. 일별 토큰 버킷과 월별 에너지 합계는 UTC로 유지됩니다.", "placeholder": "브라우저 기본값", "inputTitle": "비워 두면 이 브라우저({{timeZone}})를 따릅니다", "useBrowser": "브라우저 사용", "unknown": "알 수 없는 시간대입니다. Europe/Paris 등을 입력해 보세요." },
+  "defaultLlmPort": { "title": "기본 LLM 포트", "help": "새 Spark를 추가할 때 미리 채워집니다(1–65535)." },
+  "toggles": {
+    "hideOffline": { "title": "오프라인 Spark 숨기기", "help": "개요에서 오프라인 Spark를 자동으로 숨깁니다." },
+    "hideWorkers": { "title": "워커 노드 숨기기", "help": "워커 역할의 Spark를 개요와 사이드바에서 제거합니다. 직접 URL과 일괄 전원 / Hermes 작업에는 계속 포함됩니다." },
+    "overviewSearch": { "title": "검색 및 상태 필터 표시", "help": "개요의 검색 입력란과 상태 드롭다운(전체 / 온라인 / 오프라인 / 문제). 기본값은 꺼짐입니다." },
+    "benchShareImage": { "title": "벤치마크 공유 이미지", "help": "decode/prefill의 Copy results 버튼에 Copy as text / Copy as image(공유 카드)를 선택하는 메뉴가 추가됩니다. 끄면 텍스트만 복사하는 버튼으로 돌아갑니다." },
+    "vramBreakdown": { "title": "자세한 VRAM 내역", "help": "VRAM 막대를 LLM 엔진, 시스템, 여유로 나누고 여유 메모리가 적을 때 높은 비율이 아니라 주황색이나 빨간색으로 표시합니다. 끄면 단일 비율 막대가 됩니다." },
+    "prometheus": { "title": "Prometheus 지표", "help": "각 유닛의 지표를 Prometheus / Grafana가 {{origin}}/metrics에서 수집할 수 있게 합니다. 기본값은 꺼짐입니다." },
+    "intelVramSudo": { "title": "sudo로 Intel Arc VRAM 읽기", "help": "각 호스트에서 sudo -n을 사용해 root 전용 debugfs에서 정확한 Intel Arc VRAM 사용량을 읽습니다. 기본값은 꺼짐이며, 이때 VRAM은 PCI BAR 크기를 표시하고 sudo로 실행되는 작업은 없습니다." },
+    "metricsHistory": { "title": "지표 기록", "help": "서버에 각 유닛의 1분 데이터 48시간, 15분 데이터 30일을 보관하고(GPU, 메모리 여유, CPU, 네트워크, LLM tok/s, KV. 디스크 사용량은 유닛당 최대 약 1MB) 각 유닛 페이지의 History 패널에 차트로 표시합니다. 기본값은 꺼짐입니다." },
+    "fleetEnergy": { "title": "플릿 에너지 표시", "help": "개요 카드에 플릿 전체 전력 추정치를 표시합니다. 전체 Fleet energy 페이지는 언제든 사이드바에서 열 수 있습니다." },
+    "llmTokenTotals": { "title": "LLM Token 합계 표시", "help": "개요 카드에 모델별 누적 프롬프트 / 생성 Token을 표시합니다. 전체 Token totals 페이지는 언제든 사이드바에서 열 수 있습니다." },
+    "recentActivity": { "title": "최근 활동 표시", "help": "개요 카드에 최신 상태 및 커널 이벤트를 표시합니다. 전체 Activity 페이지는 언제든 사이드바에서 열 수 있습니다." },
+    "fleetDecode": { "title": "플릿 디코드 타일 표시", "help": "개요 타일에서 플릿 전체 생성 tok/s를 표시합니다." },
+    "fleetPower": { "title": "플릿 전력 타일 표시", "help": "개요 타일에서 플릿 전체 소비 전력을 표시합니다." },
+    "memoryInUse": { "title": "사용 중인 메모리 타일 표시", "help": "개요 타일에서 플릿 전체 사용 메모리를 표시합니다." },
+    "tokens24Hours": { "title": "최근 24시간 Token 타일 표시", "help": "개요 타일에서 최근 24시간에 생성된 Token을 표시합니다(아직 Token을 기록하지 않았다면 온라인 유닛 수)." },
+    "fleetExceptions": { "title": "활성 플릿 예외 표시", "help": "개요에 오프라인 호스트, GPU 스로틀링, 디스크, LLM, Tailnet 경고를 표시합니다. 기본값은 꺼짐입니다." },
+    "benchDebugTraces": { "title": "벤치마크 디버그 추적 저장", "help": "프롬프트, HTTP/completion ID, 내용 미리보기, GPU 샘플을 벤치마크 기록에 저장합니다. 기본값은 꺼짐이며 기록 파일이 커집니다." }
+  },
+  "electricityPrice": { "title": "전기 요금", "help": "kWh당 요금으로 Fleet energy 페이지의 예상 비용에 사용됩니다. 비워 두면 비용을 표시하지 않습니다.", "currency": "통화 기호" },
+  "alertNotifications": { "title": "알림", "help": "Health 발견 사항과 개요 예외를 일정 시간 지속될 때와 해소될 때 ntfy, Discord, Slack 또는 webhook으로 보냅니다. 기본값은 꺼짐입니다.", "on": "켬", "off": "끔", "configure": "설정…" },
+  "browserAlerts": { "tabBadge": { "title": "탭 배지", "help": "탭 제목에 활성 플릿 경고 수(오프라인 유닛, 스로틀링, 스토리지, LLM, Health)를 “(2) sparkDash”처럼 표시하고 아이콘에 빨간색(심각) 또는 주황색 점이 붙습니다. “활성 플릿 예외 표시”가 꺼져 있어도 모두 집계합니다. 이 브라우저에만 적용되며 즉시 저장됩니다." }, "desktop": { "title": "데스크톱 알림", "help": "이 페이지가 열려 있는 동안 플릿 경고가 활성화되면(탭 배지와 동일하게 모든 종류) 알림을 보냅니다. 이 브라우저에만 적용되며 즉시 저장됩니다.", "blocked": "이 사이트의 알림이 차단되어 있습니다. 브라우저 사이트 설정에서 알림을 허용한 뒤 다시 켜세요.", "refused": "이 브라우저가 알림 권한 요청을 거부했습니다.", "insecure": "브라우저는 HTTPS 또는 localhost에서만 알림을 허용하는데 이 페이지는 HTTP입니다. SSH 터널, Tailscale Serve, HTTPS 프록시를 사용하거나 알림에서 ntfy 채널을 설정하세요.", "unsupported": "이 브라우저는 데스크톱 알림을 지원하지 않습니다.", "withdrawn": "브라우저에서 권한이 철회되었습니다. 다시 허용할 때까지 아무것도 표시되지 않습니다." } },
+  "accessToken": { "title": "액세스 토큰", "help": "이 브라우저에 저장된 서버 토큰의 사본으로, 토큰을 요구하는 서버에 전송됩니다. 보호를 켤 수는 없습니다. 호스트의 .env에 SPARKDASH_TOKEN을 설정하고 컨테이너를 다시 만드세요. 이 브라우저에만 저장됩니다.", "set": "설정됨", "notSet": "설정 안 됨", "change": "변경", "add": "토큰 추가", "clear": "지우기" },
+  "about": { "version": "sparkDash v{{version}}", "github": "GitHub MiaAI-Lab" },
+  "sessionAge": { "title": "세션 보관 기간", "help": "이 시간보다 오래된 하네스 세션을 숨깁니다. 최대 14일이며 “무제한”은 없습니다.", "aria": "세션 보관 기간" },
+  "harnessSessions": { "title": "하네스 세션", "help": "각 머신의 도우미가 OpenClaw, OpenCode, oh-my-pi, Hermes, DeepSeek Harness를 나열합니다. 대시보드는 도우미 주소와 토큰만 저장합니다.", "setup": "설정" },
+  "mqtt": {
+    "publishingTitle": "MQTT 게시",
+    "publishingHelp": "활동 피드 이벤트와 각 유닛의 측정값을 변경될 때 MQTT 브로커(Home Assistant, Node-RED 등)로 게시합니다. 기본값은 꺼짐입니다. 토픽 목록은 README의 MQTT 절에 있습니다.",
+    "brokerUrlTitle": "MQTT 브로커 URL",
+    "brokerUrlHelp": "mqtt://host:1883, TLS는 mqtts://, WebSocket 브로커는 ws(s):// 를 사용합니다. 비밀번호는 SPARKDASH_MQTT_PASSWORD 환경 변수에서 읽으며 settings.json에 저장되지 않습니다.",
+    "usernameTitle": "MQTT 사용자 이름",
+    "usernameHelp": "익명 게시를 허용하는 브로커라면 비워 두세요.",
+    "usernamePlaceholder": "비어 있음",
+    "topicPrefixTitle": "MQTT 토픽 접두사",
+    "topicPrefixHelp": "게시하는 모든 항목의 토픽 루트: PREFIX/events, PREFIX/status/…, PREFIX/metrics/…"
+  },
+  "gpuClock": { "title": "GPU 클럭 상한", "help": "모든 Spark의 GPU 그래픽 클럭을 한 번에 제한합니다(nvidia-smi -lgc). 목표 상태(최대 성능 또는 1800–2400 MHz)를 선택하고 저장하면 적용됩니다. 오프라인이거나 GPU가 없는 유닛은 건너뛰고 결과를 보고합니다." },
+  "errors": {
+    "invalidTimeZone": "“{{timeZone}}”은(는) 알려진 시간대가 아닙니다(예: Europe/Paris). 또는 입력란을 비워 브라우저를 따르게 하세요.",
+    "mqttUrl": "“{{url}}”은(는) 브로커 URL이 아닙니다. mqtt://host:1883(또는 mqtts://, ws://, wss://)을 사용하거나 입력란을 비우세요.",
+    "mqttCredentials": "브로커 URL에서 사용자 이름과 비밀번호를 제거하세요. 사용자 이름은 MQTT 사용자 이름에, 비밀번호는 SPARKDASH_MQTT_PASSWORD 환경 변수에 넣습니다."
+  }
+}

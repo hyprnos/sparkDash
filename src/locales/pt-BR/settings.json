@@ -1,0 +1,51 @@
+{
+  "dialog": { "title": "Configurações", "close": "Fechar", "loading": "Carregando…", "cancel": "Cancelar", "save": "Salvar", "saving": "Salvando..." },
+  "appearance": { "title": "Aparência", "help": "Aplica-se na hora neste dispositivo e fica salvo neste navegador.", "theme": "Tema", "white": "Branco", "light": "Claro", "dark": "Escuro", "oled": "OLED" },
+  "refresh": { "title": "Frequência de atualização", "help": "Com que frequência as métricas de GPU, CPU, memória, rede e LLM de cada unidade são consultadas e com que frequência o painel é atualizado. Unidades remotas são consultadas por SSH, então 1 s custa mais; armazenamento e disponibilidade mantêm verificações próprias mais lentas.", "interval": "Intervalo de consulta", "oneSecond": "1 s", "twoSeconds": "2 s", "fiveSeconds": "5 s", "tenSeconds": "10 s" },
+  "temperature": { "title": "Unidade de temperatura", "aria": "Unidade de temperatura" },
+  "timeZone": { "title": "Fuso horário", "help": "Limites e rótulos de horas e dias nos gráficos Tokens, Energy e Activity. Vazio segue este navegador ({{timeZone}}). Os buckets diários de tokens e os totais mensais de energia continuam em UTC.", "placeholder": "Padrão do navegador", "inputTitle": "Vazio segue este navegador ({{timeZone}})", "useBrowser": "Usar o navegador", "unknown": "Fuso horário desconhecido. Tente Europe/Paris." },
+  "defaultLlmPort": { "title": "Porta LLM padrão", "help": "Preenchida ao adicionar um novo Spark (1–65535)." },
+  "toggles": {
+    "hideOffline": { "title": "Ocultar Sparks offline", "help": "Oculta automaticamente Sparks offline na Visão geral." },
+    "hideWorkers": { "title": "Ocultar nós worker", "help": "Remove da Visão geral e da barra lateral os Sparks com papel Worker. URLs diretas e ações de energia / Hermes em lote continuam incluindo-os." },
+    "overviewSearch": { "title": "Mostrar busca e filtros de status", "help": "Campo de busca e seletor de status na Visão geral (Todos / Online / Offline / Problemas). Desativado por padrão." },
+    "benchShareImage": { "title": "Imagem de compartilhamento dos testes", "help": "O botão Copy results de decode/prefill ganha um menu com Copy as text / Copy as image (um cartão de compartilhamento). Desative para manter o botão de texto simples." },
+    "vramBreakdown": { "title": "Detalhamento de VRAM", "help": "As barras de VRAM dividem a memória em motor LLM, sistema e livre, e ficam âmbar ou vermelhas quando sobra pouca memória livre, em vez de por uma porcentagem alta. Desative para usar uma única barra de porcentagem." },
+    "prometheus": { "title": "Métricas do Prometheus", "help": "Publica as métricas de cada unidade para o Prometheus / Grafana coletar em {{origin}}/metrics. Desativado por padrão." },
+    "intelVramSudo": { "title": "VRAM do Intel Arc via sudo", "help": "Lê o uso exato de VRAM do Intel Arc no debugfs restrito ao root com sudo -n em cada host. Desativado por padrão: a VRAM então mostra o tamanho da BAR PCI e nada roda com sudo." },
+    "metricsHistory": { "title": "Histórico de métricas", "help": "Mantém no servidor 48 horas de dados por minuto e 30 dias por 15 minutos de cada unidade (GPU, folga de memória, CPU, rede, tok/s de LLM e KV; no máximo cerca de 1 MB por unidade em disco) e desenha os gráficos em um painel History na página de cada unidade. Desativado por padrão." },
+    "fleetEnergy": { "title": "Mostrar energia da frota", "help": "Cartão na Visão geral com estimativas móveis de consumo da frota. A página Fleet energy completa continua sempre disponível na barra lateral." },
+    "llmTokenTotals": { "title": "Mostrar totais de tokens LLM", "help": "Cartão na Visão geral com os tokens de prompt e gerados acumulados por modelo. A página Token totals completa continua sempre disponível na barra lateral." },
+    "recentActivity": { "title": "Mostrar atividade recente", "help": "Cartão na Visão geral com os eventos mais recentes de integridade e de kernel. A página Activity completa continua sempre disponível na barra lateral." },
+    "fleetDecode": { "title": "Mostrar cartão de decodificação da frota", "help": "Cartão na Visão geral com o total de tok/s de geração da frota." },
+    "fleetPower": { "title": "Mostrar cartão de consumo da frota", "help": "Cartão na Visão geral com o consumo total da frota." },
+    "memoryInUse": { "title": "Mostrar cartão de memória em uso", "help": "Cartão na Visão geral com a memória total em uso da frota." },
+    "tokens24Hours": { "title": "Mostrar cartão de tokens das últimas 24 horas", "help": "Cartão na Visão geral com os tokens gerados nas últimas 24 horas (ou o número de unidades online, se ainda não houver tokens registrados)." },
+    "fleetExceptions": { "title": "Mostrar exceções ativas da frota", "help": "Faixa na Visão geral para hosts offline, limitação de GPU, disco, LLM e alertas de Tailnet. Desativado por padrão." },
+    "benchDebugTraces": { "title": "Salvar traces de depuração dos testes", "help": "Guarda prompts, IDs de HTTP/completion, prévias de conteúdo e amostras de GPU no histórico dos testes. Desativado por padrão; arquivos de histórico maiores." }
+  },
+  "electricityPrice": { "title": "Preço da eletricidade", "help": "Por kWh, usado no custo estimado na página Fleet energy. Deixe vazio para ocultar o custo.", "currency": "Símbolo da moeda" },
+  "alertNotifications": { "title": "Notificações de alerta", "help": "Envia as descobertas do Health e as exceções da Visão geral para ntfy, Discord, Slack ou um webhook quando persistem por um tempo e quando terminam. Desativado por padrão.", "on": "Ativado", "off": "Desativado", "configure": "Configurar…" },
+  "browserAlerts": { "tabBadge": { "title": "Selo na aba", "help": "O título da aba mostra quantos alertas da frota estão ativos — unidades offline, limitação, armazenamento, LLM e Health — como “(2) sparkDash”, e o ícone ganha um ponto vermelho (crítico) ou âmbar. Conta todos mesmo com “Mostrar exceções ativas da frota” desativado. Apenas neste navegador; salvo na hora." }, "desktop": { "title": "Notificações na área de trabalho", "help": "Uma notificação quando um alerta da frota fica ativo (de qualquer tipo, como no selo da aba), enquanto esta página estiver aberta. Apenas neste navegador; salvo na hora.", "blocked": "As notificações estão bloqueadas para este site. Permita-as nas configurações de site do navegador e ative de novo.", "refused": "Este navegador recusou o pedido de permissão para notificações.", "insecure": "Os navegadores só permitem notificações em HTTPS ou localhost, e esta página é HTTP simples. Use um túnel SSH, Tailscale Serve ou um proxy HTTPS, ou um canal ntfy em Notificações de alerta.", "unsupported": "Este navegador não oferece notificações na área de trabalho.", "withdrawn": "A permissão foi retirada no navegador; nada será exibido até ela ser permitida de novo." } },
+  "accessToken": { "title": "Token de acesso", "help": "A cópia deste navegador do token do servidor, enviada a servidores que já exigem um. Ele não ativa a proteção: defina SPARKDASH_TOKEN no .env do host e recrie o contêiner. Guardado apenas neste navegador.", "set": "Definido", "notSet": "Não definido", "change": "Alterar", "add": "Adicionar token", "clear": "Limpar" },
+  "about": { "version": "sparkDash v{{version}}", "github": "GitHub MiaAI-Lab" },
+  "sessionAge": { "title": "Idade das sessões", "help": "Oculta sessões de harness mais antigas que isso. A opção mais longa é 14 dias; não existe valor ilimitado.", "aria": "Idade das sessões" },
+  "harnessSessions": { "title": "Sessões de harness", "help": "Um auxiliar em cada máquina lista OpenClaw, OpenCode, oh-my-pi, Hermes e DeepSeek Harness. O painel guarda apenas o endereço e o token do auxiliar.", "setup": "Configurar" },
+  "mqtt": {
+    "publishingTitle": "Publicação MQTT",
+    "publishingHelp": "Publica os eventos do feed de atividade e as leituras de cada unidade no seu broker MQTT (Home Assistant, Node-RED, …) conforme mudam. Desativado por padrão. A seção MQTT do README lista os tópicos.",
+    "brokerUrlTitle": "URL do broker MQTT",
+    "brokerUrlHelp": "mqtt://host:1883, mqtts:// para TLS, ws(s):// para um broker websocket. A senha é lida da variável de ambiente SPARKDASH_MQTT_PASSWORD e nunca fica em settings.json.",
+    "usernameTitle": "Usuário MQTT",
+    "usernameHelp": "Deixe vazio para um broker que permita publicação anônima.",
+    "usernamePlaceholder": "vazio",
+    "topicPrefixTitle": "Prefixo de tópico MQTT",
+    "topicPrefixHelp": "Raiz dos tópicos de tudo o que é publicado: PREFIX/events, PREFIX/status/… e PREFIX/metrics/…"
+  },
+  "gpuClock": { "title": "Limite de clock da GPU", "help": "Limita o clock gráfico da GPU em todos os Sparks de uma vez (nvidia-smi -lgc): escolha o estado desejado — capacidade total ou 1800–2400 MHz — e Salvar aplica. Unidades offline ou sem GPU são ignoradas e informadas." },
+  "errors": {
+    "invalidTimeZone": "“{{timeZone}}” não é um fuso horário conhecido (por exemplo Europe/Paris), ou limpe o campo para seguir o navegador.",
+    "mqttUrl": "“{{url}}” não é uma URL de broker — use mqtt://host:1883 (ou mqtts://, ws://, wss://), ou limpe o campo.",
+    "mqttCredentials": "Remova o usuário e a senha da URL do broker: coloque o usuário em Usuário MQTT e a senha na variável de ambiente SPARKDASH_MQTT_PASSWORD."
+  }
+}

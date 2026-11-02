@@ -1,6 +1,7 @@
 import { BenchIcon } from "./components/bench/BenchIcon";
 import { setConfiguredTimeZone } from "./shared/timeZone";
 import { useState, useCallback, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useSnapshot } from "./hooks/useSnapshot";
 import { useFleetAlerts } from "./hooks/useFleetAlerts";
 import { useBrowserAlerts } from "./hooks/useBrowserAlerts";
@@ -176,6 +177,8 @@ function placeholderSnapshot(
 }
 
 function DashboardApp() {
+  const { t } = useTranslation("nav");
+  const { t: tc } = useTranslation("common");
   const {
     sparks: snapSparks,
     activeId,
@@ -321,7 +324,7 @@ function DashboardApp() {
         })
         .catch((err) =>
           setActionError(
-            `Could not load settings: ${err instanceof Error ? err.message : String(err)}. Reload to retry.`
+            tc("errors.loadSettings", { message: err instanceof Error ? err.message : String(err) })
           )
         );
     void load(false);
@@ -398,10 +401,10 @@ function DashboardApp() {
     } catch (err) {
       console.error("Failed to refresh sparks:", err);
       setActionError(
-        `Could not refresh Sparks: ${err instanceof Error ? err.message : String(err)}. Previous data remains visible.`
+        tc("errors.refreshSparks", { message: err instanceof Error ? err.message : String(err) })
       );
     }
-  }, [sparks, activeId, replace]);
+  }, [sparks, activeId, replace, tc]);
 
   const handleReorder = useCallback(
     async (orderedIds: string[]) => {
@@ -413,11 +416,11 @@ function DashboardApp() {
         console.error("Failed to reorder Sparks:", err);
         setOrderOverride(null);
         setActionError(
-          `Could not save the Spark order: ${err instanceof Error ? err.message : String(err)}. The previous order was restored.`
+          tc("errors.saveOrder", { message: err instanceof Error ? err.message : String(err) })
         );
       }
     },
-    [displaySparks, hiddenWorkerIds]
+    [displaySparks, hiddenWorkerIds, tc]
   );
 
   const [showPalette, setShowPalette] = useState(false);
@@ -460,24 +463,25 @@ function DashboardApp() {
   }, [toggleSidebar]);
 
   const paletteCommands = useMemo<PaletteCommand[]>(() => {
+    const goTo = t("palette.goTo");
     const cmds: PaletteCommand[] = [
-      { id: "nav:overview", group: "Go to", label: "Overview", hint: "Fleet", icon: <GridIcon className="h-4 w-4" />, keywords: "home fleet", run: () => navigate(OVERVIEW_ID) },
+      { id: "nav:overview", group: goTo, label: t("overview"), hint: t("palette.hintFleet"), icon: <GridIcon className="h-4 w-4" />, keywords: "home fleet", run: () => navigate(OVERVIEW_ID) },
     ];
     cmds.push(
-      { id: "nav:tokens", group: "Go to", label: "Token totals", hint: "Page", icon: <TokensIcon className="h-4 w-4" />, keywords: "llm tokens generated prompt cached usage", run: () => navigate(TOKENS_ID) },
-      { id: "nav:cost", group: "Go to", label: "Cost compare", hint: "Page", icon: <CoinsIcon className="h-4 w-4" />, keywords: "cost price money usd dollars api hosted opus sonnet gpt gemini compare", run: () => navigate(COST_ID) },
-      { id: "nav:eink", group: "Go to", label: "E-paper", hint: "Page", icon: <ImageIcon className="h-4 w-4" />, keywords: "eink e-paper epaper bluetooth tag display shelf refresh", run: () => navigate(EINK_ID) },
-      { id: "nav:energy", group: "Go to", label: "Fleet energy", hint: "Page", icon: <BoltIcon className="h-4 w-4" />, keywords: "power kwh watts cost electricity", run: () => navigate(ENERGY_ID) },
-      { id: "nav:temps", group: "Go to", label: "Temps", hint: "Page", icon: <ThermometerIcon className="h-4 w-4" />, keywords: "gpu temperature thermal temps heat cooling", run: () => navigate(TEMPS_ID) },
-      { id: "nav:showcase", group: "Go to", label: "Showcase", hint: "Page", icon: <TerminalIcon className="h-4 w-4" />, keywords: "prompts terminals stream demo", run: () => navigate(SHOWCASE_ID) },
-      { id: "nav:activity", group: "Go to", label: "Activity", hint: "Page", icon: <ListIcon className="h-4 w-4" />, keywords: "events log history recent", run: () => navigate(ACTIVITY_ID) },
+      { id: "nav:tokens", group: goTo, label: t("tokenTotals"), hint: t("palette.hintPage"), icon: <TokensIcon className="h-4 w-4" />, keywords: "llm tokens generated prompt cached usage", run: () => navigate(TOKENS_ID) },
+      { id: "nav:cost", group: goTo, label: t("costCompare"), hint: t("palette.hintPage"), icon: <CoinsIcon className="h-4 w-4" />, keywords: "cost price money usd dollars api hosted opus sonnet gpt gemini compare", run: () => navigate(COST_ID) },
+      { id: "nav:eink", group: goTo, label: t("ePaper"), hint: t("palette.hintPage"), icon: <ImageIcon className="h-4 w-4" />, keywords: "eink e-paper epaper bluetooth tag display shelf refresh", run: () => navigate(EINK_ID) },
+      { id: "nav:energy", group: goTo, label: t("fleetEnergy"), hint: t("palette.hintPage"), icon: <BoltIcon className="h-4 w-4" />, keywords: "power kwh watts cost electricity", run: () => navigate(ENERGY_ID) },
+      { id: "nav:temps", group: goTo, label: t("temps"), hint: t("palette.hintPage"), icon: <ThermometerIcon className="h-4 w-4" />, keywords: "gpu temperature thermal temps heat cooling", run: () => navigate(TEMPS_ID) },
+      { id: "nav:showcase", group: goTo, label: t("showcase"), hint: t("palette.hintPage"), icon: <TerminalIcon className="h-4 w-4" />, keywords: "prompts terminals stream demo", run: () => navigate(SHOWCASE_ID) },
+      { id: "nav:activity", group: goTo, label: t("activity"), hint: t("palette.hintPage"), icon: <ListIcon className="h-4 w-4" />, keywords: "events log history recent", run: () => navigate(ACTIVITY_ID) },
     );
     for (const s of displaySparks) {
       cmds.push({
         id: `nav:${s.id}`,
-        group: "Go to",
+        group: goTo,
         label: s.name,
-        hint: s.online ? "online" : "offline",
+        hint: s.online ? t("palette.hintOnline") : t("palette.hintOffline"),
         icon: <ServerIcon className="h-4 w-4" />,
         keywords: `spark ${s.id}`,
         run: () => navigate(s.id),
@@ -486,30 +490,30 @@ function DashboardApp() {
     for (const b of BENCH_TYPES) {
       cmds.push({
         id: `bench:${b.id}`,
-        group: "Benchmarks",
-        label: `${b.label} benchmark`,
+        group: t("benchmarks"),
+        label: t("palette.benchmarkEntry", { benchmark: b.label }),
         hint: b.family,
         icon: <BenchIcon id={b.id} className="h-4 w-4" />,
         keywords: `bench benchmark ${b.blurb}`,
         run: () => navigate(benchId(b.id)),
       });
     }
-    cmds.push({ id: "act:add", group: "Actions", label: "Add a Spark or GPU host", icon: <PlusIcon className="h-4 w-4" />, keywords: "new register connect", run: () => setShowAdd(true) });
+    cmds.push({ id: "act:add", group: t("palette.actions"), label: t("palette.addSparkHost"), icon: <PlusIcon className="h-4 w-4" />, keywords: "new register connect", run: () => setShowAdd(true) });
     const sc = showcaseTarget(displaySparks);
     if (sc) {
-      cmds.push({ id: "act:showcase", group: "Actions", label: `Open showcase on ${sc.name} in a new window`, icon: <TerminalIcon className="h-4 w-4" />, keywords: "demo streams terminals", run: () => openShowcase(sc) });
+      cmds.push({ id: "act:showcase", group: t("palette.actions"), label: t("palette.openShowcase", { name: sc.name }), icon: <TerminalIcon className="h-4 w-4" />, keywords: "demo streams terminals", run: () => openShowcase(sc) });
     }
     if (displayActive) {
-      cmds.push({ id: "act:edit", group: "Actions", label: `Edit ${displayActive.name}`, icon: <EditIcon className="h-4 w-4" />, keywords: "settings role ports", run: () => setEditId(displayActive.id) });
+      cmds.push({ id: "act:edit", group: t("palette.actions"), label: t("palette.editSpark", { name: displayActive.name }), icon: <EditIcon className="h-4 w-4" />, keywords: "settings role ports", run: () => setEditId(displayActive.id) });
     }
     cmds.push(
-      { id: "act:theme", group: "Actions", label: "Switch theme", hint: "white · light · dark · oled", icon: <SunIcon className="h-4 w-4" />, keywords: "appearance dark light", run: () => window.dispatchEvent(new Event("sparkdash:cycle-theme")) },
-      { id: "act:sidebar", group: "Actions", label: "Show or hide the sidebar", icon: <PanelLeftIcon className="h-4 w-4" />, keywords: "collapse expand navigation rail menu", run: toggleSidebar },
-      { id: "act:settings", group: "Actions", label: "Open settings", icon: <GearIcon className="h-4 w-4" />, keywords: "preferences density refresh", run: () => setShowSettings(true) },
-      { id: "act:harness", group: "Actions", label: "Set up harness sessions", icon: <BotIcon className="h-4 w-4" />, keywords: "occupancy openclaw opencode hermes oh-my-pi wizard", run: () => { setHarnessSparkId(undefined); setShowHarness(true); } }
+      { id: "act:theme", group: t("palette.actions"), label: t("palette.switchTheme"), hint: t("palette.switchThemeHint"), icon: <SunIcon className="h-4 w-4" />, keywords: "appearance dark light", run: () => window.dispatchEvent(new Event("sparkdash:cycle-theme")) },
+      { id: "act:sidebar", group: t("palette.actions"), label: t("palette.toggleSidebar"), icon: <PanelLeftIcon className="h-4 w-4" />, keywords: "collapse expand navigation rail menu", run: toggleSidebar },
+      { id: "act:settings", group: t("palette.actions"), label: t("palette.openSettings"), icon: <GearIcon className="h-4 w-4" />, keywords: "preferences density refresh", run: () => setShowSettings(true) },
+      { id: "act:harness", group: t("palette.actions"), label: t("palette.setupHarness"), icon: <BotIcon className="h-4 w-4" />, keywords: "occupancy openclaw opencode hermes oh-my-pi wizard", run: () => { setHarnessSparkId(undefined); setShowHarness(true); } }
     );
     return cmds;
-  }, [displaySparks, displayActive, navigate, toggleSidebar]);
+  }, [displaySparks, displayActive, navigate, toggleSidebar, t]);
 
   return (
     <div className="min-h-screen text-text">
@@ -530,7 +534,7 @@ function DashboardApp() {
           authMode={authMode}
         />
         <div className="side-strip" aria-hidden={!sideHidden}>
-          <button type="button" className="icon-circle" onClick={toggleSidebar} tabIndex={sideHidden ? 0 : -1} title="Show sidebar (Ctrl+B)" aria-label="Show sidebar">
+          <button type="button" className="icon-circle" onClick={toggleSidebar} tabIndex={sideHidden ? 0 : -1} title={tc("showSidebarShortcut")} aria-label={tc("showSidebar")}>
             <PanelLeftIcon className="h-3.5 w-3.5" />
           </button>
         </div>
@@ -540,7 +544,7 @@ function DashboardApp() {
             <a
               href={idToPath(OVERVIEW_ID)}
               className="brand"
-              aria-label="sparkDash overview"
+              aria-label={tc("brand")}
               onClick={(e) => {
                 if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
                 e.preventDefault();
@@ -554,7 +558,7 @@ function DashboardApp() {
                 spark<span className="brand__dash">Dash</span>
               </span>
             </a>
-            <button type="button" className="search-trigger" onClick={() => setShowPalette(true)} aria-label="Open command palette">
+            <button type="button" className="search-trigger" onClick={() => setShowPalette(true)} aria-label={tc("openCommandPalette")}>
               <SearchIcon className="h-4 w-4" />
             </button>
             <ThemeSwitch />
@@ -629,11 +633,11 @@ function DashboardApp() {
                   <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-accent-soft text-accent">
                     <PlusIcon className="h-5 w-5" />
                   </div>
-                  <h2 className="text-sm font-semibold text-text-strong">No Spark registered</h2>
-                  <p className="mt-1 text-xs text-muted">Add a DGX Spark or GPU host to start monitoring.</p>
+                  <h2 className="text-sm font-semibold text-text-strong">{tc("noFleet.title")}</h2>
+                  <p className="mt-1 text-xs text-muted">{tc("noFleet.help")}</p>
                   <button type="button" className="btn btn--primary mt-4" onClick={() => setShowAdd(true)}>
                     <PlusIcon className="h-3.5 w-3.5" />
-                    Add Spark
+                    {tc("noFleet.add")}
                   </button>
                 </div>
               )}

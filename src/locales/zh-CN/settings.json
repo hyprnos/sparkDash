@@ -29,5 +29,23 @@
   "browserAlerts": { "tabBadge": { "title": "标签页徽标", "help": "标签页标题显示活跃集群告警数量——离线节点、降频、存储、LLM 和 Health——例如“(2) sparkDash”，图标会出现红色（严重）或琥珀色圆点。即使“显示活跃集群异常”关闭，也会统计全部告警。仅此浏览器；立即保存。" }, "desktop": { "title": "桌面通知", "help": "此页面打开期间，当某个集群告警变为活跃（任何类型，与标签页徽标相同）时发送通知。仅此浏览器；立即保存。", "blocked": "此站点的通知已被阻止。请在浏览器的网站设置中允许通知，然后再次开启。", "refused": "此浏览器拒绝了通知权限请求。", "insecure": "浏览器只允许在 HTTPS 或 localhost 上使用通知，而当前页面是普通 HTTP。请使用 SSH 隧道、Tailscale Serve 或 HTTPS 代理，或在告警通知中使用 ntfy 频道。", "unsupported": "此浏览器不支持桌面通知。", "withdrawn": "浏览器中的权限已被撤回；重新允许前不会显示任何内容。" } },
   "accessToken": { "title": "访问令牌", "help": "此浏览器保存的服务器令牌副本，会发送给已经要求令牌的服务器。它无法开启保护：请在主机的 .env 中设置 SPARKDASH_TOKEN 并重新创建容器。只保存在此浏览器中。", "set": "已设置", "notSet": "未设置", "change": "更改", "add": "添加令牌", "clear": "清除" },
   "about": { "version": "sparkDash v{{version}}", "github": "GitHub MiaAI-Lab" },
-  "errors": { "invalidTimeZone": "\"{{timeZone}}\" 不是已知时区（例如 Europe/Paris），或者清空此字段以跟随浏览器。" }
+  "sessionAge": { "title": "会话时限", "help": "隐藏早于此时间的 Harness 会话。最长可选 14 天，没有“不限”选项。", "aria": "会话时限" },
+  "harnessSessions": { "title": "Harness 会话", "help": "每台机器上的一个助手进程会列出 OpenClaw、OpenCode、oh-my-pi、Hermes 和 DeepSeek Harness。仪表盘只保存助手地址和令牌。", "setup": "设置" },
+  "mqtt": {
+    "publishingTitle": "MQTT 发布",
+    "publishingHelp": "将活动流事件和各节点的读数在变化时发布到你的 MQTT 代理（Home Assistant、Node-RED 等）。默认关闭。README 的 MQTT 章节列出了全部主题。",
+    "brokerUrlTitle": "MQTT 代理地址",
+    "brokerUrlHelp": "mqtt://host:1883；TLS 用 mqtts://；websocket 代理用 ws(s)://。密码从 SPARKDASH_MQTT_PASSWORD 环境变量读取，绝不写入 settings.json。",
+    "usernameTitle": "MQTT 用户名",
+    "usernameHelp": "如果代理允许匿名发布，可留空。",
+    "usernamePlaceholder": "留空",
+    "topicPrefixTitle": "MQTT 主题前缀",
+    "topicPrefixHelp": "所有发布内容的主题根：PREFIX/events、PREFIX/status/… 和 PREFIX/metrics/…"
+  },
+  "gpuClock": { "title": "GPU 频率上限", "help": "同时为所有 Spark 设置 GPU 图形频率上限（nvidia-smi -lgc）：选择目标状态——满血或 1800–2400 MHz——然后保存即可生效。离线或没有 GPU 的节点会被跳过并报告。" },
+  "errors": {
+    "invalidTimeZone": "\"{{timeZone}}\" 不是已知时区（例如 Europe/Paris），或者清空此字段以跟随浏览器。",
+    "mqttUrl": "\"{{url}}\" 不是代理地址——请使用 mqtt://host:1883（或 mqtts://、ws://、wss://），或者清空此字段。",
+    "mqttCredentials": "请从代理地址中移除用户名和密码：用户名填到“MQTT 用户名”，密码放入 SPARKDASH_MQTT_PASSWORD 环境变量。"
+  }
 }

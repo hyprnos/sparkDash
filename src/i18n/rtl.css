@@ -1,0 +1,48 @@
+/* Right-to-left shell layout (Arabic).
+ *
+ * The dashboard mirrors itself for free where it uses flow layout (the app grid,
+ * the tab bar's columns, flex rows), but the shell stylesheets also carry a few
+ * physical directions. Those are flipped here instead of editing src/styles/,
+ * which other feature areas own. Each rule is scoped to [dir="rtl"], so the
+ * browser only considers it while a right-to-left locale is active.
+ */
+
+[dir="rtl"] .app-side,
+[dir="rtl"] .side-strip {
+  border-left: 1px solid var(--color-border);
+  border-right: 0;
+}
+
+/* Rail and palette rows align to the reading edge, and the active marker follows. */
+[dir="rtl"] .rail-item,
+[dir="rtl"] .palette__item,
+[dir="rtl"] .search-trigger {
+  text-align: right;
+}
+[dir="rtl"] .rail-item.is-active,
+[dir="rtl"] .palette__item.is-sel {
+  box-shadow: inset -2px 0 0 var(--color-accent);
+}
+[dir="rtl"] .palette__item small {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+/* The phone top bar keeps the search button away from the brand on the other side. */
+[dir="rtl"] .app-topbar .search-trigger {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+/* Hiding the rail slides it towards the edge it is docked on. */
+[dir="rtl"] .app-shell--side-hidden .app-side {
+  transform: translateX(28px);
+}
+
+/* The tab highlight is one pill that slides under the active tab; it has to start at
+   the trailing edge and travel the other way once the columns themselves mirror. */
+[dir="rtl"] .tabbar::before {
+  left: auto;
+  right: 8px;
+  transform: translateX(calc(var(--tab) * -100%));
+}

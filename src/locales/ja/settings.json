@@ -1,0 +1,51 @@
+{
+  "dialog": { "title": "設定", "close": "閉じる", "loading": "読み込み中…", "cancel": "キャンセル", "save": "保存", "saving": "保存中..." },
+  "appearance": { "title": "外観", "help": "このデバイスにすぐ反映され、このブラウザに保存されます。", "theme": "テーマ", "white": "ホワイト", "light": "ライト", "dark": "ダーク", "oled": "OLED" },
+  "refresh": { "title": "更新頻度", "help": "各ユニットの GPU・CPU・メモリ・ネットワーク・LLM 指標をポーリングする間隔と、ダッシュボードを更新する間隔です。リモートユニットは SSH 経由でポーリングするため 1 秒が最も負荷が高くなります。ストレージと稼働状態には、それぞれより遅い独自のチェックがあります。", "interval": "ポーリング間隔", "oneSecond": "1秒", "twoSeconds": "2秒", "fiveSeconds": "5秒", "tenSeconds": "10秒" },
+  "temperature": { "title": "温度単位", "aria": "温度単位" },
+  "timeZone": { "title": "タイムゾーン", "help": "Tokens・Energy・Activity グラフの時間と日付の区切り、およびラベル。空欄にするとこのブラウザ（{{timeZone}}）に従います。日次の Token バケットと月次のエネルギー合計は UTC のままです。", "placeholder": "ブラウザの既定値", "inputTitle": "空欄にするとこのブラウザ（{{timeZone}}）に従います", "useBrowser": "ブラウザを使用", "unknown": "不明なタイムゾーンです。Europe/Paris などを試してください。" },
+  "defaultLlmPort": { "title": "既定の LLM ポート", "help": "新しい Spark を追加するときに事前入力されます（1–65535）。" },
+  "toggles": {
+    "hideOffline": { "title": "オフラインの Spark を隠す", "help": "概要でオフラインの Spark を自動的に隠します。" },
+    "hideWorkers": { "title": "ワーカーノードを隠す", "help": "Worker ロールの Spark を概要とサイドバーから除外します。直接 URL とバッチ電源 / Hermes 操作には引き続き含まれます。" },
+    "overviewSearch": { "title": "検索とステータスフィルターを表示", "help": "概要の検索欄とステータス選択（すべて / オンライン / オフライン / 問題）。既定ではオフです。" },
+    "benchShareImage": { "title": "ベンチマーク共有画像", "help": "decode/prefill の Copy results ボタンにメニューが付き、Copy as text / Copy as image（共有カード）を選べます。オフにするとテキストのみのボタンに戻ります。" },
+    "vramBreakdown": { "title": "詳細な VRAM 内訳", "help": "VRAM バーを LLM エンジン・システム・空きに分割し、空きメモリが少ないときに琥珀色や赤で示します（高い使用率では判定しません）。オフにすると単一のパーセントバーになります。" },
+    "prometheus": { "title": "Prometheus メトリクス", "help": "各ユニットの指標を Prometheus / Grafana が {{origin}}/metrics から収集できるようにします。既定ではオフです。" },
+    "intelVramSudo": { "title": "sudo 経由で Intel Arc VRAM を読む", "help": "各ホストで sudo -n を使い、root 専用の debugfs から正確な Intel Arc VRAM 使用量を読み取ります。既定ではオフです。その場合 VRAM は PCI BAR サイズを表示し、sudo で実行される処理はありません。" },
+    "metricsHistory": { "title": "メトリクス履歴", "help": "サーバー上で各ユニットの 1 分値を 48 時間、15 分値を 30 日保持し（GPU、メモリ余裕、CPU、ネットワーク、LLM tok/s、KV。ディスクはユニットあたり最大約 1 MB）、ユニットページの History パネルにグラフ表示します。既定ではオフです。" },
+    "fleetEnergy": { "title": "フリート電力を表示", "help": "概要カードにフリート全体の消費電力推定を表示します。Fleet energy ページはサイドバーからいつでも開けます。" },
+    "llmTokenTotals": { "title": "LLM Token 合計を表示", "help": "概要カードにモデル別の累計プロンプト / 生成 Token を表示します。Token totals ページはサイドバーからいつでも開けます。" },
+    "recentActivity": { "title": "最近のアクティビティを表示", "help": "概要カードに最新のヘルスとカーネルイベントを表示します。Activity ページはサイドバーからいつでも開けます。" },
+    "fleetDecode": { "title": "フリートデコードタイルを表示", "help": "概要タイルにフリート全体の生成 tok/s を表示します。" },
+    "fleetPower": { "title": "フリート電力タイルを表示", "help": "概要タイルにフリート全体の消費電力を表示します。" },
+    "memoryInUse": { "title": "使用中メモリタイルを表示", "help": "概要タイルにフリート全体の使用中メモリを表示します。" },
+    "tokens24Hours": { "title": "直近 24 時間の Token タイルを表示", "help": "概要タイルに直近 24 時間に生成された Token を表示します（まだ Token を記録していない場合はオンライン台数）。" },
+    "fleetExceptions": { "title": "アクティブなフリート例外を表示", "help": "オフラインのホスト、GPU スロットリング、ディスク、LLM、Tailnet の警告を概要に表示します。既定ではオフです。" },
+    "benchDebugTraces": { "title": "ベンチマークのデバッグトレースを保存", "help": "プロンプト、HTTP/completion ID、内容プレビュー、GPU サンプルをベンチマーク履歴に保存します。既定ではオフで、履歴ファイルが大きくなります。" }
+  },
+  "electricityPrice": { "title": "電気料金", "help": "1 kWh あたりの料金。Fleet energy ページの推定コストに使われます。空欄にするとコストを表示しません。", "currency": "通貨記号" },
+  "alertNotifications": { "title": "アラート通知", "help": "ヘルスの検出結果と概要の例外を、一定時間続いたときと解消したときに ntfy、Discord、Slack、webhook へ送信します。既定ではオフです。", "on": "オン", "off": "オフ", "configure": "設定…" },
+  "browserAlerts": { "tabBadge": { "title": "タブバッジ", "help": "タブのタイトルにアクティブなフリートアラート数（オフライン、スロットリング、ストレージ、LLM、ヘルス）を「(2) sparkDash」のように表示し、アイコンに赤（重大）または琥珀色の点が付きます。「アクティブなフリート例外を表示」がオフでもすべてを数えます。このブラウザのみ。すぐに保存されます。" }, "desktop": { "title": "デスクトップ通知", "help": "このページを開いている間にフリートアラートがアクティブになったとき（タブバッジと同じくすべての種類）に通知します。このブラウザのみ。すぐに保存されます。", "blocked": "このサイトでは通知がブロックされています。ブラウザのサイト設定で通知を許可してから、もう一度オンにしてください。", "refused": "このブラウザは通知の許可リクエストを拒否しました。", "insecure": "ブラウザは HTTPS または localhost でのみ通知を許可しますが、このページは HTTP です。SSH トンネル、Tailscale Serve、HTTPS プロキシのいずれかを使うか、アラート通知で ntfy チャンネルを設定してください。", "unsupported": "このブラウザはデスクトップ通知に対応していません。", "withdrawn": "ブラウザで許可が取り消されました。再度許可するまで何も表示されません。" } },
+  "accessToken": { "title": "アクセストークン", "help": "このブラウザに保存されたサーバートークンのコピーで、トークンを要求するサーバーに送信されます。保護を有効にすることはできません。ホストの .env に SPARKDASH_TOKEN を設定し、コンテナを再作成してください。このブラウザにのみ保存されます。", "set": "設定済み", "notSet": "未設定", "change": "変更", "add": "トークンを追加", "clear": "クリア" },
+  "about": { "version": "sparkDash v{{version}}", "github": "GitHub MiaAI-Lab" },
+  "sessionAge": { "title": "セッションの保持期間", "help": "これより古いハーネスセッションを隠します。最長 14 日で、「無制限」はありません。", "aria": "セッションの保持期間" },
+  "harnessSessions": { "title": "ハーネスセッション", "help": "各マシンのヘルパーが OpenClaw、OpenCode、oh-my-pi、Hermes、DeepSeek Harness を一覧します。ダッシュボードはヘルパーのアドレスとトークンのみを保存します。", "setup": "セットアップ" },
+  "mqtt": {
+    "publishingTitle": "MQTT 配信",
+    "publishingHelp": "アクティビティフィードのイベントと各ユニットの測定値を、変化に応じて MQTT ブローカー（Home Assistant、Node-RED など）へ配信します。既定ではオフです。トピックの一覧は README の MQTT の節にあります。",
+    "brokerUrlTitle": "MQTT ブローカー URL",
+    "brokerUrlHelp": "mqtt://host:1883、TLS は mqtts://、WebSocket ブローカーは ws(s):// を使います。パスワードは環境変数 SPARKDASH_MQTT_PASSWORD から読み取り、settings.json には保存されません。",
+    "usernameTitle": "MQTT ユーザー名",
+    "usernameHelp": "匿名配信を許可するブローカーでは空欄にします。",
+    "usernamePlaceholder": "空欄",
+    "topicPrefixTitle": "MQTT トピックプレフィックス",
+    "topicPrefixHelp": "配信するすべてのトピックのルート: PREFIX/events、PREFIX/status/…、PREFIX/metrics/…"
+  },
+  "gpuClock": { "title": "GPU クロック上限", "help": "すべての Spark の GPU グラフィックスクロックを一括で制限します（nvidia-smi -lgc）。目標の状態（フル性能または 1800–2400 MHz）を選び、保存すると適用されます。オフラインまたは GPU のないユニットはスキップされ、結果が報告されます。" },
+  "errors": {
+    "invalidTimeZone": "「{{timeZone}}」は既知のタイムゾーンではありません（例: Europe/Paris）。または欄を空にしてブラウザに従わせてください。",
+    "mqttUrl": "「{{url}}」はブローカー URL ではありません。mqtt://host:1883（または mqtts://、ws://、wss://）を使うか、欄を空にしてください。",
+    "mqttCredentials": "ブローカー URL からユーザー名とパスワードを削除してください。ユーザー名は MQTT ユーザー名に、パスワードは環境変数 SPARKDASH_MQTT_PASSWORD に入れます。"
+  }
+}

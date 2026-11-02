@@ -1,0 +1,59 @@
+{
+  "appTitle": "sparkDash — Dashboard di monitoraggio multi DGX Spark",
+  "brand": "Panoramica di sparkDash",
+  "fleetNavigation": "Navigazione della flotta",
+  "primaryNavigation": "Principale",
+  "hideSidebar": "Nascondi barra laterale",
+  "hideSidebarShortcut": "Nascondi barra laterale (Ctrl+B)",
+  "showSidebar": "Mostra barra laterale",
+  "showSidebarShortcut": "Mostra barra laterale (Ctrl+B)",
+  "openCommandPalette": "Apri la palette dei comandi",
+  "addSparkHost": "Aggiungi Spark o host GPU",
+  "chooseSpark": "Scegli uno Spark",
+  "sortable": "riordinabile",
+  "dragTitle": "{{name}}. Trascina per riordinare (tastiera: M).",
+  "dragTitleOffline": "{{name}} (offline). Trascina per riordinare (tastiera: M).",
+  "dragInstructions": "Premi Invio per aprire questo Spark. Per riordinarlo, premi M, spostalo con le frecce, poi Invio per rilasciare o Esc per annullare.",
+  "live": "In diretta",
+  "livePoll": "In diretta · polling ogni {{seconds}} s",
+  "reconnecting": "Riconnessione…",
+  "credit": "di Mia's AI Lab",
+  "creditWebsite": "Sito di Mia's AI Lab",
+  "creditGithub": "sparkDash su GitHub",
+  "creditX": "Mia's AI Lab su X",
+  "status": {
+    "off": "offline",
+    "worker": "worker",
+    "prefilling": "prefill in corso",
+    "decoding": "decodifica in corso"
+  },
+  "noFleet": {
+    "title": "Nessuno Spark registrato",
+    "help": "Aggiungi un DGX Spark o un host GPU per iniziare il monitoraggio.",
+    "add": "Aggiungi Spark"
+  },
+  "palette": {
+    "dialog": "Palette dei comandi",
+    "search": "Cerca comandi",
+    "placeholder": "Vai a uno Spark, esegui un'azione, apri le impostazioni…",
+    "list": "Comandi",
+    "empty": "Nessun risultato per «{{query}}».",
+    "moveHint": "↑↓ per spostarti",
+    "openHint": "↵ per aprire",
+    "closeHint": "Esc per chiudere"
+  },
+  "install": {
+    "label": "Installa sparkDash",
+    "title": "Installa sparkDash",
+    "help": "Aggiungilo alla schermata Home per una dashboard a schermo intero, come un'app.",
+    "action": "Installa",
+    "iosTitle": "Installa sparkDash sul tuo iPhone",
+    "iosHelp": "Tocca l'icona <b>Condividi</b> ⬆︎ in Safari, poi <b>Aggiungi alla schermata Home</b>.",
+    "dismiss": "Chiudi"
+  },
+  "errors": {
+    "loadSettings": "Impossibile caricare le impostazioni: {{message}}. Ricarica per riprovare.",
+    "refreshSparks": "Impossibile aggiornare gli Sparks: {{message}}. Restano visibili i dati precedenti.",
+    "saveOrder": "Impossibile salvare l'ordine degli Sparks: {{message}}. È stato ripristinato l'ordine precedente."
+  }
+}

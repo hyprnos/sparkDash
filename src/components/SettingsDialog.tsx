@@ -195,12 +195,12 @@ export function SettingsDialog({ open, onClose, onSaved, onOpenHarness }: Settin
     }
     if (settings.mqttUrl && !/^(mqtt|ws)s?:\/\//i.test(settings.mqttUrl.trim())) {
       // The server would silently clear it; say so instead.
-      setError(`"${settings.mqttUrl}" is not a broker URL — use mqtt://host:1883 (or mqtts://, ws://, wss://), or clear the field.`);
+      setError(t("errors.mqttUrl", { url: settings.mqttUrl }));
       return;
     }
     if (settings.mqttUrl && mqttUrlHasCredentials(settings.mqttUrl)) {
       // settings.json is world-readable, so the server refuses (and clears) such a URL.
-      setError("Remove the user name and password from the broker URL: put the user name in MQTT username and the password in the SPARKDASH_MQTT_PASSWORD environment variable.");
+      setError(t("errors.mqttCredentials"));
       return;
     }
     setSaving(true);
@@ -292,8 +292,8 @@ export function SettingsDialog({ open, onClose, onSaved, onOpenHarness }: Settin
                 </div>
               </SettingRow>
 
-              <SettingRow title="Session age" help="Hide harness sessions older than this. The oldest choice is 14 days. There is no unlimited value.">
-                <div className="seg" role="radiogroup" aria-label="Session age">
+              <SettingRow title={t("sessionAge.title")} help={t("sessionAge.help")}>
+                <div className="seg" role="radiogroup" aria-label={t("sessionAge.aria")}>
                   {AGE_PRESETS.map((preset) => (
                     <button
                       key={preset.value}
@@ -309,9 +309,9 @@ export function SettingsDialog({ open, onClose, onSaved, onOpenHarness }: Settin
                 </div>
               </SettingRow>
 
-              <SettingRow title="Harness sessions" help="One helper on each machine lists OpenClaw, OpenCode, oh-my-pi, Hermes and DeepSeek Harness. The dashboard only stores the helper address and token.">
+              <SettingRow title={t("harnessSessions.title")} help={t("harnessSessions.help")}>
                 <button type="button" className="btn btn--sm" onClick={() => onOpenHarness?.()}>
-                  Set up
+                  {t("harnessSessions.setup")}
                 </button>
               </SettingRow>
 
@@ -457,14 +457,14 @@ export function SettingsDialog({ open, onClose, onSaved, onOpenHarness }: Settin
                 onChange={(v) => update({ metricsHistory: v })}
               />
               <ToggleRow
-                title="MQTT publishing"
-                help="Publishes the activity feed events and every unit's readings to your MQTT broker (Home Assistant, Node-RED, …) as they change. Off by default. The README's MQTT section lists the topics."
+                title={t("mqtt.publishingTitle")}
+                help={t("mqtt.publishingHelp")}
                 checked={Boolean(settings.mqttEnabled)}
                 onChange={(v) => update({ mqttEnabled: v })}
               />
               <SettingRow
-                title="MQTT broker URL"
-                help="mqtt://host:1883, mqtts:// for TLS, ws(s):// for a websocket broker. The password is read from the SPARKDASH_MQTT_PASSWORD environment variable, never stored in settings.json."
+                title={t("mqtt.brokerUrlTitle")}
+                help={t("mqtt.brokerUrlHelp")}
                 htmlFor="settings-mqtt-url"
               >
                 <input
@@ -479,15 +479,15 @@ export function SettingsDialog({ open, onClose, onSaved, onOpenHarness }: Settin
                 />
               </SettingRow>
               <SettingRow
-                title="MQTT username"
-                help="Leave empty for a broker that allows anonymous publish."
+                title={t("mqtt.usernameTitle")}
+                help={t("mqtt.usernameHelp")}
                 htmlFor="settings-mqtt-username"
               >
                 <input
                   id="settings-mqtt-username"
                   type="text"
                   value={settings.mqttUsername ?? ""}
-                  placeholder="empty"
+                  placeholder={t("mqtt.usernamePlaceholder")}
                   spellCheck={false}
                   autoComplete="off"
                   onChange={(e) => update({ mqttUsername: e.target.value })}
@@ -495,8 +495,8 @@ export function SettingsDialog({ open, onClose, onSaved, onOpenHarness }: Settin
                 />
               </SettingRow>
               <SettingRow
-                title="MQTT topic prefix"
-                help="Topic root for everything published: PREFIX/events, PREFIX/status/… and PREFIX/metrics/…"
+                title={t("mqtt.topicPrefixTitle")}
+                help={t("mqtt.topicPrefixHelp")}
                 htmlFor="settings-mqtt-prefix"
               >
                 <input
@@ -620,8 +620,8 @@ export function SettingsDialog({ open, onClose, onSaved, onOpenHarness }: Settin
 
           {/* Outside the settings block: a fleet GPU action needs no saved settings. */}
           <SettingRow
-            title="GPU clock cap"
-            help="Caps the GPU graphics clock on every Spark at once (nvidia-smi -lgc): pick the state they should be in — Full capacity or 1800–2400 MHz — and Save applies it. Offline or GPU-less units are skipped and reported."
+            title={t("gpuClock.title")}
+            help={t("gpuClock.help")}
             stack
           >
             <FleetGpuClock apiRef={fleetClock} onPendingChange={setFleetClockPending} />

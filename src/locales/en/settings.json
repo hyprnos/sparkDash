@@ -29,5 +29,23 @@
   "browserAlerts": { "tabBadge": { "title": "Tab badge", "help": "The tab title shows how many fleet alerts are active — offline units, throttling, storage, LLM and Health — as “(2) sparkDash”, and the icon gets a red (critical) or amber dot. Counts all of them even when “Show active fleet exceptions” is off. This browser only; saved immediately." }, "desktop": { "title": "Desktop notifications", "help": "A notification when a fleet alert becomes active (any kind, as for the tab badge), while this page is open. This browser only; saved immediately.", "blocked": "Notifications are blocked for this site. Allow them in the browser's site settings, then turn this on again.", "refused": "This browser refused the notification permission request.", "insecure": "Browsers only allow notifications on HTTPS or localhost, and this page is plain HTTP. Use an SSH tunnel, Tailscale Serve or an HTTPS proxy — or an ntfy channel under Alert notifications.", "unsupported": "This browser does not support desktop notifications.", "withdrawn": "Permission was withdrawn in the browser; nothing is shown until it is allowed again." } },
   "accessToken": { "title": "Access token", "help": "This browser's copy of the server's token, sent to servers that already require one. It cannot turn protection on: set SPARKDASH_TOKEN in the host's .env and recreate the container. Stored in this browser only.", "set": "Set", "notSet": "Not set", "change": "Change", "add": "Add token", "clear": "Clear" },
   "about": { "version": "sparkDash v{{version}}", "github": "GitHub MiaAI-Lab" },
-  "errors": { "invalidTimeZone": "\"{{timeZone}}\" is not a known time zone (for example Europe/Paris), or clear the field to follow the browser." }
+  "sessionAge": { "title": "Session age", "help": "Hide harness sessions older than this. The oldest choice is 14 days. There is no unlimited value.", "aria": "Session age" },
+  "harnessSessions": { "title": "Harness sessions", "help": "One helper on each machine lists OpenClaw, OpenCode, oh-my-pi, Hermes and DeepSeek Harness. The dashboard only stores the helper address and token.", "setup": "Set up" },
+  "mqtt": {
+    "publishingTitle": "MQTT publishing",
+    "publishingHelp": "Publishes the activity feed events and every unit's readings to your MQTT broker (Home Assistant, Node-RED, …) as they change. Off by default. The README's MQTT section lists the topics.",
+    "brokerUrlTitle": "MQTT broker URL",
+    "brokerUrlHelp": "mqtt://host:1883, mqtts:// for TLS, ws(s):// for a websocket broker. The password is read from the SPARKDASH_MQTT_PASSWORD environment variable, never stored in settings.json.",
+    "usernameTitle": "MQTT username",
+    "usernameHelp": "Leave empty for a broker that allows anonymous publish.",
+    "usernamePlaceholder": "empty",
+    "topicPrefixTitle": "MQTT topic prefix",
+    "topicPrefixHelp": "Topic root for everything published: PREFIX/events, PREFIX/status/… and PREFIX/metrics/…"
+  },
+  "gpuClock": { "title": "GPU clock cap", "help": "Caps the GPU graphics clock on every Spark at once (nvidia-smi -lgc): pick the state they should be in — Full capacity or 1800–2400 MHz — and Save applies it. Offline or GPU-less units are skipped and reported." },
+  "errors": {
+    "invalidTimeZone": "\"{{timeZone}}\" is not a known time zone (for example Europe/Paris), or clear the field to follow the browser.",
+    "mqttUrl": "\"{{url}}\" is not a broker URL — use mqtt://host:1883 (or mqtts://, ws://, wss://), or clear the field.",
+    "mqttCredentials": "Remove the user name and password from the broker URL: put the user name in MQTT username and the password in the SPARKDASH_MQTT_PASSWORD environment variable."
+  }
 }

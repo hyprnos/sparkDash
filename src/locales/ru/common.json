@@ -1,0 +1,59 @@
+{
+  "appTitle": "sparkDash — панель мониторинга нескольких DGX Spark",
+  "brand": "Обзор sparkDash",
+  "fleetNavigation": "Навигация по флоту",
+  "primaryNavigation": "Основная навигация",
+  "hideSidebar": "Скрыть боковую панель",
+  "hideSidebarShortcut": "Скрыть боковую панель (Ctrl+B)",
+  "showSidebar": "Показать боковую панель",
+  "showSidebarShortcut": "Показать боковую панель (Ctrl+B)",
+  "openCommandPalette": "Открыть палитру команд",
+  "addSparkHost": "Добавить Spark или GPU-хост",
+  "chooseSpark": "Выберите Spark",
+  "sortable": "с изменяемым порядком",
+  "dragTitle": "{{name}}. Перетащите, чтобы изменить порядок (клавиатура: M).",
+  "dragTitleOffline": "{{name}} (не в сети). Перетащите, чтобы изменить порядок (клавиатура: M).",
+  "dragInstructions": "Нажмите Enter, чтобы открыть этот Spark. Чтобы изменить порядок, нажмите M, переместите стрелками, затем Enter — закрепить или Escape — отменить.",
+  "live": "В реальном времени",
+  "livePoll": "В реальном времени · опрос каждые {{seconds}} с",
+  "reconnecting": "Переподключение…",
+  "credit": "от Mia's AI Lab",
+  "creditWebsite": "Сайт Mia's AI Lab",
+  "creditGithub": "sparkDash на GitHub",
+  "creditX": "Mia's AI Lab в X",
+  "status": {
+    "off": "не в сети",
+    "worker": "воркер",
+    "prefilling": "префилл",
+    "decoding": "декодирование"
+  },
+  "noFleet": {
+    "title": "Нет зарегистрированных Spark",
+    "help": "Добавьте DGX Spark или GPU-хост, чтобы начать мониторинг.",
+    "add": "Добавить Spark"
+  },
+  "palette": {
+    "dialog": "Палитра команд",
+    "search": "Поиск команд",
+    "placeholder": "Перейти к Spark, выполнить действие, открыть настройки…",
+    "list": "Команды",
+    "empty": "Нет совпадений для «{{query}}».",
+    "moveHint": "↑↓ — перемещение",
+    "openHint": "↵ — открыть",
+    "closeHint": "Esc — закрыть"
+  },
+  "install": {
+    "label": "Установить sparkDash",
+    "title": "Установить sparkDash",
+    "help": "Добавьте на главный экран, чтобы получить полноэкранную панель как приложение.",
+    "action": "Установить",
+    "iosTitle": "Установить sparkDash на iPhone",
+    "iosHelp": "Нажмите значок <b>Поделиться</b> ⬆︎ в Safari, затем <b>На экран «Домой»</b>.",
+    "dismiss": "Закрыть"
+  },
+  "errors": {
+    "loadSettings": "Не удалось загрузить настройки: {{message}}. Перезагрузите страницу и повторите.",
+    "refreshSparks": "Не удалось обновить Sparks: {{message}}. Показаны прежние данные.",
+    "saveOrder": "Не удалось сохранить порядок Sparks: {{message}}. Прежний порядок восстановлен."
+  }
+}

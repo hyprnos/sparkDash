@@ -1,0 +1,59 @@
+{
+  "appTitle": "sparkDash — Multi-DGX Spark Monitoring Dashboard",
+  "brand": "sparkDash overview",
+  "fleetNavigation": "Fleet navigation",
+  "primaryNavigation": "Primary",
+  "hideSidebar": "Hide sidebar",
+  "hideSidebarShortcut": "Hide sidebar (Ctrl+B)",
+  "showSidebar": "Show sidebar",
+  "showSidebarShortcut": "Show sidebar (Ctrl+B)",
+  "openCommandPalette": "Open command palette",
+  "addSparkHost": "Add Spark / GPU host",
+  "chooseSpark": "Choose a Spark",
+  "sortable": "sortable",
+  "dragTitle": "{{name}}. Drag to reorder (keyboard: M).",
+  "dragTitleOffline": "{{name}} (offline). Drag to reorder (keyboard: M).",
+  "dragInstructions": "Press Enter to open this Spark. To reorder it, press M, use the arrow keys to move it, then Enter to drop it or Escape to cancel.",
+  "live": "Live",
+  "livePoll": "Live · {{seconds}} s poll",
+  "reconnecting": "Reconnecting…",
+  "credit": "by Mia's AI Lab",
+  "creditWebsite": "Mia's AI Lab website",
+  "creditGithub": "sparkDash on GitHub",
+  "creditX": "Mia's AI Lab on X",
+  "status": {
+    "off": "off",
+    "worker": "worker",
+    "prefilling": "prefilling",
+    "decoding": "decoding"
+  },
+  "noFleet": {
+    "title": "No Spark registered",
+    "help": "Add a DGX Spark or GPU host to start monitoring.",
+    "add": "Add Spark"
+  },
+  "palette": {
+    "dialog": "Command palette",
+    "search": "Search commands",
+    "placeholder": "Jump to a Spark, run an action, open settings…",
+    "list": "Commands",
+    "empty": "No match for “{{query}}”.",
+    "moveHint": "↑↓ to move",
+    "openHint": "↵ to open",
+    "closeHint": "Esc to close"
+  },
+  "install": {
+    "label": "Install sparkDash",
+    "title": "Install sparkDash",
+    "help": "Add to your home screen for a fullscreen, app-like dashboard.",
+    "action": "Install",
+    "iosTitle": "Install sparkDash on your iPhone",
+    "iosHelp": "Tap the <b>Share</b> icon ⬆︎ in Safari, then <b>Add to Home Screen</b>.",
+    "dismiss": "Dismiss"
+  },
+  "errors": {
+    "loadSettings": "Could not load settings: {{message}}. Reload to retry.",
+    "refreshSparks": "Could not refresh Sparks: {{message}}. Previous data remains visible.",
+    "saveOrder": "Could not save the Spark order: {{message}}. The previous order was restored."
+  }
+}

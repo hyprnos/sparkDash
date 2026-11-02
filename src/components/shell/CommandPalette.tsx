@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import { useFocusTrap } from "../../hooks/useFocusTrap";
 import { useInertBackground } from "../../hooks/useInertBackground";
 import { SearchIcon } from "../ui/icons";
@@ -54,6 +55,7 @@ interface CommandPaletteProps {
 
 /** Jump-anywhere palette (Ctrl/⌘ K): Sparks, actions, settings. */
 export function CommandPalette({ open, onClose, commands }: CommandPaletteProps) {
+  const { t } = useTranslation("common");
   const [query, setQuery] = useState("");
   const [sel, setSel] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
@@ -111,7 +113,7 @@ export function CommandPalette({ open, onClose, commands }: CommandPaletteProps)
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div ref={trapRef} className="palette" role="dialog" aria-modal="true" aria-label="Command palette" onKeyDown={onKeyDown}>
+      <div ref={trapRef} className="palette" role="dialog" aria-modal="true" aria-label={t("palette.dialog")} onKeyDown={onKeyDown}>
         <div className="palette__input">
           <SearchIcon className="h-4 w-4" />
           <input
@@ -119,8 +121,8 @@ export function CommandPalette({ open, onClose, commands }: CommandPaletteProps)
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Jump to a Spark, run an action, open settings…"
-            aria-label="Search commands"
+            placeholder={t("palette.placeholder")}
+            aria-label={t("palette.search")}
             role="combobox"
             aria-expanded="true"
             aria-controls={LIST_ID}
@@ -131,9 +133,9 @@ export function CommandPalette({ open, onClose, commands }: CommandPaletteProps)
           />
           <span className="kbd">Esc</span>
         </div>
-        <div className="palette__list" ref={listRef} role="listbox" id={LIST_ID} aria-label="Commands">
+        <div className="palette__list" ref={listRef} role="listbox" id={LIST_ID} aria-label={t("palette.list")}>
           {results.length === 0 ? (
-            <div className="palette__empty">No match for “{query}”.</div>
+            <div className="palette__empty">{t("palette.empty", { query })}</div>
           ) : (
             results.map((cmd, i) => {
               const header = cmd.group !== lastGroup ? cmd.group : null;
@@ -162,9 +164,9 @@ export function CommandPalette({ open, onClose, commands }: CommandPaletteProps)
           )}
         </div>
         <div className="palette__foot">
-          <span>↑↓ to move</span>
-          <span>↵ to open</span>
-          <span>Esc to close</span>
+          <span>{t("palette.moveHint")}</span>
+          <span>{t("palette.openHint")}</span>
+          <span>{t("palette.closeHint")}</span>
         </div>
       </div>
     </div>,

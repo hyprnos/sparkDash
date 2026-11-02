@@ -1,0 +1,59 @@
+{
+  "appTitle": "sparkDash — لوحة مراقبة عدة DGX Spark",
+  "brand": "نظرة عامة على sparkDash",
+  "fleetNavigation": "تنقّل الأسطول",
+  "primaryNavigation": "التنقّل الرئيسي",
+  "hideSidebar": "إخفاء الشريط الجانبي",
+  "hideSidebarShortcut": "إخفاء الشريط الجانبي (Ctrl+B)",
+  "showSidebar": "إظهار الشريط الجانبي",
+  "showSidebarShortcut": "إظهار الشريط الجانبي (Ctrl+B)",
+  "openCommandPalette": "فتح لوحة الأوامر",
+  "addSparkHost": "إضافة Spark أو مضيف GPU",
+  "chooseSpark": "اختر Spark",
+  "sortable": "قابل لإعادة الترتيب",
+  "dragTitle": "{{name}}. اسحب لإعادة الترتيب (لوحة المفاتيح: M).",
+  "dragTitleOffline": "{{name}} (غير متصل). اسحب لإعادة الترتيب (لوحة المفاتيح: M).",
+  "dragInstructions": "اضغط Enter لفتح هذا الـ Spark. لإعادة ترتيبه اضغط M، وحرّكه بمفاتيح الأسهم، ثم Enter للإفلات أو Escape للإلغاء.",
+  "live": "مباشر",
+  "livePoll": "مباشر · استعلام كل {{seconds}} ثانية",
+  "reconnecting": "جارٍ إعادة الاتصال…",
+  "credit": "من Mia's AI Lab",
+  "creditWebsite": "موقع Mia's AI Lab",
+  "creditGithub": "sparkDash على GitHub",
+  "creditX": "Mia's AI Lab على X",
+  "status": {
+    "off": "غير متصل",
+    "worker": "عامل",
+    "prefilling": "تعبئة مسبقة",
+    "decoding": "فك ترميز"
+  },
+  "noFleet": {
+    "title": "لا يوجد Spark مسجّل",
+    "help": "أضف DGX Spark أو مضيف GPU لبدء المراقبة.",
+    "add": "إضافة Spark"
+  },
+  "palette": {
+    "dialog": "لوحة الأوامر",
+    "search": "البحث في الأوامر",
+    "placeholder": "انتقل إلى Spark، نفّذ إجراءً، افتح الإعدادات…",
+    "list": "الأوامر",
+    "empty": "لا نتائج لـ «{{query}}».",
+    "moveHint": "↑↓ للتنقل",
+    "openHint": "↵ للفتح",
+    "closeHint": "Esc للإغلاق"
+  },
+  "install": {
+    "label": "تثبيت sparkDash",
+    "title": "تثبيت sparkDash",
+    "help": "أضفه إلى الشاشة الرئيسية للحصول على لوحة بملء الشاشة تشبه التطبيقات.",
+    "action": "تثبيت",
+    "iosTitle": "تثبيت sparkDash على iPhone",
+    "iosHelp": "اضغط أيقونة <b>مشاركة</b> ⬆︎ في Safari ثم <b>إضافة إلى الشاشة الرئيسية</b>.",
+    "dismiss": "إغلاق"
+  },
+  "errors": {
+    "loadSettings": "تعذّر تحميل الإعدادات: {{message}}. أعد تحميل الصفحة للمحاولة مرة أخرى.",
+    "refreshSparks": "تعذّر تحديث Sparks: {{message}}. ما زالت البيانات السابقة معروضة.",
+    "saveOrder": "تعذّر حفظ ترتيب Sparks: {{message}}. تمت استعادة الترتيب السابق."
+  }
+}

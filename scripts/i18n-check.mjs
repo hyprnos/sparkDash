@@ -240,6 +240,32 @@ export function validateCatalogs({ catalogs, usages }) {
   return errors;
 }
 
+/**
+ * Whole-catalog parity. validateCatalogs only covers keys source code happens to
+ * call, which lets a translator's file drift out of step unnoticed; every shipped
+ * locale must instead carry the source language's complete key set, namespace by
+ * namespace. A namespace that exists in no locale at all is invisible here — the
+ * catalogs on disk are the list of namespaces.
+ */
+export function validateCompleteness({ catalogs }) {
+  const errors = [];
+  const sourceCatalogs = catalogs[SOURCE_LANGUAGE] ?? {};
+  const languages = Object.keys(catalogs).filter((language) => language !== SOURCE_LANGUAGE).sort();
+  for (const language of languages) {
+    const namespaces = catalogs[language] ?? {};
+    for (const [namespace, source] of Object.entries(sourceCatalogs)) {
+      const target = namespaces[namespace];
+      if (!target) {
+        errors.push(`${language}: missing ${namespace}.json`);
+        continue;
+      }
+      const missing = [...source.keys()].filter((key) => !target.has(key));
+      for (const key of missing) errors.push(`${language}/${namespace}: missing key ${key}`);
+    }
+  }
+  return errors;
+}
+
 async function filesBelow(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
   const files = [];
@@ -278,7 +304,7 @@ export async function checkI18n(root = process.cwd()) {
   const [catalogs, files] = await Promise.all([readCatalogs(localesDirectory), filesBelow(sourceDirectory)]);
   const usages = [];
   for (const file of files) usages.push(...scanTranslationSource(await readFile(file, "utf8"), path.relative(root, file)));
-  return validateCatalogs({ catalogs, usages });
+  return [...validateCatalogs({ catalogs, usages }), ...validateCompleteness({ catalogs })];
 }
 
 async function main() {
