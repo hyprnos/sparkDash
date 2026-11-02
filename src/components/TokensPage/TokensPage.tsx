@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "r
 import { fetchTokenHistory, resetTokenTotals } from "../../api/client";
 import { ClearMenu, type ClearChoice } from "../ui/ClearMenu";
 import { fetchLlmTokenCost, fetchLlmTokenTotals, type LlmTokenCost } from "../../api/llmTokenClient";
+import { CloudPriceSetting } from "../CloudPriceSetting";
 import type { LlmTokenSeriesTotals } from "../../api/llmTokenTypes";
 import type { SparkSnapshot, TokenHistory } from "../../api/types";
 import { formatTokensCompact } from "../../shared/tokenFormat";
@@ -511,8 +512,12 @@ function CostCard({ range }: { range: RangeKey }) {
       <p className="tk-cost__note">
         {cost.tariff === "peak" ? "高峰时段价" : "空闲时段价"}（¥{cost.rates.cacheHit}/¥
         {cost.rates.cacheMiss}/¥{cost.rates.output} 每百万 tokens，缓存命中/未命中/输出）·
-        与墨水屏使用同一套价格设置，可在 E-paper 页面调整或同步官网价格
+        墨水屏上的「云价」用同一份价格，只显示不配置
       </p>
+      <details className="tk-cost__settings">
+        <summary>调整价格 / 从官网同步</summary>
+        <CloudPriceSetting />
+      </details>
     </section>
   );
 }

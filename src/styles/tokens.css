@@ -381,3 +381,15 @@
   font-size: 12px;
   color: var(--color-muted);
 }
+
+.tk-cost__settings {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.tk-cost__settings > summary {
+  cursor: pointer;
+  color: var(--color-muted-strong);
+  margin-bottom: 8px;
+}

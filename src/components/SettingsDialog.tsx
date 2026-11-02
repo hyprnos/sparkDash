@@ -550,6 +550,8 @@ export function SettingsDialog({ open, onClose, onSaved, onOpenHarness }: Settin
                   />
                 </div>
               </SettingRow>
+
+
               <ToggleRow
                 title={t("toggles.llmTokenTotals.title")}
                 help={t("toggles.llmTokenTotals.help")}

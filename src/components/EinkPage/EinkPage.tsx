@@ -4,8 +4,6 @@ import {
   clearEinkBackground,
   fetchEinkAlgorithms,
   fetchEinkConfig,
-  fetchEinkPricing,
-  refreshEinkPricing,
   fetchEinkDevices,
   fetchEinkPreview,
   pushEinkNow,
@@ -13,7 +11,6 @@ import {
   uploadEinkBackground,
   type EinkConfig,
   type EinkDevice,
-  type EinkPriceModel,
   type EinkStatus,
 } from "./einkClient";
 
@@ -33,7 +30,6 @@ export function EinkPage() {
   const [status, setStatus] = useState<EinkStatus | null>(null);
   const [devices, setDevices] = useState<EinkDevice[]>([]);
   const [algorithms, setAlgorithms] = useState<string[]>(["floyd-steinberg"]);
-  const [priceModels, setPriceModels] = useState<EinkPriceModel[]>([]);
   const [savedSignature, setSavedSignature] = useState<string>("");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -76,9 +72,6 @@ export function EinkPage() {
     void fetchEinkAlgorithms().then((list) => {
       if (list.length) setAlgorithms(list);
     });
-    void fetchEinkPricing()
-      .then((payload) => setPriceModels(payload.models))
-      .catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -124,22 +117,6 @@ export function EinkPage() {
       const found = await fetchEinkDevices();
       setDevices(found);
       setNotice(found.length ? `发现 ${found.length} 台设备` : "没扫到墨水屏；确认它没有连在手机上，且距离在几米内");
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setBusy(null);
-    }
-  }, []);
-
-  const syncPrices = useCallback(async () => {
-    setBusy("pricing");
-    setError(null);
-    setNotice(null);
-    try {
-      const payload = await refreshEinkPricing();
-      setPriceModels(payload.models);
-      setConfig((current) => (current ? { ...current, pricing: payload.pricing } : current));
-      setNotice("已同步官网价格");
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -338,7 +315,7 @@ export function EinkPage() {
                 checked={config.sections.cost}
                 onChange={(e) => setConfig({ ...config, sections: { ...config.sections, cost: e.target.checked } })}
               />
-              <span>云价换算（元）</span>
+              <span>云价换算（元，价格在「设置 → 云价换算」统一配置）</span>
             </label>
           </fieldset>
           <div className="eink-row">
@@ -511,105 +488,6 @@ export function EinkPage() {
               {busy === "push" ? "推送中…" : "立即刷新"}
             </button>
           </div>
-        </div>
-
-        <div className="panel eink-card">
-          <h2>成本换算（元 / 百万 tokens）</h2>
-          <div className="eink-row">
-            <label className="field">
-              <span>对照模型</span>
-              <select
-                value={config.pricing.modelId}
-                onChange={(e) => setConfig({ ...config, pricing: { ...config.pricing, modelId: e.target.value } })}
-              >
-                {priceModels.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.label}
-                  </option>
-                ))}
-                <option value="custom">自定义单价</option>
-              </select>
-            </label>
-            <label className="field">
-              <span>时段</span>
-              <select
-                value={config.pricing.tariff}
-                onChange={(e) =>
-                  setConfig({
-                    ...config,
-                    pricing: { ...config.pricing, tariff: e.target.value as "auto" | "peak" | "off-peak" },
-                  })
-                }
-              >
-                <option value="auto">自动（按北京时间）</option>
-                <option value="off-peak">空闲时段</option>
-                <option value="peak">高峰时段</option>
-              </select>
-            </label>
-          </div>
-          {config.pricing.modelId === "custom" ? (
-            <div className="eink-row">
-              <label className="field">
-                <span>名称</span>
-                <input
-                  type="text"
-                  maxLength={40}
-                  value={config.pricing.label}
-                  onChange={(e) => setConfig({ ...config, pricing: { ...config.pricing, label: e.target.value } })}
-                />
-              </label>
-              <label className="field">
-                <span>缓存命中（元/M）</span>
-                <input
-                  type="number"
-                  min={0}
-                  step={0.01}
-                  value={config.pricing.cacheHitPrice}
-                  onChange={(e) =>
-                    setConfig({ ...config, pricing: { ...config.pricing, cacheHitPrice: Number(e.target.value) } })
-                  }
-                />
-              </label>
-              <label className="field">
-                <span>缓存未命中（元/M）</span>
-                <input
-                  type="number"
-                  min={0}
-                  step={0.01}
-                  value={config.pricing.cacheMissPrice}
-                  onChange={(e) =>
-                    setConfig({ ...config, pricing: { ...config.pricing, cacheMissPrice: Number(e.target.value) } })
-                  }
-                />
-              </label>
-              <label className="field">
-                <span>输出（元/M）</span>
-                <input
-                  type="number"
-                  min={0}
-                  step={0.01}
-                  value={config.pricing.outputPrice}
-                  onChange={(e) =>
-                    setConfig({ ...config, pricing: { ...config.pricing, outputPrice: Number(e.target.value) } })
-                  }
-                />
-              </label>
-            </div>
-          ) : null}
-          <div className="eink-actions">
-            <button
-              type="button"
-              className="btn btn--sm"
-              onClick={() => void syncPrices()}
-              disabled={busy !== null}
-            >
-              {busy === "pricing" ? "同步中…" : "从官网同步价格"}
-            </button>
-            <span className="eink-meta">
-              {config.pricing.updatedAt ? `更新于 ${fmtTime(config.pricing.updatedAt)}` : "尚未同步过官网价格"}
-            </span>
-          </div>
-          <p className="eink-meta">按今日 token 量折算，勾选“云价换算”后显示在墨水屏上。</p>
         </div>
 
         <div className="panel eink-card eink-card--preview">
