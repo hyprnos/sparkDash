@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { AlertInstance, SparkSnapshot } from "../../api/types";
 import { fleetExceptions } from "../../shared/fleetExceptions";
 import { AlertTriangleIcon, ChevronRightIcon } from "../ui/icons";
@@ -98,6 +99,7 @@ export function FleetAlertStrip({
   alertsEnabled?: boolean;
   serverAlerts?: AlertInstance[] | null;
 }) {
+  const { t } = useTranslation("overview");
   const alerts = useMemo(
     () => stripAlerts({ sparks, alertsEnabled, serverAlerts, showExceptions, temperatureUnit }),
     [sparks, alertsEnabled, serverAlerts, showExceptions, temperatureUnit]
@@ -113,19 +115,20 @@ export function FleetAlertStrip({
   }, [alerts]);
   if (alerts.length === 0) return null;
   return (
-    <section className="ov-alerts" aria-label="Active fleet exceptions">
+    <section className="ov-alerts" aria-label={t("alerts.aria")}>
       {alerts.map((alert) => {
         const since = alert.startsAt ?? firstSeen.current.get(alert.key) ?? now;
         const mins = Math.max(0, Math.floor((now - since) / 60_000));
+        const activeFor = t("alerts.activeFor", { minutes: mins });
         return (
           <div key={alert.key} className={`alert-strip ov-alert ${alert.severity === "critical" ? "ov-alert--bad" : ""}`} role="status">
             <AlertTriangleIcon className="h-[18px] w-[18px] shrink-0" />
             <div className="ov-alert__text">
               <b>{alert.unitName}</b> {alert.label}.
-              <small>{[alert.detail, `${mins}m active`].filter(Boolean).join(" · ")}</small>
+              <small>{[alert.detail, activeFor].filter(Boolean).join(" · ")}</small>
             </div>
             <button type="button" className="btn btn--sm" onClick={() => onSelect?.(alert.unitId)}>
-              Open {alert.unitName}
+              {t("alerts.open", { name: alert.unitName })}
               <ChevronRightIcon className="h-3.5 w-3.5" />
             </button>
           </div>

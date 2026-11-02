@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { AppLink } from "../ui/AppLink";
 import { activeTimeZone } from "../../shared/timeZone";
 import { ACTIVITY_ID, idToPath } from "../../constants";
@@ -12,29 +13,44 @@ interface ActivityFeedProps {
   onViewAll?: () => void;
 }
 
+/** Screen-reader wording for an event severity (the raw value stays in the data model). */
+function severityLabel(t: (key: string) => string, severity: string): string {
+  switch (severity) {
+    case "success":
+      return t("activity.severitySuccess");
+    case "warn":
+      return t("activity.severityWarn");
+    case "error":
+      return t("activity.severityError");
+    case "info":
+      return t("activity.severityInfo");
+    default:
+      return t("activity.severityOther");
+  }
+}
+
 /** Compact fleet timeline. Renders card contents only (no outer chrome). */
 export function ActivityFeed({ limit = 8, sparkId, onSelectSpark, onViewAll }: ActivityFeedProps) {
+  const { t, i18n } = useTranslation("overview");
   const { events, loading, error } = useActivityEvents({ sparkId });
   const now = Date.now();
   const shown = events.slice(0, limit);
 
   return (
-    <section className="activity-feed" aria-label="Recent activity">
+    <section className="activity-feed" aria-label={t("activity.title")}>
       <header className="mb-2 flex items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold text-text-strong">Recent activity</h3>
+        <h3 className="text-sm font-semibold text-text-strong">{t("activity.title")}</h3>
         <span className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted">
           <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden="true" />
-          live
+          {t("activity.live")}
         </span>
       </header>
 
       {loading && shown.length === 0 ? (
-        <p className="py-2 text-xs text-muted">Loading…</p>
+        <p className="py-2 text-xs text-muted">{t("activity.loading")}</p>
       ) : shown.length === 0 ? (
         <p className="py-2 text-xs text-muted">
-          {error
-            ? "Couldn't load activity."
-            : "Nothing yet. Throttling, restarts, updates and benchmark runs will appear here."}
+          {error ? t("activity.error") : t("activity.empty")}
         </p>
       ) : (
         <ul className="divide-y divide-border">
@@ -48,11 +64,11 @@ export function ActivityFeed({ limit = 8, sparkId, onSelectSpark, onViewAll }: A
                   dateTime={new Date(ev.ts).toISOString()}
                   title={new Date(ev.ts).toLocaleString(undefined, { timeZone: activeTimeZone() })}
                 >
-                  {formatRelativeTime(ev.ts, now)}
+                  {formatRelativeTime(ev.ts, now, { locale: i18n.language, now: t("activity.agoNow") })}
                 </time>
                 <span
                   className={`h-1.5 w-1.5 shrink-0 translate-y-[-1px] rounded-full ${severityDotClass(ev.severity)}`}
-                  aria-label={ev.severity}
+                  aria-label={severityLabel(t, ev.severity)}
                 />
                 <span className="min-w-0 break-words text-muted-strong">
                   {before}
@@ -77,7 +93,7 @@ export function ActivityFeed({ limit = 8, sparkId, onSelectSpark, onViewAll }: A
       )}
       {onViewAll ? (
         <AppLink href={idToPath(ACTIVITY_ID)} className="btn btn--sm btn--ghost mt-2" onNavigate={onViewAll}>
-          View all activity
+          {t("activity.viewAll")}
         </AppLink>
       ) : null}
     </section>

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { setConfiguredTimeZone } from "../../shared/timeZone";
 import type { TokenHistoryRow } from "../../api/types";
+import enTokens from "../../locales/en/tokens.json";
+import type { Translate } from "./tokenStats";
 import {
   RANGES,
   OTHER_ID,
@@ -31,6 +33,14 @@ import {
 } from "./tokenStats";
 
 const NOW = Date.parse("2026-10-07T14:30:00Z");
+
+/** Renders catalog templates with their {{vars}}; the English copy is the source of truth. */
+const t: Translate = (key, vars) => {
+  let value: unknown = enTokens;
+  for (const part of key.split(".")) value = (value as Record<string, unknown> | undefined)?.[part];
+  if (typeof value !== "string") throw new Error(`missing en/tokens key: ${key}`);
+  return value.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, name: string) => String(vars?.[name] ?? ""));
+};
 
 function row(t: string, over: Partial<TokenHistoryRow> = {}): TokenHistoryRow {
   return { t, sparkId: "a", port: 8000, modelId: "m1", promptTokens: 1000, completionTokens: 100, cachedTokens: 400, ...over };
@@ -336,10 +346,10 @@ describe("tables", () => {
     expect(entriesFromTotals(undefined as never)).toEqual([]);
   });
   it("formats ages", () => {
-    expect(formatAgo(NOW - 10_000, NOW)).toBe("just now");
-    expect(formatAgo(NOW - 10 * 60_000, NOW)).toBe("10 min ago");
-    expect(formatAgo(NOW - 5 * 3_600_000, NOW)).toBe("5 h ago");
-    expect(formatAgo(NOW - 4 * 86_400_000, NOW)).toBe("4 d ago");
+    expect(formatAgo(NOW - 10_000, NOW, t)).toBe("just now");
+    expect(formatAgo(NOW - 10 * 60_000, NOW, t)).toBe("10 min ago");
+    expect(formatAgo(NOW - 5 * 3_600_000, NOW, t)).toBe("5 h ago");
+    expect(formatAgo(NOW - 4 * 86_400_000, NOW, t)).toBe("4 d ago");
   });
 });
 
@@ -349,10 +359,23 @@ describe("insights", () => {
     const inRange = rowsIn(rows, w.keys);
     const totals = bucketTotals(inRange, w.keys);
     const summary = summarize(tallyOf(inRange), totals, w.firstKey);
-    return { spec: w.spec, summary, comparison: null, models: modelRows(inRange), endpoints: endpointRows(inRange), totals, firstKey: w.firstKey, sparkName: (id: string) => `Spark ${id}` };
+    return {
+      spec: w.spec,
+      summary,
+      comparison: null,
+      models: modelRows(inRange),
+      endpoints: endpointRows(inRange),
+      totals,
+      firstKey: w.firstKey,
+      sparkName: (id: string) => `Spark ${id}`,
+      unit: t("units.day"),
+      unitPlural: t("units.days"),
+      period: t(range === "24h" ? "range.24h.phrase" : "range.7d.phrase"),
+      prevPeriod: t(range === "24h" ? "range.24h.prev" : "range.7d.prev"),
+    };
   }
   it("returns nothing without data", () => {
-    expect(buildInsights(ctx([]))).toEqual([]);
+    expect(buildInsights(ctx([]), t)).toEqual([]);
   });
   it("describes a rich week in plain English, capped at 6", () => {
     const rows = [
@@ -360,7 +383,7 @@ describe("insights", () => {
       row("2026-10-03", { modelId: "big", sparkId: "b", completionTokens: 5000 }),
       row("2026-10-05", { modelId: "small" }),
     ];
-    const lines = buildInsights({ ...ctx(rows), comparison: { total: 0.25, generated: 0, prompt: 0, cachePoints: 0 } });
+    const lines = buildInsights({ ...ctx(rows), comparison: { total: 0.25, generated: 0, prompt: 0, cachePoints: 0 } }, t);
     const text = lines.join("\n");
     expect(lines.length).toBeGreaterThanOrEqual(3);
     expect(lines.length).toBeLessThanOrEqual(6);
@@ -370,20 +393,20 @@ describe("insights", () => {
     expect(text).toContain("had no traffic");
   });
   it("single day: no busiest, no idle sentences", () => {
-    const text = buildInsights(ctx([row("2026-10-07")])).join("\n");
+    const text = buildInsights(ctx([row("2026-10-07")]), t).join("\n");
     expect(text).not.toContain("busiest day");
     expect(text).not.toContain("no traffic at all");
     expect(text).toContain("All traffic ran on m1");
   });
   it("flags zero cache hits and omits ratio without prompt data", () => {
-    const zero = buildInsights(ctx([row("2026-10-07", { cachedTokens: 0 })])).join("\n");
+    const zero = buildInsights(ctx([row("2026-10-07", { cachedTokens: 0 })]), t).join("\n");
     expect(zero).toContain("No prompt tokens were served from the prefix cache");
-    const none = buildInsights(ctx([row("2026-10-07", { promptTokens: 0, cachedTokens: 0 })])).join("\n");
+    const none = buildInsights(ctx([row("2026-10-07", { promptTokens: 0, cachedTokens: 0 })]), t).join("\n");
     expect(none).not.toContain("prompt tokens were read");
     expect(none).not.toContain("prefix cache");
   });
   it("says the counter is missing instead of claiming zero hits", () => {
-    const text = buildInsights(ctx([row("2026-10-07", { cachedTokens: 0, cacheReported: false })])).join("\n");
+    const text = buildInsights(ctx([row("2026-10-07", { cachedTokens: 0, cacheReported: false })]), t).join("\n");
     expect(text).toContain("does not publish a prefix-cache counter");
     expect(text).not.toContain("No prompt tokens were served from the prefix cache");
   });

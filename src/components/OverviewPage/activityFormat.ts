@@ -1,13 +1,18 @@
 import type { ActivityEvent } from "../../api/types";
 import { tzOffsetMinutes } from "../../shared/timeZone";
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+/** Compact relative time: "now", "2m", "3h", "5d", then a localised date after a week. */
+export interface RelativeTimeOptions {
+  /** BCP 47 locale for the date branch. */
+  locale: string;
+  /** Translated word for "right now". */
+  now: string;
+}
 
-/** Compact relative time: "now", "2m", "3h", "5d", then "Oct 5" after a week. */
-export function formatRelativeTime(ts: number, now: number = Date.now()): string {
+export function formatRelativeTime(ts: number, now: number, opts: RelativeTimeOptions): string {
   const diff = Math.max(0, now - ts);
   const sec = Math.floor(diff / 1000);
-  if (sec < 45) return "now";
+  if (sec < 45) return opts.now;
   const min = Math.floor(sec / 60);
   if (min < 60) return `${Math.max(1, min)}m`;
   const hr = Math.floor(min / 60);
@@ -16,7 +21,7 @@ export function formatRelativeTime(ts: number, now: number = Date.now()): string
   if (day < 7) return `${day}d`;
   // Month and day in the Settings time zone (else the browser's), via the same offset the charts use.
   const d = new Date(ts + tzOffsetMinutes(ts) * 60_000);
-  return `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`;
+  return new Intl.DateTimeFormat(opts.locale, { month: "short", day: "numeric", timeZone: "UTC" }).format(d);
 }
 
 export function severityDotClass(severity: ActivityEvent["severity"]): string {

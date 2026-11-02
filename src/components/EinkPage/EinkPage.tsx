@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import "../../styles/eink.css";
 import {
   clearEinkBackground,
@@ -26,6 +27,7 @@ function fmtTime(ts: number | null): string {
 }
 
 export function EinkPage() {
+  const { t } = useTranslation("eink");
   const [config, setConfig] = useState<EinkConfig | null>(null);
   const [status, setStatus] = useState<EinkStatus | null>(null);
   const [devices, setDevices] = useState<EinkDevice[]>([]);
@@ -98,7 +100,7 @@ export function EinkPage() {
         setConfig(payload.config);
         setSavedSignature(JSON.stringify(payload.config));
         setStatus(payload.status);
-        setNotice("配置已保存");
+        setNotice(t("notice.saved"));
         await loadPreview(payload.config);
       } catch (err) {
         setError((err as Error).message);
@@ -106,7 +108,7 @@ export function EinkPage() {
         setBusy(null);
       }
     },
-    [config, loadPreview]
+    [config, loadPreview, t]
   );
 
   const scan = useCallback(async () => {
@@ -116,13 +118,13 @@ export function EinkPage() {
     try {
       const found = await fetchEinkDevices();
       setDevices(found);
-      setNotice(found.length ? `发现 ${found.length} 台设备` : "没扫到墨水屏；确认它没有连在手机上，且距离在几米内");
+      setNotice(found.length ? t("device.found", { count: found.length }) : t("device.notFound"));
     } catch (err) {
       setError((err as Error).message);
     } finally {
       setBusy(null);
     }
-  }, []);
+  }, [t]);
 
   const push = useCallback(async () => {
     setBusy("push");
@@ -139,7 +141,10 @@ export function EinkPage() {
       setStatus(result.status);
       const pushed = (result as { scene?: { ditherAlgorithm?: string } }).scene;
       setNotice(
-        `已推送到墨水屏（抖动：${pushed?.ditherAlgorithm ?? config?.ditherAlgorithm ?? "?"}），用时 ${(result.durationMs / 1000).toFixed(1)} 秒`
+        t("notice.pushed", {
+          algorithm: pushed?.ditherAlgorithm ?? config?.ditherAlgorithm ?? "?",
+          seconds: (result.durationMs / 1000).toFixed(1),
+        })
       );
       setSavedSignature(JSON.stringify(config));
     } catch (err) {
@@ -147,7 +152,7 @@ export function EinkPage() {
     } finally {
       setBusy(null);
     }
-  }, []);
+  }, [config, t]);
 
   const onBackground = useCallback(
     async (file: File | null) => {
@@ -158,13 +163,13 @@ export function EinkPage() {
         const dataUrl = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(String(reader.result));
-          reader.onerror = () => reject(new Error("读取图片失败"));
+          reader.onerror = () => reject(new Error(t("notice.imageFailed")));
           reader.readAsDataURL(file);
         });
         const payload = await uploadEinkBackground(dataUrl);
         setConfig(payload.config);
         setStatus(payload.status);
-        setNotice("背景已更新");
+        setNotice(t("notice.background"));
         await loadPreview();
       } catch (err) {
         setError((err as Error).message);
@@ -172,17 +177,17 @@ export function EinkPage() {
         setBusy(null);
       }
     },
-    [loadPreview]
+    [loadPreview, t]
   );
 
   if (!config) {
     return (
       <section className="eink-page">
         <header className="eink-head">
-          <h1>E-Paper</h1>
-          <p>把舰队 token 用量投到桌上的蓝牙墨水屏。</p>
+          <h1>{t("title")}</h1>
+          <p>{t("intro")}</p>
         </header>
-        {error ? <p className="eink-note eink-note--error">{error}</p> : <p className="eink-note">加载中…</p>}
+        {error ? <p className="eink-note eink-note--error">{error}</p> : <p className="eink-note">{t("loading")}</p>}
       </section>
     );
   }
@@ -191,8 +196,8 @@ export function EinkPage() {
     <section className="eink-page">
       <header className="eink-head">
         <div>
-          <h1>E-Paper</h1>
-          <p>把舰队 token 用量投到桌上的蓝牙墨水屏。刷新一次约 20 秒，电池供电，别设太勤。</p>
+          <h1>{t("title")}</h1>
+          <p>{t("introRefresh")}</p>
         </div>
         <label className="eink-switch">
           <input
@@ -201,7 +206,7 @@ export function EinkPage() {
             onChange={(e) => void persist({ enabled: e.target.checked })}
             disabled={busy !== null}
           />
-          <span>{config.enabled ? "自动刷新已开启" : "自动刷新已关闭"}</span>
+          <span>{config.enabled ? t("autoOn") : t("autoOff")}</span>
         </label>
       </header>
 
@@ -210,14 +215,14 @@ export function EinkPage() {
 
       <div className="eink-grid">
         <div className="panel eink-card">
-          <h2>设备</h2>
+          <h2>{t("device.title")}</h2>
           <p className="eink-meta">
-            当前：{config.device.name || "未选择"}
-            {config.device.address ? ` · ${config.device.address}` : ""}
+            {t("device.current", { name: config.device.name || t("device.none") })}
+            {config.device.address ? t("device.address", { address: config.device.address }) : ""}
           </p>
           <div className="eink-actions">
             <button type="button" className="btn btn--sm" onClick={() => void scan()} disabled={busy !== null}>
-              {busy === "scan" ? "扫描中…" : "扫描附近墨水屏"}
+              {busy === "scan" ? t("device.scanning") : t("device.scan")}
             </button>
           </div>
           {devices.length ? (
@@ -238,7 +243,7 @@ export function EinkPage() {
             </ul>
           ) : null}
           <label className="field">
-            <span>备用名称（地址为空时按名字找）</span>
+            <span>{t("device.alias")}</span>
             <input
               type="text"
               value={config.device.name}
@@ -248,9 +253,9 @@ export function EinkPage() {
         </div>
 
         <div className="panel eink-card">
-          <h2>刷新节奏</h2>
+          <h2>{t("cadence.title")}</h2>
           <label className="field">
-            <span>间隔（分钟，5–1440）</span>
+            <span>{t("cadence.interval")}</span>
             <input
               type="number"
               min={5}
@@ -267,23 +272,23 @@ export function EinkPage() {
                 className={`btn btn--sm ${config.intervalMinutes === m ? "is-active" : ""}`}
                 onClick={() => setConfig({ ...config, intervalMinutes: m })}
               >
-                {m} 分钟
+                {t("cadence.minutes", { minutes: m })}
               </button>
             ))}
           </div>
           <p className="eink-meta">
-            上次成功：{fmtTime(status?.lastOkAt ?? null)}
-            {status?.lastDurationMs ? ` · 用时 ${(status.lastDurationMs / 1000).toFixed(1)} 秒` : ""}
+            {t("cadence.lastOk", { time: fmtTime(status?.lastOkAt ?? null) })}
+            {status?.lastDurationMs ? t("cadence.duration", { seconds: (status.lastDurationMs / 1000).toFixed(1) }) : ""}
           </p>
           <p className="eink-meta">
-            电量：{status?.batteryMv ? `${(status.batteryMv / 1000).toFixed(2)} V` : "—"}
-            {status?.lastError ? " · 最近错误见下" : ""}
+            {t("cadence.battery", { voltage: status?.batteryMv ? `${(status.batteryMv / 1000).toFixed(2)} V` : "—" })}
+            {status?.lastError ? t("cadence.errorBelow") : ""}
           </p>
           {status?.lastError ? <p className="eink-note eink-note--error">{status.lastError}</p> : null}
         </div>
 
         <div className="panel eink-card">
-          <h2>显示内容</h2>
+          <h2>{t("content.title")}</h2>
           <fieldset className="eink-fieldset">
             <label>
               <input
@@ -291,7 +296,7 @@ export function EinkPage() {
                 checked={config.sections.headline}
                 onChange={(e) => setConfig({ ...config, sections: { ...config.sections, headline: e.target.checked } })}
               />
-              <span>今日 token 大数字</span>
+              <span>{t("content.headline")}</span>
             </label>
             <label>
               <input
@@ -299,7 +304,7 @@ export function EinkPage() {
                 checked={config.sections.stats}
                 onChange={(e) => setConfig({ ...config, sections: { ...config.sections, stats: e.target.checked } })}
               />
-              <span>输入 / 输出 / 缓存命中</span>
+              <span>{t("content.stats")}</span>
             </label>
             <label>
               <input
@@ -307,7 +312,7 @@ export function EinkPage() {
                 checked={config.sections.rows}
                 onChange={(e) => setConfig({ ...config, sections: { ...config.sections, rows: e.target.checked } })}
               />
-              <span>每台 Spark 的用量条</span>
+              <span>{t("content.rows")}</span>
             </label>
             <label>
               <input
@@ -315,34 +320,34 @@ export function EinkPage() {
                 checked={config.sections.cost}
                 onChange={(e) => setConfig({ ...config, sections: { ...config.sections, cost: e.target.checked } })}
               />
-              <span>云价换算（元，价格在「设置 → 云价换算」统一配置）</span>
+              <span>{t("content.cost")}</span>
             </label>
           </fieldset>
           <div className="eink-row">
             <label className="field">
-              <span>副色（黄/红由面板决定）</span>
+              <span>{t("content.pigment")}</span>
               <select
                 value={config.pigment}
                 onChange={(e) => setConfig({ ...config, pigment: e.target.value === "red" ? "red" : "yellow" })}
               >
-                <option value="yellow">黄色</option>
-                <option value="red">红色</option>
+                <option value="yellow">{t("content.yellow")}</option>
+                <option value="red">{t("content.red")}</option>
               </select>
             </label>
             <label className="field">
-              <span>主题</span>
+              <span>{t("content.theme")}</span>
               <select
                 value={config.theme}
                 onChange={(e) => setConfig({ ...config, theme: e.target.value === "light" ? "light" : "dark" })}
               >
-                <option value="dark">深色</option>
-                <option value="light">浅色</option>
+                <option value="dark">{t("content.dark")}</option>
+                <option value="light">{t("content.light")}</option>
               </select>
             </label>
           </div>
           <div className="eink-sliders">
             <label className="field">
-              <span>背景缩放 {config.backgroundZoom.toFixed(2)}×</span>
+              <span>{t("content.backgroundZoom", { value: config.backgroundZoom.toFixed(2) })}</span>
               <input
                 type="range"
                 min={1}
@@ -353,7 +358,7 @@ export function EinkPage() {
               />
             </label>
             <label className="field">
-              <span>左右平移 {config.backgroundOffsetX.toFixed(2)}</span>
+              <span>{t("content.offsetX", { value: config.backgroundOffsetX.toFixed(2) })}</span>
               <input
                 type="range"
                 min={-1}
@@ -364,7 +369,7 @@ export function EinkPage() {
               />
             </label>
             <label className="field">
-              <span>上下平移 {config.backgroundOffsetY.toFixed(2)}</span>
+              <span>{t("content.offsetY", { value: config.backgroundOffsetY.toFixed(2) })}</span>
               <input
                 type="range"
                 min={-1}
@@ -375,7 +380,7 @@ export function EinkPage() {
               />
             </label>
             <label className="field">
-              <span>亮度 {config.backgroundBrightness}</span>
+              <span>{t("content.brightness", { value: config.backgroundBrightness })}</span>
               <input
                 type="range"
                 min={-100}
@@ -386,7 +391,7 @@ export function EinkPage() {
               />
             </label>
             <label className="field">
-              <span>对比度 {config.backgroundContrast}</span>
+              <span>{t("content.contrast", { value: config.backgroundContrast })}</span>
               <input
                 type="range"
                 min={-100}
@@ -397,7 +402,7 @@ export function EinkPage() {
               />
             </label>
             <label className="field">
-              <span>抖动算法</span>
+              <span>{t("content.dither")}</span>
               <select
                 value={config.ditherAlgorithm}
                 onChange={(e) => setConfig({ ...config, ditherAlgorithm: e.target.value })}
@@ -410,7 +415,7 @@ export function EinkPage() {
               </select>
             </label>
             <label className="field">
-              <span>抖动强度 {Math.round(config.ditherStrength * 100)}%</span>
+              <span>{t("content.ditherStrength", { value: Math.round(config.ditherStrength * 100) })}</span>
               <input
                 type="range"
                 min={0}
@@ -423,7 +428,7 @@ export function EinkPage() {
           </div>
           <div className="eink-row">
             <label className="field">
-              <span>标题文案</span>
+              <span>{t("content.titleText")}</span>
               <input
                 type="text"
                 maxLength={24}
@@ -432,29 +437,29 @@ export function EinkPage() {
               />
             </label>
             <label className="field">
-              <span>页脚文案（留空用默认，{"{time}"} 表示刷新时间）</span>
+              <span>{t("content.footerText")}</span>
               <input
                 type="text"
                 maxLength={48}
-                placeholder="留空 = 每 N 分钟刷新"
+                placeholder={t("content.footerPlaceholder")}
                 value={config.footer}
                 onChange={(e) => setConfig({ ...config, footer: e.target.value })}
               />
             </label>
             <label className="field">
-              <span>背景处理（文字优先）</span>
+              <span>{t("content.textProtection")}</span>
               <select
                 value={config.textProtection}
                 onChange={(e) => setConfig({ ...config, textProtection: e.target.value as EinkConfig["textProtection"] })}
               >
-                <option value="auto">智能：小字紧贴描底，大字只描一圈</option>
-                <option value="halo">全部文字描边（背景完全不动）</option>
-                <option value="plate">文字区整块留白</option>
-                <option value="off">不处理（背景可能切字）</option>
+                <option value="auto">{t("content.protectAuto")}</option>
+                <option value="halo">{t("content.protectHalo")}</option>
+                <option value="plate">{t("content.protectPlate")}</option>
+                <option value="off">{t("content.protectOff")}</option>
               </select>
             </label>
             <label className="field">
-              <span>描边粗细（1-4 像素）</span>
+              <span>{t("content.haloWidth")}</span>
               <input
                 type="number"
                 min={1}
@@ -466,7 +471,7 @@ export function EinkPage() {
           </div>
           <div className="eink-row">
             <label className="field">
-              <span>背景图</span>
+              <span>{t("content.background")}</span>
               <input
                 type="file"
                 accept="image/png,image/jpeg"
@@ -476,35 +481,35 @@ export function EinkPage() {
             </label>
             {config.background ? (
               <button type="button" className="btn btn--sm" onClick={() => void persist({ background: null })}>
-                去掉背景
+                {t("content.removeBackground")}
               </button>
             ) : null}
           </div>
           <div className="eink-actions">
             <button type="button" className="btn btn--sm btn--primary" onClick={() => void persist({})} disabled={busy !== null}>
-              {busy === "save" ? "保存中…" : "保存"}
+              {busy === "save" ? t("content.saving") : t("content.save")}
             </button>
             <button type="button" className="btn btn--sm" onClick={() => void push()} disabled={busy !== null}>
-              {busy === "push" ? "推送中…" : "立即刷新"}
+              {busy === "push" ? t("content.pushing") : t("content.push")}
             </button>
           </div>
         </div>
 
         <div className="panel eink-card eink-card--preview">
           <h2>
-            预览
+            {t("preview.title")}
             {savedSignature && config && JSON.stringify(config) !== savedSignature ? (
-              <span className="eink-badge">表单有未保存修改，屏上仍是上次推送的画面</span>
+              <span className="eink-badge">{t("preview.unsaved")}</span>
             ) : (
-              <span className="eink-badge eink-badge--ok">屏上内容与此一致</span>
+              <span className="eink-badge eink-badge--ok">{t("preview.saved")}</span>
             )}
           </h2>
           {previewUrl ? (
-            <img className="eink-preview" src={previewUrl} alt="墨水屏预览" />
+            <img className="eink-preview" src={previewUrl} alt={t("preview.alt")} />
           ) : (
-            <p className="eink-note">还没有预览。确认宿主机上的 eink-bridge 已启动。</p>
+            <p className="eink-note">{t("preview.none")}</p>
           )}
-          <p className="eink-meta">400 × 300 · 三色抖动 · 桥接：{status?.bridgeUrl ?? "—"}</p>
+          <p className="eink-meta">{t("preview.meta", { url: status?.bridgeUrl ?? "—" })}</p>
         </div>
       </div>
     </section>

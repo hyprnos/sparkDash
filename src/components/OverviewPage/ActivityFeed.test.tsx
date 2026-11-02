@@ -24,11 +24,12 @@ function ev(over: Partial<ActivityEvent>): ActivityEvent {
 describe("activity formatting", () => {
   const now = new Date(2026, 9, 6, 12, 0, 0).getTime();
   it("formats relative times", () => {
-    expect(formatRelativeTime(now - 5_000, now)).toBe("now");
-    expect(formatRelativeTime(now - 120_000, now)).toBe("2m");
-    expect(formatRelativeTime(now - 3 * 3600_000, now)).toBe("3h");
-    expect(formatRelativeTime(now - 2 * 86400_000, now)).toBe("2d");
-    expect(formatRelativeTime(new Date(2026, 9, 5, 8).getTime() - 8 * 86400_000, now)).toBe("Sep 27");
+    const opts = { locale: "en", now: "now" };
+    expect(formatRelativeTime(now - 5_000, now, opts)).toBe("now");
+    expect(formatRelativeTime(now - 120_000, now, opts)).toBe("2m");
+    expect(formatRelativeTime(now - 3 * 3600_000, now, opts)).toBe("3h");
+    expect(formatRelativeTime(now - 2 * 86400_000, now, opts)).toBe("2d");
+    expect(formatRelativeTime(new Date(2026, 9, 5, 8).getTime() - 8 * 86400_000, now, opts)).toBe("Sep 27");
   });
   it("maps severities and splits messages", () => {
     expect(severityDotClass("error")).toBe("bg-danger");

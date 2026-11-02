@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useTranslation } from "react-i18next";
 import { fetchTokenHistory, resetTokenTotals } from "../../api/client";
 import { ClearMenu, type ClearChoice } from "../ui/ClearMenu";
 import { fetchLlmTokenCost, fetchLlmTokenTotals, type LlmTokenCost } from "../../api/llmTokenClient";
@@ -33,17 +34,14 @@ import {
   type GroupBy,
   type RangeKey,
   type Summary,
+  type Translate,
 } from "./tokenStats";
 import "../../styles/tokens.css";
 
 const POLL_MS = 30_000;
 const fmt = formatTokensCompact;
 
-const GROUPS: { key: GroupBy; label: string }[] = [
-  { key: "type", label: "Type" },
-  { key: "model", label: "Model" },
-  { key: "spark", label: "Spark" },
-];
+const GROUPS: GroupBy[] = ["type", "model", "spark"];
 const TYPE_COLORS: Record<string, string> = {
   generated: "var(--color-accent)",
   cached: "var(--color-info)",
@@ -51,6 +49,55 @@ const TYPE_COLORS: Record<string, string> = {
   unknown: "var(--color-muted)",
 };
 const GROUP_COLORS = ["var(--color-accent)", "var(--color-info)", "var(--color-violet)", "var(--color-success)", "var(--color-warning)"];
+
+/** Range tab, sentence and comparison wording, one static catalog key per string. */
+interface RangeCopy {
+  label: string;
+  phrase: string;
+  prev: string;
+}
+
+function rangeCopies(t: Translate): Record<RangeKey, RangeCopy> {
+  return {
+    today: { label: t("range.today.label"), phrase: t("range.today.phrase"), prev: t("range.today.prev") },
+    week: { label: t("range.week.label"), phrase: t("range.week.phrase"), prev: t("range.week.prev") },
+    month: { label: t("range.month.label"), phrase: t("range.month.phrase"), prev: t("range.month.prev") },
+    "24h": { label: t("range.24h.label"), phrase: t("range.24h.phrase"), prev: t("range.24h.prev") },
+    "7d": { label: t("range.7d.label"), phrase: t("range.7d.phrase"), prev: t("range.7d.prev") },
+    "14d": { label: t("range.14d.label"), phrase: t("range.14d.phrase"), prev: t("range.14d.prev") },
+    "30d": { label: t("range.30d.label"), phrase: t("range.30d.phrase"), prev: t("range.30d.prev") },
+    all: { label: t("range.all.label"), phrase: t("range.all.phrase"), prev: t("range.all.prev") },
+  };
+}
+
+function groupLabel(t: Translate, key: GroupBy): string {
+  switch (key) {
+    case "type":
+      return t("chart.groupType");
+    case "model":
+      return t("chart.groupModel");
+    default:
+      return t("chart.groupSpark");
+  }
+}
+
+/** Chart series names; model and Spark series keep their own (data) names. */
+function seriesLabel(t: Translate, id: string): string | null {
+  switch (id) {
+    case "generated":
+      return t("chart.seriesGenerated");
+    case "cached":
+      return t("chart.seriesCached");
+    case "computed":
+      return t("chart.seriesComputed");
+    case "unknown":
+      return t("chart.seriesUnknown");
+    case OTHER_ID:
+      return t("chart.seriesOther");
+    default:
+      return null;
+  }
+}
 
 interface Loaded {
   history: TokenHistory;
@@ -60,6 +107,8 @@ interface Loaded {
 }
 
 export function TokensPage({ sparks, onSelectSpark }: { sparks: SparkSnapshot[]; onSelectSpark?: (id: string) => void }) {
+  const { t: translate } = useTranslation("tokens");
+  const t = translate as unknown as Translate;
   const [range, setRange] = useState<RangeKey>("today");
   const [groupBy, setGroupBy] = useState<GroupBy>("type");
   const [data, setData] = useState<Loaded | null>(null);
@@ -77,7 +126,7 @@ export function TokensPage({ sparks, onSelectSpark }: { sparks: SparkSnapshot[];
           setError(null);
         })
         .catch((e: unknown) => {
-          if (!cancelled) setError(e instanceof Error ? e.message : "Could not load token history");
+          if (!cancelled) setError(e instanceof Error ? e.message : t("loadFailedShort"));
         });
     };
     run();
@@ -93,21 +142,21 @@ export function TokensPage({ sparks, onSelectSpark }: { sparks: SparkSnapshot[];
       clearInterval(id);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [tick]);
+  }, [tick, t]);
 
   useEffect(() => {
     if (!copyMsg) return;
-    const t = setTimeout(() => setCopyMsg(null), 4000);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setCopyMsg(null), 4000);
+    return () => clearTimeout(timer);
   }, [copyMsg]);
 
   const sparkNames = useMemo(() => new Map(sparks.map((s) => [s.id, s.name])), [sparks]);
   const tokenResetChoices = useMemo<ClearChoice<string | undefined>[]>(
     () => [
-      { id: "all", label: "All Sparks", ask: "Reset the token totals of every Spark?", arg: undefined },
-      ...sparks.map((s) => ({ id: s.id, label: s.name, ask: `Reset the token totals of ${s.name}?`, arg: s.id })),
+      { id: "all", label: t("resetAll"), ask: t("resetAskAll"), arg: undefined },
+      ...sparks.map((s) => ({ id: s.id, label: s.name, ask: t("resetAskSpark", { name: s.name }), arg: s.id })),
     ],
-    [sparks]
+    [sparks, t]
   );
   const sparkName = useCallback((id: string) => sparkNames.get(id) || id, [sparkNames]);
   const knownSpark = useCallback((id: string) => sparkNames.has(id), [sparkNames]);
@@ -141,23 +190,29 @@ export function TokensPage({ sparks, onSelectSpark }: { sparks: SparkSnapshot[];
     [view, groupBy, sparkName]
   );
 
-  const insights = useMemo(
-    () =>
-      view
-        ? buildInsights({
-            spec: view.w.spec,
-            summary: view.summary,
-            comparison: view.comparison,
-            models: view.models,
-            endpoints: view.endpoints,
-            totals: view.totals,
-            firstKey: view.w.firstKey,
-            sparkName,
-            localDays: view.w.localDays,
-          })
-        : [],
-    [view, sparkName]
-  );
+  const insights = useMemo(() => {
+    if (!view) return [];
+    const copy = rangeCopies(t)[view.w.spec.key];
+    return buildInsights(
+      {
+        spec: view.w.spec,
+        summary: view.summary,
+        comparison: view.comparison,
+        models: view.models,
+        endpoints: view.endpoints,
+        totals: view.totals,
+        firstKey: view.w.firstKey,
+        sparkName,
+        localDays: view.w.localDays,
+        unit: view.unit === "hour" ? t("units.hour") : t("units.day"),
+        unitPlural: view.unit === "hour" ? t("units.hours") : t("units.days"),
+        period: copy.phrase,
+        prevPeriod: copy.prev,
+        locale: document.documentElement.lang || undefined,
+      },
+      t
+    );
+  }, [view, sparkName, t]);
 
   const copyCsv = async () => {
     if (!view) return;
@@ -166,7 +221,7 @@ export function TokensPage({ sparks, onSelectSpark }: { sparks: SparkSnapshot[];
     try {
       if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(text);
       else throw new Error("no clipboard");
-      setCopyMsg({ ok: true, text: `Copied ${n} row${n === 1 ? "" : "s"} as CSV` });
+      setCopyMsg({ ok: true, text: t("copied", { rows: n }) });
     } catch {
       // Insecure origins block the async clipboard API; fall back to a hidden textarea.
       try {
@@ -177,59 +232,58 @@ export function TokensPage({ sparks, onSelectSpark }: { sparks: SparkSnapshot[];
         ta.select();
         const ok = document.execCommand("copy");
         ta.remove();
-        setCopyMsg(ok ? { ok: true, text: `Copied ${n} row${n === 1 ? "" : "s"} as CSV` } : { ok: false, text: "Copy failed: the browser blocked clipboard access" });
+        setCopyMsg(ok ? { ok: true, text: t("copied", { rows: n }) } : { ok: false, text: t("copyFailed") });
       } catch {
-        setCopyMsg({ ok: false, text: "Copy failed: the browser blocked clipboard access" });
+        setCopyMsg({ ok: false, text: t("copyFailed") });
       }
     }
   };
 
   const spec = RANGES.find((r) => r.key === range) ?? RANGES.find((r) => r.key === "7d")!;
-  const unitWord = spec.unit === "hour" ? "hour" : "day";
+  const copy = rangeCopies(t)[spec.key];
+  const unit = spec.unit === "hour" ? { one: t("units.hour"), per: t("units.perHour") } : { one: t("units.day"), per: t("units.perDay") };
+  const rangeOpts = { locale: document.documentElement.lang || undefined, utc: t("chart.utc"), local: t("chart.local") };
 
   const series: BarSeries[] = (grouped?.series ?? []).map((s, i) => ({
     id: s.id,
-    label: s.label,
+    label: seriesLabel(t, s.id) ?? s.label,
     color: groupBy === "type" ? TYPE_COLORS[s.id] : s.id === OTHER_ID ? "var(--color-faint)" : GROUP_COLORS[i % GROUP_COLORS.length],
   }));
   const buckets: BarBucket[] = (grouped?.buckets ?? []).map((b) => ({
     key: b.key,
-    label: bucketLabel(b.key, spec.unit),
-    title: bucketTitle(b.key, spec.unit, undefined, spec.localDays),
+    label: bucketLabel(b.key, spec.unit, undefined, rangeOpts),
+    title: bucketTitle(b.key, spec.unit, undefined, spec.localDays, rangeOpts),
     values: b.values,
   }));
-  const chartEmpty =
-    range === "24h"
-      ? "No hourly traffic recorded yet. Hourly history only builds up while sparkDash is running, starting from the update that added it."
-      : "No token traffic recorded in this range yet. History builds up while sparkDash is running.";
+  const chartEmpty = range === "24h" ? t("chart.empty24h") : t("chart.emptyRange");
 
   return (
     <div className="tk">
       <header className="page-head">
         <div>
-          <h1>Token totals</h1>
-          <p className="page-head__sub">What your Sparks generated and read, by type, model and endpoint, built from the counters sparkDash polls from each inference engine.</p>
+          <h1>{t("title")}</h1>
+          <p className="page-head__sub">{t("subtitle")}</p>
         </div>
         <div className="page-head__tools">
-          <div className="seg" role="group" aria-label="Time range">
+          <div className="seg" role="group" aria-label={t("rangeGroup")}>
             {RANGES.map((r) => (
               <button key={r.key} type="button" className={r.key === range ? "is-on" : undefined} aria-pressed={r.key === range} onClick={() => setRange(r.key)}>
-                {r.label}
+                {rangeCopies(t)[r.key].label}
               </button>
             ))}
           </div>
           <ClearMenu
-            label="Reset…"
+            label={t("reset")}
             choices={tokenResetChoices}
-            note="Counting restarts from zero; the engines themselves are not touched. This can't be undone."
+            note={t("resetNote")}
             onRun={async (id) => {
               const { removed } = await resetTokenTotals(id);
-              setTick((t) => t + 1);
+              setTick((value) => value + 1);
               return removed;
             }}
           />
           <button type="button" className="btn btn--sm" onClick={copyCsv} disabled={!view || view.inRange.length === 0}>
-            Copy CSV
+            {t("copyCsv")}
           </button>
           <span className={`tk-copymsg${copyMsg && !copyMsg.ok ? " is-err" : ""}`} role="status" aria-live="polite">
             {copyMsg?.text}
@@ -239,22 +293,22 @@ export function TokensPage({ sparks, onSelectSpark }: { sparks: SparkSnapshot[];
 
       {!data && !error ? (
         <div className="panel tk-note" role="status">
-          Loading token history…
+          {t("loading")}
         </div>
       ) : null}
 
       {error ? (
         <div className="panel tk-note tk-note--err" role="alert">
-          <span>{data ? `Showing the last loaded data. Refresh failed: ${error}` : `Could not load token history: ${error}`}</span>
-          <button type="button" className="btn btn--sm" onClick={() => setTick((t) => t + 1)}>
-            Retry
+          <span>{data ? t("refreshFailed", { message: error }) : t("loadFailed", { message: error })}</span>
+          <button type="button" className="btn btn--sm" onClick={() => setTick((value) => value + 1)}>
+            {t("retry")}
           </button>
         </div>
       ) : null}
 
       {view ? (
         <>
-          {view.summary.total > 0 ? <Tiles s={view.summary} cmp={view.comparison} spec={spec} /> : null}
+          {view.summary.total > 0 ? <Tiles s={view.summary} cmp={view.comparison} spec={spec} t={t} /> : null}
           <CostCard range={range} />
 
           <div className="tk-grid">
@@ -262,18 +316,18 @@ export function TokensPage({ sparks, onSelectSpark }: { sparks: SparkSnapshot[];
               <div className="tk-card__head">
                 <div>
                   <h2 id="tk-chart-title" className="tk-card__title">
-                    Tokens per {unitWord}
+                    {t("chart.title", { unit: unit.one })}
                   </h2>
                   <p className="tk-card__sub">
-                    {spec.unit === "hour" ? "Local-time hours, oldest to newest" : range === "all" ? "UTC days, as far back as history is kept" : spec.localDays ? "Local calendar days, oldest to newest" : "UTC days, oldest to newest"}
+                    {spec.unit === "hour" ? t("chart.subHourly") : range === "all" ? t("chart.subAllTime") : spec.localDays ? t("chart.subLocalDays") : t("chart.subUtcDays")}
                   </p>
                 </div>
                 <div className="tk-card__tools">
-                  <span className="eyebrow">Group by</span>
-                  <div className="seg" role="group" aria-label="Group chart by">
+                  <span className="eyebrow">{t("chart.groupBy")}</span>
+                  <div className="seg" role="group" aria-label={t("chart.groupAria")}>
                     {GROUPS.map((g) => (
-                      <button key={g.key} type="button" className={g.key === groupBy ? "is-on" : undefined} aria-pressed={g.key === groupBy} onClick={() => setGroupBy(g.key)}>
-                        {g.label}
+                      <button key={g} type="button" className={g === groupBy ? "is-on" : undefined} aria-pressed={g === groupBy} onClick={() => setGroupBy(g)}>
+                        {groupLabel(t, g)}
                       </button>
                     ))}
                   </div>
@@ -286,7 +340,7 @@ export function TokensPage({ sparks, onSelectSpark }: { sparks: SparkSnapshot[];
                 format={fmt}
                 unit="tokens"
                 empty={chartEmpty}
-                ariaLabel={`Stacked bar chart of tokens per ${unitWord} for ${spec.phrase}, grouped by ${groupBy}`}
+                ariaLabel={t("chart.ariaLabel", { unit: unit.one, period: copy.phrase, group: groupLabel(t, groupBy) })}
               />
               <ul className="legend tk-legend">
                 {series.map((s, i) => (
@@ -300,16 +354,16 @@ export function TokensPage({ sparks, onSelectSpark }: { sparks: SparkSnapshot[];
 
             <section className="panel tk-card" aria-labelledby="tk-insights-title">
               <h2 id="tk-insights-title" className="tk-card__title">
-                Insights
+                {t("insights.title")}
               </h2>
               {insights.length > 0 ? (
                 <ul className="tk-insights">
-                  {insights.map((t) => (
-                    <li key={t}>{t}</li>
+                  {insights.map((line) => (
+                    <li key={line}>{line}</li>
                   ))}
                 </ul>
               ) : (
-                <p className="tk-card__sub">Insights appear once there is traffic for {spec.phrase}.</p>
+                <p className="tk-card__sub">{t("insights.empty", { period: copy.phrase })}</p>
               )}
             </section>
           </div>
@@ -320,11 +374,9 @@ export function TokensPage({ sparks, onSelectSpark }: { sparks: SparkSnapshot[];
                 <div className="tk-card__head">
                   <div>
                     <h2 id="tk-models-title" className="tk-card__title">
-                      By model
+                      {t("insights.byModel")}
                     </h2>
-                    <p className="tk-card__sub">
-                      {view.models.length} model{view.models.length === 1 ? "" : "s"} for {spec.phrase}. Click a column to sort.
-                    </p>
+                    <p className="tk-card__sub">{t("insights.byModelSub", { count: view.models.length, period: copy.phrase })}</p>
                   </div>
                 </div>
                 <ModelTable rows={view.models} sparkName={sparkName} nowMs={view.at} />
@@ -334,9 +386,9 @@ export function TokensPage({ sparks, onSelectSpark }: { sparks: SparkSnapshot[];
                 <div className="tk-card__head">
                   <div>
                     <h2 id="tk-eps-title" className="tk-card__title">
-                      By Spark and endpoint
+                      {t("insights.byEndpoint")}
                     </h2>
-                    <p className="tk-card__sub">One row per Spark and inference port. Select a Spark to open it.</p>
+                    <p className="tk-card__sub">{t("insights.byEndpointSub")}</p>
                   </div>
                 </div>
                 <EndpointTable rows={view.endpoints} sparkName={sparkName} knownSpark={knownSpark} onSelectSpark={onSelectSpark} />
@@ -344,44 +396,28 @@ export function TokensPage({ sparks, onSelectSpark }: { sparks: SparkSnapshot[];
             </>
           ) : (
             <section className="panel tk-note" role="status">
-              <b>No token traffic for {spec.phrase}.</b>
+              <b>{t("insights.noTrafficTitle", { period: copy.phrase })}</b>
               <span>
-                {view.hasRetainedHistory
-                  ? " Try a longer range."
-                  : " sparkDash records token counters while it runs, so history builds up over time. Send a request to a local LLM endpoint and check back in a minute or two."}
+                {" "}
+                {view.hasRetainedHistory ? t("insights.tryLonger") : t("insights.historyHint")}
               </span>
             </section>
           )}
 
           <section className="panel tk-card tk-about" aria-labelledby="tk-about-title">
             <h2 id="tk-about-title" className="tk-card__title">
-              About this data
+              {t("about.title")}
             </h2>
             <ul>
               <li>
-                Rolling ranges use <b>UTC days</b>; hourly buckets are UTC hours shown in the time zone from Settings (browser default). <b>Today</b>, <b>This week</b> and <b>This month</b> are
-                absolute calendar windows in that time zone (weeks start Monday), built by folding hourly buckets into local days; days older than retained
-                hourly history fall back to UTC daily buckets.
-                {data?.history.firstDay ? (
-                  <>
-                    {" "}
-                    Tracking began on <b>{data.history.firstDay}</b> (UTC).
-                  </>
-                ) : null}
+                {t("about.zones")}
+                {data?.history.firstDay ? <>{" "}{t("about.trackingBegan", { date: data.history.firstDay })}</> : null}
               </li>
-              <li>Counters that go backwards (an engine restart) are re-seeded from the new value, so a restart never inflates totals. Tokens served right before a restart can be missed.</li>
-              <li>
-                Hourly history is kept for {data?.history.retention.hours ?? 840} hours and daily history for {data?.history.retention.days ?? 35} days. The hourly view only has data from when
-                it was first recorded.
-              </li>
-              <li>
-                <b>All time</b> is the lifetime total since tracking began{data?.lifetime ? "" : " (unavailable right now, so the retained days are summed instead)"}; its chart shows the retained daily
-                buckets.
-              </li>
-              <li>
-                Generated = tokens the model wrote. Prompt = tokens it read. Cached prefill is the part of the prompt served from the prefix cache; computed prefill is the observed uncached part. Missing cache counters remain unknown. Cache hit rate uses only input tokens with an observed cache split; partial coverage is shown explicitly. Local SGLang log counts measure scheduled prefill work, including retries, rather than completed-request billing.
-              </li>
-              {view.w.prevKeys.length === 0 && spec.key !== "all" ? <li>No change-vs-previous figures are shown because {spec.prevPhrase ?? `the previous ${spec.phrase.replace("the last ", "")}`} was not fully tracked.</li> : null}
+              <li>{t("about.restarts")}</li>
+              <li>{t("about.retention", { hours: data?.history.retention.hours ?? 840, days: data?.history.retention.days ?? 35 })}</li>
+              <li>{data?.lifetime ? t("about.allTime") : t("about.allTimeUnavailable")}</li>
+              <li>{t("about.vocabulary")}</li>
+              {view.w.prevKeys.length === 0 && spec.key !== "all" ? <li>{t("about.noComparison", { period: copy.prev })}</li> : null}
             </ul>
           </section>
         </>
@@ -391,11 +427,12 @@ export function TokensPage({ sparks, onSelectSpark }: { sparks: SparkSnapshot[];
 }
 
 function Delta({ value, suffix }: { value: number | null | undefined; suffix: string }) {
+  const { t } = useTranslation("tokens");
   if (value == null || !Number.isFinite(value)) return null;
   const flat = Math.abs(value) < 0.005;
   return (
     <span className={`tk-delta ${flat ? "" : value > 0 ? "is-up" : "is-down"}`}>
-      <span aria-hidden="true">{flat ? "→" : value > 0 ? "▲" : "▼"}</span> {flat ? "flat" : fmtPct(Math.abs(value))} {suffix}
+      <span aria-hidden="true">{flat ? "→" : value > 0 ? "▲" : "▼"}</span> {flat ? t("tiles.flat") : fmtPct(Math.abs(value))} {suffix}
     </span>
   );
 }
@@ -414,56 +451,83 @@ function Tile({ label, value, unit, sub, delta, title }: { label: string; value:
   );
 }
 
-function Tiles({ s, cmp, spec }: { s: Summary; cmp: Comparison | null; spec: (typeof RANGES)[number] }) {
-  const per = spec.unit === "hour" ? "hour" : "day";
-  const prevWord = spec.prevPhrase ? spec.prevPhrase.replace(/^the /, "") : `prev. ${spec.phrase.replace("the last ", "")}`;
+function Tiles({ s, cmp, spec, t }: { s: Summary; cmp: Comparison | null; spec: (typeof RANGES)[number]; t: Translate }) {
+  const copy = rangeCopies(t)[spec.key];
+  const unit = spec.unit === "hour" ? { one: t("units.hour"), many: t("units.hours"), per: t("units.perHour") } : { one: t("units.day"), many: t("units.days"), per: t("units.perDay") };
+  const prevWord = copy.prev;
   const ratio = s.genPerPrompt != null && s.generated > 0 ? s.prompt / s.generated : null;
   return (
-    <section className="tk-tiles" aria-label={`Summary for ${spec.phrase}`}>
-      <Tile label="Total tokens" value={fmt(s.total)} sub="Generated plus prompt" title={s.total.toLocaleString()} delta={<Delta value={cmp?.total} suffix={`vs ${prevWord}`} />} />
+    <section className="tk-tiles" aria-label={t("tiles.summaryAria", { period: copy.phrase })}>
+      <Tile label={t("tiles.total")} value={fmt(s.total)} sub={t("tiles.totalSub")} title={s.total.toLocaleString()} delta={<Delta value={cmp?.total} suffix={t("tiles.vsPeriod", { period: prevWord })} />} />
       <Tile
-        label="Generated"
+        label={t("tiles.generated")}
         value={fmt(s.generated)}
-        sub={s.total > 0 ? `${fmtPct(s.generated / s.total)} of all tokens` : undefined}
+        sub={s.total > 0 ? t("tiles.shareOfAll", { percent: fmtPct(s.generated / s.total) }) : undefined}
         title={s.generated.toLocaleString()}
-        delta={<Delta value={cmp?.generated} suffix={`vs ${prevWord}`} />}
+        delta={<Delta value={cmp?.generated} suffix={t("tiles.vsPeriod", { period: prevWord })} />}
       />
       <Tile
-        label="Prompt (input)"
+        label={t("tiles.prompt")}
         value={fmt(s.prompt)}
-        sub={s.prompt > 0 ? `${fmt(s.cached)} cached; ${fmt(Math.max(0, s.prompt - (s.cacheObservedPrompt ?? s.prompt)))} without cache stats` : "No prompt data reported"}
+        sub={
+          s.prompt > 0
+            ? t("tiles.promptSub", {
+                cached: fmt(s.cached),
+                uncached: fmt(Math.max(0, s.prompt - (s.cacheObservedPrompt ?? s.prompt))),
+              })
+            : t("tiles.promptNone")
+        }
         title={s.prompt.toLocaleString()}
-        delta={<Delta value={cmp?.prompt} suffix={`vs ${prevWord}`} />}
+        delta={<Delta value={cmp?.prompt} suffix={t("tiles.vsPeriod", { period: prevWord })} />}
       />
       <Tile
-        label="Cache hit rate"
-value={s.cacheRate == null ? "—" : fmtPct(s.cacheRate, 1)}
+        label={t("tiles.cacheRate")}
+        value={s.cacheRate == null ? "—" : fmtPct(s.cacheRate, 1)}
         sub={
           s.prompt <= 0
-            ? "Needs prompt data"
+            ? t("tiles.cacheNeedsPrompt")
             : s.cacheReported === false
-              ? "This engine does not report prefix-cache hits"
+              ? t("tiles.cacheNoCounter")
               : s.cached > 0
-                ? `${fmt(s.cached)} of ${fmt(s.cacheObservedPrompt ?? s.prompt)} observed input tokens served from cache${(s.cacheObservedPrompt ?? s.prompt) < s.prompt ? " · Partial coverage" : ""}`
-                : "No cache hits were recorded"
+                ? `${t("tiles.cacheServed", { cached: fmt(s.cached), observed: fmt(s.cacheObservedPrompt ?? s.prompt) })}${
+                    (s.cacheObservedPrompt ?? s.prompt) < s.prompt ? ` · ${t("tiles.cachePartial")}` : ""
+                  }`
+                : t("tiles.cacheNone")
         }
-        delta={cmp?.cachePoints != null ? <span className={`tk-delta ${Math.abs(cmp.cachePoints) < 0.5 ? "" : cmp.cachePoints > 0 ? "is-up" : "is-down"}`}>{cmp.cachePoints >= 0 ? "+" : "−"}{Math.abs(cmp.cachePoints).toFixed(1)} pts vs {prevWord}</span> : null}
+        delta={
+          cmp?.cachePoints != null ? (
+            <span className={`tk-delta ${Math.abs(cmp.cachePoints) < 0.5 ? "" : cmp.cachePoints > 0 ? "is-up" : "is-down"}`}>
+              {t("tiles.cachePoints", {
+                points: `${cmp.cachePoints >= 0 ? "+" : "−"}${Math.abs(cmp.cachePoints).toFixed(1)}`,
+                period: prevWord,
+              })}
+            </span>
+          ) : null
+        }
       />
       <Tile
-        label="Output : input"
+        label={t("tiles.ratio")}
         value={ratio == null ? "—" : `1 : ${ratio >= 10 ? Math.round(ratio) : ratio.toFixed(1)}`}
-        sub={ratio == null ? "Needs generated and prompt tokens" : `${ratio >= 10 ? Math.round(ratio) : ratio.toFixed(1)} prompt tokens read per token generated`}
+        sub={ratio == null ? t("tiles.ratioNeeds") : t("tiles.ratioSub", { perPrompts: ratio >= 10 ? Math.round(ratio) : ratio.toFixed(1) })}
       />
       <Tile
-        label={`Average per ${per}`}
+        label={t("tiles.average", { unit: unit.one })}
         value={fmt(Math.round(s.avgPerBucket))}
-        unit={`/ ${per}`}
-        sub={`Over ${s.elapsed} ${per}${s.elapsed === 1 ? "" : "s"} tracked`}
+        unit={unit.per}
+        sub={t("tiles.averageSub", { count: s.elapsed, unit: s.elapsed === 1 ? unit.one : unit.many })}
       />
       <Tile
-        label={`Busiest ${per}`}
+        label={t("tiles.busiest", { unit: unit.one })}
         value={s.busiest ? fmt(s.busiest.total) : "—"}
-        sub={s.busiest ? bucketTitle(s.busiest.key, spec.unit, undefined, spec.localDays).replace(/ \((UTC|local)\)$/, "") : "No traffic yet"}
+        sub={
+          s.busiest
+            ? bucketTitle(s.busiest.key, spec.unit, undefined, spec.localDays, {
+                locale: document.documentElement.lang || undefined,
+                utc: t("chart.utc"),
+                local: t("chart.local"),
+              }).replace(/ \((?:[^()]*)\)$/, "")
+            : t("tiles.busiestNone")
+        }
         title={s.busiest ? s.busiest.total.toLocaleString() : undefined}
       />
     </section>
@@ -472,6 +536,8 @@ value={s.cacheRate == null ? "—" : fmtPct(s.cacheRate, 1)}
 
 /** Cloud-price estimate for the selected range, using the e-paper pricing settings. */
 function CostCard({ range }: { range: RangeKey }) {
+  const { t: translate } = useTranslation("tokens");
+  const t = translate as unknown as Translate;
   const [cost, setCost] = useState<LlmTokenCost | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -495,7 +561,7 @@ function CostCard({ range }: { range: RangeKey }) {
   if (error) {
     return (
       <section className="panel tk-card tk-cost">
-        <h2>Cloud price</h2>
+        <h2>{t("cost.title")}</h2>
         <p className="tk-cost__note">{error}</p>
       </section>
     );
@@ -504,18 +570,18 @@ function CostCard({ range }: { range: RangeKey }) {
 
   return (
     <section className="panel tk-card tk-cost">
-      <h2>Cloud price</h2>
+      <h2>{t("cost.title")}</h2>
       <p className="tk-cost__value">
         {cost.formatted}
         <span className="tk-cost__range"> · {cost.label}</span>
       </p>
       <p className="tk-cost__note">
-        {cost.tariff === "peak" ? "高峰时段价" : "空闲时段价"}（¥{cost.rates.cacheHit}/¥
-        {cost.rates.cacheMiss}/¥{cost.rates.output} 每百万 tokens，缓存命中/未命中/输出）·
-        墨水屏上的「云价」用同一份价格，只显示不配置
+        {cost.tariff === "peak" ? t("cost.peak") : t("cost.offPeak")} ·{" "}
+        {t("cost.rates", { hit: cost.rates.cacheHit, miss: cost.rates.cacheMiss, output: cost.rates.output })} ·{" "}
+        {t("cost.einkNote")}
       </p>
       <details className="tk-cost__settings">
-        <summary>调整价格 / 从官网同步</summary>
+        <summary>{t("cost.details")}</summary>
         <CloudPriceSetting />
       </details>
     </section>
