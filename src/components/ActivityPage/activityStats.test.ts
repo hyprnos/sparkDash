@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { setConfiguredTimeZone } from "../../shared/timeZone";
 import type { ActivityEvent } from "../../api/types";
 import {
-  EMPTY_FILTER, NO_SPARK, categorize, countByCategory, countBySeverity, countBySpark, dayLabel, eventsPerDay,
+  CATEGORIES, EMPTY_FILTER, NO_SPARK, categorize, categoryLabel, countByCategory, countBySeverity, countBySpark, dayLabel, eventsPerDay,
   exportText, filterEvents, formatClock, formatStamp, groupByDay, isFilterActive, localDayKey, mergeEvents,
   sparkOptions, summarize, typeLabel,
 } from "./activityStats";
@@ -256,5 +256,17 @@ describe("exportText", () => {
       "2026-10-07 10:00:00 [Success] Decode bench - done",
     ]);
     expect(exportText([], NY)).toBe("");
+  });
+});
+
+describe("category copy", () => {
+  it("names every category from the activity catalog in every locale", async () => {
+    const { i18n, LOCALES } = await import("../../i18n");
+    for (const locale of LOCALES) {
+      const t = i18n.getFixedT(locale, "activity") as unknown as (key: string) => string;
+      for (const { id } of CATEGORIES) expect(categoryLabel(id, t)).not.toBe(`categories.${id}`);
+    }
+    const de = i18n.getFixedT("de", "activity") as unknown as (key: string) => string;
+    expect(categoryLabel("thermal", de)).toBe("Temperatur");
   });
 });

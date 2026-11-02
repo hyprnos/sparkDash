@@ -1,6 +1,6 @@
 import type { ToolEvalArgSpec, ToolEvalRun, ToolEvalSpec } from "../../../api/types";
 import type { Translate } from "./format";
-import { presetsFor, type Preset } from "./presets";
+import { englishBenchT, presetsFor, type Preset } from "./presets";
 
 /**
  * Form state for the Tool Eval pages and its mapping to the API payload.
@@ -18,21 +18,21 @@ export interface FormState {
   suites: string[];
 }
 
-/** English suite labels; `suites` reads the catalog. The suite ids are the tool's own names. */
+/**
+ * The accuracy suites: the tool's own ids and their product names. The names are
+ * the same in every language; the picker's descriptions come from the `bench`
+ * catalog (`te.suites.*`) through `suites`.
+ */
 export const SUITES = [
-  { id: "gsm8k", label: "GSM8K", help: "Grade-school math" },
-  { id: "mmlu", label: "MMLU", help: "Multitask knowledge" },
-  { id: "ifeval", label: "IFEval", help: "Instruction following" },
+  { id: "gsm8k", name: "GSM8K" },
+  { id: "mmlu", name: "MMLU" },
+  { id: "ifeval", name: "IFEval" },
 ] as const;
 
 /** Suite picker copy from the `bench` catalog; English when no translator is passed. */
 export function suites(t?: Translate): { id: string; label: string; help: string }[] {
-  if (!t) return SUITES.map((s) => ({ ...s }));
-  return [
-    { id: "gsm8k", label: "GSM8K", help: t("te.suites.gsm8k") },
-    { id: "mmlu", label: "MMLU", help: t("te.suites.mmlu") },
-    { id: "ifeval", label: "IFEval", help: t("te.suites.ifeval") },
-  ];
+  const tr = t ?? englishBenchT();
+  return SUITES.map((s) => ({ id: s.id, label: s.name, help: tr(`te.suites.${s.id}`) }));
 }
 
 /** A group on a page; `only` limits it to named fields (a field from another group can join a page this way). */

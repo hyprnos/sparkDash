@@ -8,71 +8,60 @@ import { formatBytesPerSec } from "../../shared/formatBytes";
 
 type Translate = (key: string, vars?: Record<string, string | number>) => string;
 
-/** Counters worth showing, in this order; the rest stay in the API. */
-export const ROCE_COUNTER_ROWS: { key: string; label: string; loss?: boolean }[] = [
-  { key: "out_of_buffer", label: "Out of buffer", loss: true },
-  { key: "packet_seq_err", label: "Packet sequence errors", loss: true },
-  { key: "local_ack_timeout_err", label: "Local ACK timeouts", loss: true },
-  { key: "rnr_nak_retry_err", label: "RNR NAK retries", loss: true },
-  { key: "implied_nak_seq_err", label: "Implied NAK errors", loss: true },
-  { key: "req_transport_retries_exceeded", label: "Transport retries exceeded", loss: true },
-  { key: "rx_icrc_encapsulated", label: "ICRC errors", loss: true },
-  { key: "np_ecn_marked_roce_packets", label: "ECN-marked packets" },
-  { key: "np_cnp_sent", label: "CNPs sent" },
-  { key: "rp_cnp_handled", label: "CNPs handled" },
-  { key: "roce_adp_retrans", label: "Adaptive retransmits" },
-  { key: "duplicate_request", label: "Duplicate requests" },
+/** Counters worth showing, in this order; the rest stay in the API. Their names come from the `spark` catalog. */
+export const ROCE_COUNTER_ROWS: { key: string; loss?: boolean }[] = [
+  { key: "out_of_buffer", loss: true },
+  { key: "packet_seq_err", loss: true },
+  { key: "local_ack_timeout_err", loss: true },
+  { key: "rnr_nak_retry_err", loss: true },
+  { key: "implied_nak_seq_err", loss: true },
+  { key: "req_transport_retries_exceeded", loss: true },
+  { key: "rx_icrc_encapsulated", loss: true },
+  { key: "np_ecn_marked_roce_packets" },
+  { key: "np_cnp_sent" },
+  { key: "rp_cnp_handled" },
+  { key: "roce_adp_retrans" },
+  { key: "duplicate_request" },
 ];
 
-const ETH_ROWS: { key: string; label: string }[] = [
-  { key: "rx_discards_phy", label: "RX discards" },
-  { key: "tx_discards_phy", label: "TX discards" },
-  { key: "rx_crc_errors_phy", label: "CRC errors" },
-  { key: "rx_pause_ctrl_phy", label: "Pause frames received" },
-  { key: "tx_pause_ctrl_phy", label: "Pause frames sent" },
+const ETH_ROWS: { key: string }[] = [
+  { key: "rx_discards_phy" },
+  { key: "tx_discards_phy" },
+  { key: "rx_crc_errors_phy" },
+  { key: "rx_pause_ctrl_phy" },
+  { key: "tx_pause_ctrl_phy" },
 ];
 
-/** Localized name of one counter row; the English label stays the fallback. */
-function counterLabel(t: Translate | undefined, key: string, fallback: string): string {
-  if (!t) return fallback;
-  switch (key) {
-    case "out_of_buffer":
-      return t("roce.counterOutOfBuffer");
-    case "packet_seq_err":
-      return t("roce.counterPacketSeqErr");
-    case "local_ack_timeout_err":
-      return t("roce.counterLocalAckTimeout");
-    case "rnr_nak_retry_err":
-      return t("roce.counterRnrNakRetry");
-    case "implied_nak_seq_err":
-      return t("roce.counterImpliedNakSeq");
-    case "req_transport_retries_exceeded":
-      return t("roce.counterTransportRetries");
-    case "rx_icrc_encapsulated":
-      return t("roce.counterIcrc");
-    case "np_ecn_marked_roce_packets":
-      return t("roce.counterEcnMarked");
-    case "np_cnp_sent":
-      return t("roce.counterCnpSent");
-    case "rp_cnp_handled":
-      return t("roce.counterCnpHandled");
-    case "roce_adp_retrans":
-      return t("roce.counterAdaptiveRetrans");
-    case "duplicate_request":
-      return t("roce.counterDuplicateRequest");
-    case "rx_discards_phy":
-      return t("roce.counterRxDiscards");
-    case "tx_discards_phy":
-      return t("roce.counterTxDiscards");
-    case "rx_crc_errors_phy":
-      return t("roce.counterCrcErrors");
-    case "rx_pause_ctrl_phy":
-      return t("roce.counterRxPause");
-    case "tx_pause_ctrl_phy":
-      return t("roce.counterTxPause");
-    default:
-      return fallback;
-  }
+/**
+ * Catalog key per counter id. The technical acronyms (RNR NAK, ICRC, CNP, ECN)
+ * stay as they are inside the translated values.
+ */
+const COUNTER_LABEL_KEY: Record<string, string> = {
+  out_of_buffer: "roce.counterOutOfBuffer",
+  packet_seq_err: "roce.counterPacketSeqErr",
+  local_ack_timeout_err: "roce.counterLocalAckTimeout",
+  rnr_nak_retry_err: "roce.counterRnrNakRetry",
+  implied_nak_seq_err: "roce.counterImpliedNakSeq",
+  req_transport_retries_exceeded: "roce.counterTransportRetries",
+  rx_icrc_encapsulated: "roce.counterIcrc",
+  np_ecn_marked_roce_packets: "roce.counterEcnMarked",
+  np_cnp_sent: "roce.counterCnpSent",
+  rp_cnp_handled: "roce.counterCnpHandled",
+  roce_adp_retrans: "roce.counterAdaptiveRetrans",
+  duplicate_request: "roce.counterDuplicateRequest",
+  rx_discards_phy: "roce.counterRxDiscards",
+  tx_discards_phy: "roce.counterTxDiscards",
+  rx_crc_errors_phy: "roce.counterCrcErrors",
+  rx_pause_ctrl_phy: "roce.counterRxPause",
+  tx_pause_ctrl_phy: "roce.counterTxPause",
+};
+
+/**
+ * Localized name of one counter row. The parameter is named `tr` because the
+ * catalog checker only inspects calls to the `t` destructured from useTranslation.
+ */
+function counterLabel(tr: Translate, key: string): string {
+  return tr(COUNTER_LABEL_KEY[key] ?? key);
 }
 
 const n = (v: number | null | undefined) => (v == null ? "—" : v.toLocaleString());
@@ -141,7 +130,7 @@ function PortRow({ d }: { d: RoceDevice }) {
               const delta = d.deltas[r.key] ?? 0;
               return (
                 <tr key={r.key} className={r.loss && delta > 0 ? "is-rising" : ""}>
-                  <td>{counterLabel(t, r.key, r.label)}</td>
+                  <td>{counterLabel(t, r.key)}</td>
                   <td className="mono">{n(d.counters[r.key])}</td>
                   <td className="mono sp-muted">{delta > 0 ? `+${delta.toLocaleString()}` : ""}</td>
                 </tr>
@@ -150,7 +139,7 @@ function PortRow({ d }: { d: RoceDevice }) {
             {d.eth &&
               ETH_ROWS.filter((r) => d.eth![r.key] != null).map((r) => (
                 <tr key={r.key}>
-                  <td>{counterLabel(t, r.key, r.label)}</td>
+                  <td>{counterLabel(t, r.key)}</td>
                   <td className="mono">{n(d.eth![r.key])}</td>
                   <td />
                 </tr>

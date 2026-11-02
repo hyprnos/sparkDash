@@ -314,6 +314,12 @@ export const SEGMENT_LABELS: Readonly<Record<VramSegmentKey, string>> = Object.f
   gpu: "GPU",
 });
 
+/**
+ * English name of the free track, for callers without a translator. The VRAM bar
+ * renders the legend from the `ui` catalog (`vram.free`), like the segment names.
+ */
+const FREE_TRACK_LABEL = "Free";
+
 /** GB with one decimal, no unit: the legend's number format. */
 export function gbNumber(mb: number): string {
   return (mb / 1024).toFixed(1);
@@ -324,7 +330,7 @@ export function legendItems(b: VramBreakdown): Array<{ key: VramSegmentKey | "fr
   const items: Array<{ key: VramSegmentKey | "free"; label: string; gb: string }> = b.segments
     .filter((s) => gbNumber(s.mb) !== "0.0")
     .map((s) => ({ key: s.key, label: SEGMENT_LABELS[s.key], gb: gbNumber(s.mb) }));
-  items.push({ key: "free", label: "Free", gb: gbNumber(b.freeMB) });
+  items.push({ key: "free", label: FREE_TRACK_LABEL, gb: gbNumber(b.freeMB) });
   return items;
 }
 

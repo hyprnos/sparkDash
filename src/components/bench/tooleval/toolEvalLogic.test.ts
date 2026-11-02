@@ -248,3 +248,30 @@ describe("toolNotes", () => {
     expect(toolNotes([])).toEqual([]);
   });
 });
+
+describe("catalog copy", () => {
+  it("resolves every preset, template and suite from the bench catalog in every locale", async () => {
+    const { i18n, LOCALES } = await import("../../../i18n");
+    const { PRESETS, simpleTemplates } = await import("./presets");
+    const { suites } = await import("./options");
+    const catalogT = (locale: string) => i18n.getFixedT(locale, "bench") as unknown as (key: string) => string;
+    for (const locale of LOCALES) {
+      const t = catalogT(locale);
+      for (const type of Object.keys(PRESETS)) {
+        for (const preset of presetsFor(type, t)) {
+          expect(preset.label).not.toBe(`te.presets.${type}.${preset.id}.label`);
+          expect(preset.help).not.toBe(`te.presets.${type}.${preset.id}.help`);
+        }
+      }
+      for (const template of simpleTemplates("tool-eval", t)) {
+        expect(template.label).not.toBe(`te.templates.${template.id}.label`);
+        expect(template.help).not.toBe(`te.templates.${template.id}.help`);
+        expect(template.size).not.toBe(`te.templates.${template.id}.size`);
+        expect(template.time).not.toBe(`te.templates.${template.id}.time`);
+      }
+      for (const suite of suites(t)) expect(suite.help).not.toBe(`te.suites.${suite.id}`);
+    }
+    expect(presetsFor("tool-eval", catalogT("de"))[0].label).toBe("Schnellprüfung");
+    expect(suites(catalogT("de"))[0].help).toBe("Grundschulmathematik");
+  });
+});

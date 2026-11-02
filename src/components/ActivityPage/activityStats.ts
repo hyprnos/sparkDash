@@ -1,5 +1,6 @@
 import type { ActivityEvent } from "../../api/types";
 import { configuredTimeZone } from "../../shared/timeZone";
+import { i18n } from "../../i18n";
 
 /** Pure logic for the Activity page: categories, labels, filtering, counts, day grouping, export. */
 
@@ -38,20 +39,21 @@ export function severityLabel(severity: Severity, t?: Translate): string {
 
 export type CategoryId = "status" | "thermal" | "health" | "alerts" | "hermes" | "bench" | "power" | "llm" | "fleet" | "other";
 
-export const CATEGORIES: readonly { id: CategoryId; label: string }[] = [
-  { id: "status", label: "Status (online/offline)" },
-  { id: "thermal", label: "Thermal" },
-  { id: "health", label: "Health" },
-  { id: "alerts", label: "Alert notifications" },
-  { id: "hermes", label: "Hermes" },
-  { id: "bench", label: "Benchmarks" },
-  { id: "power", label: "Power" },
-  { id: "llm", label: "LLM models" },
-  { id: "fleet", label: "Fleet changes" },
-  { id: "other", label: "Other" },
+/** The filter's category ids; their names come from the `activity` catalog (`categories.*`). */
+export const CATEGORIES: readonly { id: CategoryId }[] = [
+  { id: "status" },
+  { id: "thermal" },
+  { id: "health" },
+  { id: "alerts" },
+  { id: "hermes" },
+  { id: "bench" },
+  { id: "power" },
+  { id: "llm" },
+  { id: "fleet" },
+  { id: "other" },
 ];
 
-/** One catalog key per category; the array above stays the English source. */
+/** One catalog key per category. */
 const CATEGORY_KEY: Record<CategoryId, string> = {
   status: "categories.status",
   thermal: "categories.thermal",
@@ -64,6 +66,11 @@ const CATEGORY_KEY: Record<CategoryId, string> = {
   fleet: "categories.fleet",
   other: "categories.other",
 };
+
+/** English copy for callers without a translator: the en `activity` catalog is the source. */
+function englishActivityT(): Translate {
+  return i18n.getFixedT("en", "activity") as unknown as Translate;
+}
 
 const DAY_MS = 86_400_000;
 const HOUR_MS = 3_600_000;
@@ -188,8 +195,7 @@ export function typeLabel(type: string, t?: Translate): string {
 }
 
 export function categoryLabel(id: CategoryId, t?: Translate): string {
-  if (t) return t(CATEGORY_KEY[id]);
-  return CATEGORIES.find((c) => c.id === id)?.label ?? "Other";
+  return (t ?? englishActivityT())(CATEGORY_KEY[id]);
 }
 
 /** Newest first by id (ids are monotonic), ts as a tiebreak for odd inputs. */

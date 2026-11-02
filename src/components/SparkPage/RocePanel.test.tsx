@@ -1,7 +1,7 @@
 import { act } from "react";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { RoceDevice, RoceMetrics } from "../../api/types";
-import { RocePanel, pfcLabel, roceSummary } from "./RocePanel";
+import { ROCE_COUNTER_ROWS, RocePanel, pfcLabel, roceSummary } from "./RocePanel";
 import { render } from "../../testing/render";
 
 const device = (over: Partial<RoceDevice> = {}): RoceDevice => ({
@@ -109,4 +109,26 @@ it("explains netdev rate limits and cumulative pause totals", () => {
   const { container } = render(<RocePanel roce={metrics([device()])} />);
   expect(container.textContent).toContain("These netdev traffic rates do not measure RDMA payload throughput.");
   expect(container.textContent).toContain("Pause frames are cumulative totals, separate from the current PFC setting.");
+});
+
+it("names the RDMA counters from the spark catalog", async () => {
+  const { i18n } = await import("../../i18n");
+  await act(async () => {
+    await i18n.changeLanguage("de");
+  });
+  try {
+    // Every listed counter is present, so a missing catalog key would show up as a raw key.
+    const counters = Object.fromEntries(ROCE_COUNTER_ROWS.map((r) => [r.key, 1]));
+    const eth = Object.fromEntries(["rx_discards_phy", "tx_discards_phy", "rx_crc_errors_phy", "rx_pause_ctrl_phy", "tx_pause_ctrl_phy"].map((k) => [k, 1]));
+    const { container } = render(<RocePanel roce={metrics([device({ counters, eth })])} />);
+    act(() => (container.querySelector("button[aria-expanded]") as HTMLButtonElement | null)?.click());
+    const text = container.textContent ?? "";
+    expect(text).toContain("Puffer erschöpft");
+    expect(text).toContain("Gesendete CNPs");
+    expect(text).not.toMatch(/roce\.counter/);
+  } finally {
+    await act(async () => {
+      await i18n.changeLanguage("en");
+    });
+  }
 });

@@ -1,122 +1,110 @@
+import { i18n } from "../../../i18n";
 import type { FieldValue } from "./options";
 import type { Translate } from "./format";
 
+/** A one-click preset: its ids and values only. The wording lives in the `bench` catalog. */
 export interface Preset {
   id: string;
-  label: string;
-  help: string;
   values: Record<string, FieldValue>;
   /** Accuracy page only: which suites to tick. */
   suites?: string[];
 }
 
-/** One-click starting points per page type. Applied on top of the page's defaults. */
+/** A preset with its catalog copy resolved (`te.presets.<type>.<id>`). */
+export interface PresetText extends Preset {
+  label: string;
+  help: string;
+}
+
+/**
+ * English copy for callers that have no translator. The `bench` catalog is the
+ * single source of the preset wording, so its `en` entries are the fallback.
+ */
+export function englishBenchT(): Translate {
+  return i18n.getFixedT("en", "bench") as unknown as Translate;
+}
+
+/** Name and help text of one preset in the reader's language (key path `te.presets.<type>.<id>`). */
+export function presetCopy(t: Translate | undefined, type: string, preset: Pick<Preset, "id">): { label: string; help: string } {
+  const tr = t ?? englishBenchT();
+  return { label: tr(`te.presets.${type}.${preset.id}.label`), help: tr(`te.presets.${type}.${preset.id}.help`) };
+}
+
+/** One-click starting points per page type. Applied on top of the page's defaults; copy comes from the `bench` catalog. */
 export const PRESETS: Record<string, Preset[]> = {
   "tool-eval": [
-    { id: "quick", label: "Quick check", help: "Only the 15 core scenarios (about 2 minutes).", values: { short: true } },
-    { id: "full", label: "Full", help: "Every standard scenario with the tool's defaults.", values: {} },
-    { id: "hard", label: "Hard mode only", help: "Only the Hard Mode scenarios (category P).", values: { "hardmode-only": true } },
-    { id: "repro", label: "Reproducible", help: "Temperature 0 and a fixed seed so repeat runs are comparable.", values: { temperature: "0", seed: "42" } },
-    { id: "thinking", label: "Thinking model", help: "Disables thinking output and allows 120 s per request (Qwen3 / DeepSeek style).", values: { "no-think": true, timeout: "120" } },
+    { id: "quick", values: { short: true } },
+    { id: "full", values: {} },
+    { id: "hard", values: { "hardmode-only": true } },
+    { id: "repro", values: { temperature: "0", seed: "42" } },
+    { id: "thinking", values: { "no-think": true, timeout: "120" } },
   ],
   throughput: [
-    { id: "quick", label: "Quick", help: "Short prompts, one depth, one run per point.", values: { pp: "512", tg: "64", depth: "0", concurrency: "1", "benchy-runs": "1" } },
-    { id: "standard", label: "Standard", help: "The tool's defaults.", values: {} },
-    { id: "deep", label: "Deep context", help: "Up to 32k of context and 8 concurrent requests.", values: { depth: "0,4096,8192,16384,32768", concurrency: "1,2,4,8" } },
+    { id: "quick", values: { pp: "512", tg: "64", depth: "0", concurrency: "1", "benchy-runs": "1" } },
+    { id: "standard", values: {} },
+    { id: "deep", values: { depth: "0,4096,8192,16384,32768", concurrency: "1,2,4,8" } },
   ],
   "spec-decode": [
-    { id: "quick", label: "Quick", help: "One prompt type, one run per cell.", values: { "spec-runs": "1", "spec-prompts": "filler" } },
-    { id: "standard", label: "Standard", help: "The tool's defaults.", values: {} },
-    { id: "code", label: "Code and structured", help: "The prompt types where speculation helps most.", values: { "spec-prompts": "code,structured" } },
+    { id: "quick", values: { "spec-runs": "1", "spec-prompts": "filler" } },
+    { id: "standard", values: {} },
+    { id: "code", values: { "spec-prompts": "code,structured" } },
   ],
   "context-pressure": [
-    { id: "single", label: "Single level (75%)", help: "Core scenarios with the context 75% full.", values: { "context-pressure": "0.75", short: true } },
-    { id: "sweep", label: "Sweep 50–100%", help: "Core scenarios at five pressure levels.", values: { "context-pressure-sweep": "0.5-1.0", "sweep-steps": "5", short: true } },
-    { id: "fine", label: "Fine sweep", help: "Ten levels from 10% to 100% (long).", values: { "context-pressure-sweep": "0.1-1.0", "sweep-steps": "10", short: true } },
+    { id: "single", values: { "context-pressure": "0.75", short: true } },
+    { id: "sweep", values: { "context-pressure-sweep": "0.5-1.0", "sweep-steps": "5", short: true } },
+    { id: "fine", values: { "context-pressure-sweep": "0.1-1.0", "sweep-steps": "10", short: true } },
   ],
   accuracy: [
-    { id: "quick", label: "Quick", help: "A small sample of each suite.", values: { "gsm8k-limit": "50", "mmlu-limit": "100", "ifeval-limit": "100" }, suites: ["gsm8k", "mmlu", "ifeval"] },
-    { id: "standard", label: "Standard", help: "The tool's default question limits.", values: {}, suites: ["gsm8k", "mmlu", "ifeval"] },
-    { id: "full", label: "Full datasets", help: "Every question (slow).", values: { "gsm8k-limit": "0", "mmlu-limit": "0", "ifeval-limit": "0" }, suites: ["gsm8k", "mmlu", "ifeval"] },
-    { id: "repro", label: "Reproducible", help: "Fixed seed and shuffled GSM8K.", values: { seed: "42", "gsm8k-shuffle": true }, suites: ["gsm8k", "mmlu", "ifeval"] },
+    { id: "quick", values: { "gsm8k-limit": "50", "mmlu-limit": "100", "ifeval-limit": "100" }, suites: ["gsm8k", "mmlu", "ifeval"] },
+    { id: "standard", values: {}, suites: ["gsm8k", "mmlu", "ifeval"] },
+    { id: "full", values: { "gsm8k-limit": "0", "mmlu-limit": "0", "ifeval-limit": "0" }, suites: ["gsm8k", "mmlu", "ifeval"] },
+    { id: "repro", values: { seed: "42", "gsm8k-shuffle": true }, suites: ["gsm8k", "mmlu", "ifeval"] },
   ],
   needle: [
-    { id: "quick", label: "Quick", help: "Three depths and two lengths.", values: { "needle-depths": "3", "needle-lengths": "2" } },
-    { id: "standard", label: "Standard", help: "The tool's defaults (5 depths, 4 lengths).", values: {} },
-    { id: "thorough", label: "Thorough", help: "Ten depths and eight lengths (long).", values: { "needle-depths": "10", "needle-lengths": "8" } },
+    { id: "quick", values: { "needle-depths": "3", "needle-lengths": "2" } },
+    { id: "standard", values: {} },
+    { id: "thorough", values: { "needle-depths": "10", "needle-lengths": "8" } },
   ],
-  decision: [{ id: "standard", label: "Default", help: "The tool's defaults.", values: {} }],
+  decision: [{ id: "standard", values: {} }],
 };
 
 /** A ready-made run shown as a card in the Simple view. */
-export interface SimpleTemplate extends Preset {
+export interface SimpleTemplate extends PresetText {
   /** Rough size, shown on the card. */
   size?: string;
   /** Rough time, shown on the card. */
   time?: string;
 }
 
+/** Tool Eval's four basics; all keep a fixed seed (42) so repeat runs stay comparable. */
+const SIMPLE_TEMPLATES: readonly { id: string; values: Record<string, FieldValue> }[] = [
+  { id: "regular", values: { seed: "42" } },
+  { id: "regular-hard", values: { hardmode: true, seed: "42" } },
+  { id: "short", values: { short: true, seed: "42" } },
+  { id: "hard", values: { "hardmode-only": true, seed: "42" } },
+];
+
 /**
- * The Simple view's templates. Tool Eval gets four basics, all with a fixed seed (42) so repeat runs stay comparable; (regular, regular + hard mode, short, hard mode only);
- * the other pages offer their ready presets as templates.
+ * The Simple view's templates. Tool Eval gets four basics (regular, regular + hard
+ * mode, short, hard mode only) from `te.templates.*`; the other pages offer their
+ * ready presets as templates.
  */
 export function simpleTemplates(type: string, t?: Translate): SimpleTemplate[] {
-  if (type === "tool-eval") {
-    const templates: SimpleTemplate[] = [
-      {
-        id: "regular",
-        label: "Regular run",
-        help: "The full standard suite: tool selection, parameters, multi-step chains, error recovery, safety and more.",
-        values: { seed: "42" },
-        size: "69 scenarios",
-        time: "about 10–20 min",
-      },
-      {
-        id: "regular-hard",
-        label: "Regular + Hard mode",
-        help: "The full suite plus the Hard Mode scenarios.",
-        values: { hardmode: true, seed: "42" },
-        size: "92 scenarios",
-        time: "about 15–30 min",
-      },
-      {
-        id: "short",
-        label: "Short run",
-        help: "Only the 15 core scenarios. A fast check after changing a model or setting.",
-        values: { short: true, seed: "42" },
-        size: "15 scenarios",
-        time: "about 2 min",
-      },
-      {
-        id: "hard",
-        label: "Hard mode only",
-        help: "Only the adversarial Hard Mode scenarios: stateful, transactional and tricky. For models that ace the regular run.",
-        values: { "hardmode-only": true, seed: "42" },
-        size: "23 scenarios",
-        time: "about 5–10 min",
-      },
-    ];
-    if (!t) return templates;
-    return templates.map((template) => ({
-      ...template,
-      label: t(`te.templates.${template.id}.label`),
-      help: t(`te.templates.${template.id}.help`),
-      size: t(`te.templates.${template.id}.size`),
-      time: t(`te.templates.${template.id}.time`),
-    }));
-  }
-  return presetsFor(type, t);
+  if (type !== "tool-eval") return presetsFor(type, t);
+  const tr = t ?? englishBenchT();
+  return SIMPLE_TEMPLATES.map((template) => ({
+    ...template,
+    values: { ...template.values },
+    label: tr(`te.templates.${template.id}.label`),
+    help: tr(`te.templates.${template.id}.help`),
+    size: tr(`te.templates.${template.id}.size`),
+    time: tr(`te.templates.${template.id}.time`),
+  }));
 }
 
-/** One-click presets with their catalog copy; English when no translator is passed. */
-export function presetsFor(type: string, t?: Translate): Preset[] {
-  const list = PRESETS[type] ?? [];
-  if (!t) return list;
-  return list.map((preset) => ({
-    ...preset,
-    label: t(`te.presets.${type}.${preset.id}.label`),
-    help: t(`te.presets.${type}.${preset.id}.help`),
-  }));
+/** One-click presets with their catalog copy (`te.presets.<type>.<id>`). */
+export function presetsFor(type: string, t?: Translate): PresetText[] {
+  return (PRESETS[type] ?? []).map((preset) => ({ ...preset, ...presetCopy(t, type, preset) }));
 }
 
 /** Where the run points, not how it runs: a custom URL or model never makes a template "custom". */
