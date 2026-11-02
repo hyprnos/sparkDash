@@ -26,6 +26,22 @@ export const OFFICIAL_MODELS = [
   },
 ];
 
+/**
+ * Reference list prices for hosted models, in USD per 1M tokens. They are a
+ * snapshot — vendors move prices, and the FX rate is a setting — so the UI
+ * labels them as参考价 and lets the user override every number.
+ */
+export const DEFAULT_FX_CNY_PER_USD = 7.2;
+
+export const HOSTED_MODELS = [
+  { id: "claude-sonnet", label: "Claude Sonnet（参考价）", currency: "USD", cacheHit: 0.3, cacheMiss: 3, output: 15 },
+  { id: "claude-opus", label: "Claude Opus（参考价）", currency: "USD", cacheHit: 1.5, cacheMiss: 15, output: 75 },
+  { id: "gpt-5", label: "GPT-5（参考价）", currency: "USD", cacheHit: 0.125, cacheMiss: 1.25, output: 10 },
+  { id: "gpt-5-mini", label: "GPT-5 mini（参考价）", currency: "USD", cacheHit: 0.025, cacheMiss: 0.25, output: 2 },
+  { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro（参考价）", currency: "USD", cacheHit: 0.31, cacheMiss: 1.25, output: 10 },
+  { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash（参考价）", currency: "USD", cacheHit: 0.075, cacheMiss: 0.3, output: 2.5 },
+];
+
 export const OFFICIAL_SOURCE = "https://api-docs.deepseek.com/zh-cn/quick_start/pricing";
 
 /**
@@ -43,6 +59,15 @@ export function isPeakHour(date = new Date()) {
 
 export function findOfficialModel(id) {
   return OFFICIAL_MODELS.find((model) => model.id === id) || null;
+}
+
+export function findHostedModel(id) {
+  return HOSTED_MODELS.find((model) => model.id === id) || null;
+}
+
+/** Every model the picker offers, official first. */
+export function listPriceModels() {
+  return [...OFFICIAL_MODELS, ...HOSTED_MODELS];
 }
 
 /**
@@ -65,6 +90,20 @@ export function resolveRates(pricing, { now = new Date() } = {}) {
       cacheMiss: official.cacheMiss[tariff === "peak" ? "peak" : "offPeak"],
       output: official.output[tariff === "peak" ? "peak" : "offPeak"],
       source: "official",
+    };
+  }
+  const hosted = findHostedModel(pricing?.modelId);
+  if (hosted) {
+    const fx = Math.min(20, Math.max(1, Number(pricing?.fxRate) || DEFAULT_FX_CNY_PER_USD));
+    return {
+      label: `${hosted.label} · $1=${fx.toFixed(2)}`,
+      currency: "CNY",
+      tariff: "flat",
+      cacheHit: hosted.cacheHit * fx,
+      cacheMiss: hosted.cacheMiss * fx,
+      output: hosted.output * fx,
+      source: "hosted",
+      fx,
     };
   }
   return {

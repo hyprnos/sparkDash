@@ -13,8 +13,9 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 import {
-  OFFICIAL_MODELS,
+  DEFAULT_FX_CNY_PER_USD,
   OFFICIAL_SOURCE,
+  listPriceModels,
   applyOfficialPricing,
   computeCost,
   formatCny,
@@ -78,6 +79,7 @@ export const DEFAULT_CONFIG = Object.freeze({
     cacheHitPrice: 0,
     cacheMissPrice: 0,
     outputPrice: 0,
+    fxRate: DEFAULT_FX_CNY_PER_USD,
     updatedAt: null,
   },
   /** Outline thickness in panel pixels (1-4); the ring follows the glyph shape. */
@@ -172,6 +174,7 @@ export function normalizeConfig(patch = {}, base = DEFAULT_CONFIG) {
       cacheHitPrice: Math.max(0, Number(source.cacheHitPrice) || 0),
       cacheMissPrice: Math.max(0, Number(source.cacheMissPrice) || 0),
       outputPrice: Math.max(0, Number(source.outputPrice) || 0),
+      fxRate: Math.min(20, Math.max(1, Number(source.fxRate) || basePricing.fxRate)),
       updatedAt: Number(source.updatedAt) || basePricing.updatedAt,
     };
   }
@@ -599,7 +602,7 @@ export function createEinkRuntime({
   });
 
   app.get("/api/eink/pricing", (_req, res) =>
-    res.json({ models: OFFICIAL_MODELS, pricing: config.pricing, source: OFFICIAL_SOURCE })
+    res.json({ models: listPriceModels(), pricing: config.pricing, source: OFFICIAL_SOURCE })
   );
 
   app.post("/api/eink/pricing/refresh", async (_req, res) => {
@@ -610,9 +613,9 @@ export function createEinkRuntime({
       const parsed = parseOfficialPricing(html);
       if (!applyOfficialPricing(parsed)) throw new Error("没在官网页面里找到价格表");
       config = saveConfig(configPath, normalizeConfig({ pricing: { updatedAt: now() } }, config));
-      res.json({ ok: true, models: OFFICIAL_MODELS, pricing: config.pricing });
+      res.json({ ok: true, models: listPriceModels(), pricing: config.pricing });
     } catch (err) {
-      res.status(502).json({ ok: false, error: err?.message || String(err), models: OFFICIAL_MODELS });
+      res.status(502).json({ ok: false, error: err?.message || String(err), models: listPriceModels() });
     }
   });
 

@@ -17,6 +17,7 @@ export interface EinkPricing {
   cacheHitPrice: number;
   cacheMissPrice: number;
   outputPrice: number;
+  fxRate: number;
   updatedAt: number | null;
 }
 

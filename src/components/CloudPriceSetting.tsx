@@ -109,6 +109,19 @@ export function CloudPriceSetting() {
           <option value="peak">高峰时段</option>
         </select>
       </label>
+      {models.find((m) => m.id === pricing.modelId)?.currency === "USD" ? (
+        <label className="field">
+          <span>美元汇率（元/$）</span>
+          <input
+            type="number"
+            min={1}
+            max={20}
+            step={0.01}
+            value={pricing.fxRate}
+            onChange={(e) => setPricing({ ...pricing, fxRate: Number(e.target.value) })}
+          />
+        </label>
+      ) : null}
       {pricing.modelId === "custom" ? (
         <>
           <label className="field">
