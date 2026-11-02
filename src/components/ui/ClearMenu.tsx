@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import "../../styles/clearmenu.css";
 
 export interface ClearChoice<T = number | string | undefined> {
@@ -16,14 +17,17 @@ export function ClearMenu<T>({
   choices,
   onRun,
   disabled,
-  note = "This can't be undone.",
+  note,
 }: {
   label: string;
   choices: readonly ClearChoice<T>[];
   onRun: (arg: T) => Promise<number>;
   disabled?: boolean;
+  /** Overrides the catalog's "this can't be undone" note. */
   note?: string;
 }) {
+  const { t } = useTranslation("ui");
+  const { t: tc } = useTranslation("common");
   const [open, setOpen] = useState(false);
   const [pick, setPick] = useState<ClearChoice<T> | null>(null);
   const [busy, setBusy] = useState(false);
@@ -54,8 +58,8 @@ export function ClearMenu<T>({
 
   useEffect(() => {
     if (!msg) return;
-    const t = setTimeout(() => setMsg(null), 4000);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setMsg(null), 4000);
+    return () => clearTimeout(timer);
   }, [msg]);
 
   const run = async () => {
@@ -63,11 +67,14 @@ export function ClearMenu<T>({
     setBusy(true);
     try {
       const n = await onRun(pick.arg);
-      setMsg({ ok: true, text: n === 0 ? "Nothing to delete" : `Deleted ${n} event${n === 1 ? "" : "s"}` });
+      setMsg({
+        ok: true,
+        text: n === 0 ? t("clearMenu.nothing") : n === 1 ? t("clearMenu.deletedOne", { count: n }) : t("clearMenu.deletedMany", { count: n }),
+      });
       setOpen(false);
       setPick(null);
     } catch (err) {
-      setMsg({ ok: false, text: err instanceof Error ? err.message : "Could not delete" });
+      setMsg({ ok: false, text: err instanceof Error ? err.message : t("clearMenu.failed") });
     } finally {
       setBusy(false);
     }
@@ -93,13 +100,13 @@ export function ClearMenu<T>({
           {pick ? (
             <div className="ac-clear__confirm">
               <p>{pick.ask}</p>
-              <p className="ac-clear__note">{note}</p>
+              <p className="ac-clear__note">{note ?? t("clearMenu.note")}</p>
               <div className="ac-clear__row">
                 <button type="button" className="btn btn--sm" onClick={() => setPick(null)} disabled={busy}>
-                  Cancel
+                  {tc("actions.cancel")}
                 </button>
                 <button type="button" className="btn btn--sm btn--danger" onClick={() => void run()} disabled={busy}>
-                  {busy ? "Deleting…" : "Delete"}
+                  {busy ? t("clearMenu.deleting") : tc("actions.delete")}
                 </button>
               </div>
             </div>

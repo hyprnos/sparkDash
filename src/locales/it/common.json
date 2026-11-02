@@ -85,5 +85,7 @@
     "resultFailed": "{{count}} non riusciti",
     "resultSkipped": "{{count}} saltati",
     "batchFailed": "Spegnimento collettivo non riuscito"
-  }
+  },
+  "actions": {"cancel": "Annulla", "save": "Salva", "close": "Chiudi", "dismiss": "Ignora", "delete": "Elimina", "remove": "Rimuovi", "back": "Indietro", "next": "Avanti", "retry": "Riprova", "edit": "Modifica", "add": "Aggiungi", "test": "Prova", "enable": "Attiva", "disable": "Disattiva", "apply": "Applica", "copy": "Copia", "copied": "Copiato"},
+  "state": {"loading": "Caricamento…", "saving": "Salvataggio…", "testing": "Verifica in corso…", "checking": "Controllo…", "working": "Elaborazione…", "sending": "Invio…", "applying": "Applicazione…", "restarting": "Riavvio…", "removing": "Rimozione…"}
 }

@@ -1,0 +1,23 @@
+{
+  "title": "Temperaturen",
+  "subtitle": "GPU-Temperatur der gesamten Flotte über {{range}}. Der minutenauflösende Verlauf wird eine Woche auf dem Server aufbewahrt, die Diagramme überstehen daher ein Neuladen.",
+  "rangeGroup": "Zeitraum",
+  "range": {
+    "24h": { "label": "Letzte 24 Std.", "long": "24 Stunden" },
+    "7d": { "label": "Letzte 7 Tage", "long": "7 Tage" }
+  },
+  "loadFailedTitle": "GPU-Verlauf konnte nicht geladen werden",
+  "retry": "Erneut versuchen",
+  "loading": "Temperaturverlauf wird geladen…",
+  "warmingTitle": "Aufwärmphase",
+  "warmingBody": "In diesem Zeitraum wurde noch keine GPU-Temperatur aufgezeichnet. Diagramme erscheinen, sobald Sparks Telemetrie melden, und füllen sich mit der Zeit rückwärts.",
+  "nowTemp": "jetzt {{temp}}°C",
+  "offline": "offline",
+  "noSamples": "Keine Temperaturmesswerte in diesem Zeitraum.",
+  "chartAria": "GPU-Temperaturverlauf",
+  "axisHours": "−{{hours}} Std.",
+  "axisDays": "−{{days}} T.",
+  "axisNow": "jetzt",
+  "gpuTemperature": "GPU-Temperatur",
+  "gpuIndex": "GPU {{index}}"
+}

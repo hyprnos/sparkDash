@@ -1,4 +1,4 @@
-import { humanizeKey } from "./format";
+import { humanizeKey, type Translate } from "./format";
 
 /**
  * Defensive readers for the tool's result JSON. The exact nested field names are not
@@ -44,7 +44,7 @@ export function normalizeStatus(v: unknown): ScenarioStatus {
   return "other";
 }
 
-/** Category names as documented for the tool (A–O, P = Hard Mode). Used only when the result carries no name. */
+/** English category names as documented for the tool (A–O, P = Hard Mode); see `categoryNames`. */
 export const CATEGORY_NAMES: Record<string, string> = {
   A: "Tool selection",
   B: "Parameter precision",
@@ -63,6 +63,19 @@ export const CATEGORY_NAMES: Record<string, string> = {
   O: "Structured output",
   P: "Hard mode",
 };
+
+const CATEGORY_IDS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P"] as const;
+
+/**
+ * Category names from the `bench` catalog, keyed by the tool's category letter.
+ * Used only when the result carries no name of its own.
+ */
+export function categoryNames(t?: Translate): Record<string, string> {
+  if (!t) return CATEGORY_NAMES;
+  const out: Record<string, string> = {};
+  for (const id of CATEGORY_IDS) out[id] = t(`te.categories.${id}`);
+  return out;
+}
 
 export interface NormCategory {
   id: string;

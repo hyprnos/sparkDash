@@ -1,12 +1,14 @@
+import { useTranslation } from "react-i18next";
 import type { SparkTestResponse } from "../api/types";
 import "../styles/dialogs.css";
 
 /** Connection-test results as a status list (ssh, hardware, LLM, ...). */
 export function TestResultList({ result }: { result: SparkTestResponse }) {
+  const { t } = useTranslation("ui");
   return (
     <div className="test-list" role="status">
       <p className={result.ok ? "test-list__head is-ok" : "test-list__head is-bad"}>
-        {result.ok ? "All required capabilities passed." : "One or more required capabilities failed."}
+        {result.ok ? t("testResults.allPassed") : t("testResults.someFailed")}
       </p>
       {result.capabilities.map((c) => (
         <div key={c.id} className="test-list__row">
@@ -16,7 +18,7 @@ export function TestResultList({ result }: { result: SparkTestResponse }) {
           />
           <span className="test-list__label">{c.label}</span>
           <span className="test-list__state">
-            {c.status === "pass" ? "ok" : c.status === "fail" ? "failed" : "skipped"}
+            {c.status === "pass" ? t("testResults.ok") : c.status === "fail" ? t("testResults.failed") : t("testResults.skipped")}
           </span>
           {(c.message || c.recovery) && (
             <span className="test-list__msg">

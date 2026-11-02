@@ -7,15 +7,20 @@ import { costFor, NODE_COLORS } from "./energyStats";
  * exactly as the server rolls them up (server/energy/FleetEnergyMonthly.js).
  */
 
-const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
-
-/** "October 2026" for a "YYYY-MM" key. */
-export function monthLabel(key: string): string {
+/** UTC instant for a "YYYY-MM" key (the first day of that month). */
+function monthStart(key: string): Date {
   const [year, month] = key.split("-").map(Number);
-  return `${MONTH_NAMES[(month || 1) - 1]} ${year}`;
+  return new Date(Date.UTC(year || 1970, (month || 1) - 1, 1));
+}
+
+function monthName(date: Date, locale: string | undefined, style: "long" | "short"): string {
+  return new Intl.DateTimeFormat(locale || "en-US", { month: style, timeZone: "UTC" }).format(date);
+}
+
+/** "October 2026" for a "YYYY-MM" key, in the viewer's language. */
+export function monthLabel(key: string, locale?: string): string {
+  const date = monthStart(key);
+  return `${monthName(date, locale, "long")} ${date.getUTCFullYear()}`;
 }
 
 const monthKeyOf = (ms: number) => {
@@ -80,10 +85,10 @@ export interface YearBar extends BarBucket {
   kwh: number;
 }
 
-const SHORT = MONTH_NAMES.map((n) => n.slice(0, 3));
+const SHORT = (key: string, locale?: string) => monthName(monthStart(key), locale, "short");
 
 /** Twelve bars (Jan to Dec) of kWh per node; months without data are empty bars. */
-export function yearBars(months: readonly MonthlyEnergyMonth[], year: number): YearBar[] {
+export function yearBars(months: readonly MonthlyEnergyMonth[], year: number, locale?: string): YearBar[] {
   const byKey = new Map(months.map((m) => [m.month, m]));
   return Array.from({ length: 12 }, (_, i) => {
     const key = `${year}-${String(i + 1).padStart(2, "0")}`;
@@ -92,8 +97,8 @@ export function yearBars(months: readonly MonthlyEnergyMonth[], year: number): Y
     return {
       key,
       month: key,
-      label: SHORT[i],
-      title: `${MONTH_NAMES[i]} ${year}`,
+      label: SHORT(key, locale),
+      title: monthLabel(key, locale),
       values,
       hasData: m != null && m.totalWh > 0,
       kwh: (m?.totalWh ?? 0) / 1000,

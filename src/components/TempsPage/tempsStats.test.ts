@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import type { Translate } from "./tempsStats";
+import enTemps from "../../locales/en/temps.json";
 import {
   TEMPS_RANGES,
   parseTempsRange,
@@ -6,6 +8,14 @@ import {
   tempsAxisLabels,
   toPoints,
 } from "./tempsStats";
+
+/** Renders catalog templates with their {{vars}}; the English copy is the source of truth. */
+const t: Translate = (key, vars) => {
+  let value: unknown = enTemps;
+  for (const part of key.split(".")) value = (value as Record<string, unknown> | undefined)?.[part];
+  if (typeof value !== "string") throw new Error(`missing en/temps key: ${key}`);
+  return value.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, name: string) => String(vars?.[name] ?? ""));
+};
 
 describe("TEMPS_RANGES", () => {
   it("covers at least a day and a week", () => {
@@ -25,7 +35,7 @@ describe("parseTempsRange", () => {
 
 describe("tempSeriesOf", () => {
   it("keeps the aggregate for a single-GPU host", () => {
-    expect(tempSeriesOf({ t: [1], u: [2], c: [61], p: [null] })).toEqual([
+    expect(tempSeriesOf({ t: [1], u: [2], c: [61], p: [null] }, t)).toEqual([
       { key: "agg", label: "GPU temperature", c: [61] },
     ]);
   });
@@ -41,7 +51,7 @@ describe("tempSeriesOf", () => {
         { index: 1, name: null, u: [3, 4], c: [62, 63], p: [12, 13] },
       ],
     };
-    expect(tempSeriesOf(resp)).toEqual([
+    expect(tempSeriesOf(resp, t)).toEqual([
       { key: "gpu0", label: "Orin", c: [60, 61] },
       { key: "gpu1", label: "GPU 1", c: [62, 63] },
     ]);
@@ -49,7 +59,7 @@ describe("tempSeriesOf", () => {
 
   it("keeps the aggregate when gpus has a single card (it already is the aggregate)", () => {
     const resp = { t: [1], u: [2], c: [61], p: [null], gpus: [{ index: 0, name: "X", u: [2], c: [61], p: [null] }] };
-    expect(tempSeriesOf(resp)).toEqual([{ key: "agg", label: "GPU temperature", c: [61] }]);
+    expect(tempSeriesOf(resp, t)).toEqual([{ key: "agg", label: "GPU temperature", c: [61] }]);
   });
 });
 
@@ -64,7 +74,7 @@ describe("toPoints", () => {
 
 describe("tempsAxisLabels", () => {
   it("labels the day range in hours and the week range in days", () => {
-    expect(tempsAxisLabels(24 * 3600_000)).toEqual(["−24 h", "−12 h"]);
-    expect(tempsAxisLabels(7 * 24 * 3600_000)).toEqual(["−7 d", "−3.5 d"]);
+    expect(tempsAxisLabels(24 * 3600_000, t)).toEqual(["−24 h", "−12 h"]);
+    expect(tempsAxisLabels(7 * 24 * 3600_000, t)).toEqual(["−7 d", "−3.5 d"]);
   });
 });

@@ -3,16 +3,38 @@ import { configuredTimeZone } from "../../shared/timeZone";
 
 /** Pure logic for the Activity page: categories, labels, filtering, counts, day grouping, export. */
 
+/** Translator shape shared by the page logic and the components. */
+export type Translate = (key: string, vars?: Record<string, string | number>) => string;
+
 export type Severity = ActivityEvent["severity"];
 
 export const SEVERITIES: readonly Severity[] = ["error", "warn", "success", "info"];
 
+/**
+ * English severity names. Kept for callers without a translator; the page reads
+ * `severityLabel` from the `activity` catalog instead.
+ */
 export const SEVERITY_LABEL: Record<Severity, string> = {
   error: "Error",
   warn: "Warning",
   success: "Success",
   info: "Info",
 };
+
+/** Translated severity name ("Error", "Warning", …). */
+export function severityLabel(severity: Severity, t?: Translate): string {
+  if (!t) return SEVERITY_LABEL[severity] ?? severity;
+  switch (severity) {
+    case "error":
+      return t("severity.error");
+    case "warn":
+      return t("severity.warn");
+    case "success":
+      return t("severity.success");
+    default:
+      return t("severity.info");
+  }
+}
 
 export type CategoryId = "status" | "thermal" | "health" | "alerts" | "hermes" | "bench" | "power" | "llm" | "fleet" | "other";
 
@@ -28,6 +50,20 @@ export const CATEGORIES: readonly { id: CategoryId; label: string }[] = [
   { id: "fleet", label: "Fleet changes" },
   { id: "other", label: "Other" },
 ];
+
+/** One catalog key per category; the array above stays the English source. */
+const CATEGORY_KEY: Record<CategoryId, string> = {
+  status: "categories.status",
+  thermal: "categories.thermal",
+  health: "categories.health",
+  alerts: "categories.alerts",
+  hermes: "categories.hermes",
+  bench: "categories.bench",
+  power: "categories.power",
+  llm: "categories.llm",
+  fleet: "categories.fleet",
+  other: "categories.other",
+};
 
 const DAY_MS = 86_400_000;
 const HOUR_MS = 3_600_000;
@@ -96,25 +132,63 @@ const BENCH_NAME: Record<string, string> = { decode: "Decode bench", prefill: "P
 const BENCH_STAGE: Record<string, string> = { finished: "", failed: " failed", cancelled: " cancelled" };
 const LLM_ACTION: Record<string, string> = { start: "LLM start", stop: "LLM stop", attach: "LLM attach" };
 
+/** Catalog key per known event type; unknown types fall back to a readable form of the tag itself. */
+const TYPE_KEY: Record<string, string> = {
+  "spark.online": "type.sparkOnline",
+  "spark.offline": "type.sparkOffline",
+  "spark.added": "type.sparkAdded",
+  "spark.removed": "type.sparkRemoved",
+  "gpu.throttle.thermal": "type.thermalThrottle",
+  "gpu.throttle.cleared": "type.throttleCleared",
+  "hermes.update.available": "type.hermesUpdateAvailable",
+  "hermes.update.success": "type.hermesUpdated",
+  "hermes.update.error": "type.hermesUpdateFailed",
+  "health.xid": "type.xidError",
+  "health.oom": "type.outOfMemoryKill",
+  "health.thermal": "type.runningHot",
+  "health.low-power": "type.lowPowerState",
+  "health.memory": "type.lowMemory",
+  "health.concurrency": "type.manyModelsLoaded",
+  "health.link-speed": "type.slowLink",
+  "health.roce-link": "type.roceLinkDown",
+  "health.roce-loss": "type.rocePacketLoss",
+  "health.cleared": "type.healthOk",
+  "alert.notify.sent": "type.notificationSent",
+  "alert.notify.failed": "type.notificationFailed",
+  "power.shutdown": "type.shutdown",
+  "power.wake": "type.wake",
+};
+
+const BENCH_NAME_KEY: Record<string, string> = { decode: "type.decodeBench", prefill: "type.prefillBench", quality: "type.qualityBench" };
+const BENCH_STAGE_KEY: Record<string, string> = { finished: "type.stageFinished", failed: "type.stageFailed", cancelled: "type.stageCancelled" };
+const LLM_ACTION_KEY: Record<string, string> = { start: "type.llmStart", stop: "type.llmStop", attach: "type.llmAttach" };
+
 function sentence(s: string): string {
   const t = s.replace(/[._-]+/g, " ").trim();
   return t ? t.charAt(0).toUpperCase() + t.slice(1) : "Event";
 }
 
-/** Short human label for a type tag, e.g. "bench.decode.finished" -> "Decode bench". */
-export function typeLabel(type: string): string {
+/**
+ * Short human label for a type tag, e.g. "bench.decode.finished" -> "Decode bench".
+ * Without a translator the English table above is used, so the server and older
+ * callers keep their English; the page passes the `activity` catalog translator.
+ */
+export function typeLabel(type: string, t?: Translate): string {
+  if (t && TYPE_KEY[type]) return t(TYPE_KEY[type]);
   if (KNOWN_LABELS[type]) return KNOWN_LABELS[type];
   const parts = type.split(".");
   if (parts[0] === "bench" && parts.length === 3 && BENCH_NAME[parts[1]] && parts[2] in BENCH_STAGE) {
-    return BENCH_NAME[parts[1]] + BENCH_STAGE[parts[2]];
+    const name = t ? t(BENCH_NAME_KEY[parts[1]]) : BENCH_NAME[parts[1]];
+    return t ? t(BENCH_STAGE_KEY[parts[2]], { name }) : name + BENCH_STAGE[parts[2]];
   }
   if (parts[0] === "llm" && parts.length === 3 && LLM_ACTION[parts[1]]) {
-    return `${LLM_ACTION[parts[1]]} ${parts[2]}`;
+    return t ? t("type.llmNamed", { action: t(LLM_ACTION_KEY[parts[1]]), target: parts[2] }) : `${LLM_ACTION[parts[1]]} ${parts[2]}`;
   }
   return sentence(type);
 }
 
-export function categoryLabel(id: CategoryId): string {
+export function categoryLabel(id: CategoryId, t?: Translate): string {
+  if (t) return t(CATEGORY_KEY[id]);
   return CATEGORIES.find((c) => c.id === id)?.label ?? "Other";
 }
 
@@ -141,7 +215,7 @@ function rangeCutoff(range: RangeId, now: number): number {
 
 type Dim = keyof ActivityFilter;
 
-function matches(e: ActivityEvent, f: ActivityFilter, now: number, skip?: Dim): boolean {
+function matches(e: ActivityEvent, f: ActivityFilter, now: number, skip?: Dim, t?: Translate): boolean {
   if (skip !== "severities" && f.severities.length > 0 && !f.severities.includes(e.severity)) return false;
   if (skip !== "category" && f.category !== "all" && categorize(e.type) !== f.category) return false;
   if (skip !== "sparkId" && f.sparkId !== "all" && sparkKey(e) !== f.sparkId) return false;
@@ -149,7 +223,7 @@ function matches(e: ActivityEvent, f: ActivityFilter, now: number, skip?: Dim): 
   if (skip !== "query") {
     const q = f.query.trim().toLowerCase();
     if (q) {
-      const hay = `${e.message}\n${e.sparkName ?? ""}\n${e.type}\n${typeLabel(e.type)}`.toLowerCase();
+      const hay = `${e.message}\n${e.sparkName ?? ""}\n${e.type}\n${typeLabel(e.type, t)}`.toLowerCase();
       if (!hay.includes(q)) return false;
     }
   }
@@ -157,8 +231,8 @@ function matches(e: ActivityEvent, f: ActivityFilter, now: number, skip?: Dim): 
 }
 
 /** Events matching every active filter dimension (order preserved). */
-export function filterEvents(events: readonly ActivityEvent[], f: ActivityFilter, now: number = Date.now()): ActivityEvent[] {
-  return events.filter((e) => matches(e, f, now));
+export function filterEvents(events: readonly ActivityEvent[], f: ActivityFilter, now: number = Date.now(), t?: Translate): ActivityEvent[] {
+  return events.filter((e) => matches(e, f, now, undefined, t));
 }
 
 /** Faceted counts: each dimension is counted with all the OTHER filters applied. */
@@ -201,13 +275,18 @@ export function sparkOptions(
 // ── Local-day handling ──────────────────────────────────────────────
 
 const dtfCache = new Map<string, Intl.DateTimeFormat>();
-function dtf(key: string, tz: string | undefined, opts: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+/**
+ * Date formatter for a calendar label. The dashboard's English source uses en-US
+ * ("Monday, Oct 5"); a page that has an active locale passes it so weekdays and
+ * months follow the reader's language.
+ */
+function dtf(key: string, tz: string | undefined, opts: Intl.DateTimeFormatOptions, locale?: string): Intl.DateTimeFormat {
   // No explicit zone: the Settings time zone, else the browser's.
   const zone = tz ?? configuredTimeZone() ?? undefined;
-  const k = `${key}|${zone ?? ""}`;
+  const k = `${key}|${zone ?? ""}|${locale ?? ""}`;
   let f = dtfCache.get(k);
   if (!f) {
-    f = new Intl.DateTimeFormat("en-US", { ...opts, timeZone: zone });
+    f = new Intl.DateTimeFormat(locale || "en-US", { ...opts, timeZone: zone });
     dtfCache.set(k, f);
   }
   return f;
@@ -219,8 +298,8 @@ interface Ymd {
   d: number;
 }
 
-function ymd(ts: number, tz?: string): Ymd {
-  const parts = dtf("ymd", tz, { year: "numeric", month: "numeric", day: "numeric" }).formatToParts(new Date(ts));
+function ymd(ts: number, tz?: string, locale?: string): Ymd {
+  const parts = dtf("ymd", tz, { year: "numeric", month: "numeric", day: "numeric" }, locale).formatToParts(new Date(ts));
   const get = (t: string) => Number(parts.find((p) => p.type === t)?.value);
   return { y: get("year"), m: get("month"), d: get("day") };
 }
@@ -240,9 +319,9 @@ function parseKey(key: string): Ymd {
 }
 
 /** Format a day key with Intl options (the key is a plain calendar date, so UTC is exact). */
-function formatDayKey(key: string, opts: Intl.DateTimeFormatOptions): string {
+function formatDayKey(key: string, opts: Intl.DateTimeFormatOptions, locale?: string): string {
   const { y, m, d } = parseKey(key);
-  return dtf(`dk${JSON.stringify(opts)}`, "UTC", opts).format(new Date(Date.UTC(y, m - 1, d)));
+  return dtf(`dk${JSON.stringify(opts)}`, "UTC", opts, locale).format(new Date(Date.UTC(y, m - 1, d)));
 }
 
 function shiftKey(key: string, days: number): string {
@@ -252,18 +331,18 @@ function shiftKey(key: string, days: number): string {
 }
 
 /** "Today", "Yesterday", else "Tuesday, Oct 7" (adds the year when it differs from now's). */
-export function dayLabel(key: string, now: number = Date.now(), tz?: string): string {
-  const today = ymd(now, tz);
+export function dayLabel(key: string, now: number = Date.now(), tz?: string, t?: Translate, locale?: string): string {
+  const today = ymd(now, tz, locale);
   const diff = dayNumber(today) - dayNumber(parseKey(key));
-  if (diff === 0) return "Today";
-  if (diff === 1) return "Yesterday";
+  if (diff === 0) return t ? t("day.today") : "Today";
+  if (diff === 1) return t ? t("day.yesterday") : "Yesterday";
   const sameYear = parseKey(key).y === today.y;
-  return formatDayKey(key, sameYear ? { weekday: "long", month: "short", day: "numeric" } : { weekday: "long", month: "short", day: "numeric", year: "numeric" });
+  return formatDayKey(key, sameYear ? { weekday: "long", month: "short", day: "numeric" } : { weekday: "long", month: "short", day: "numeric", year: "numeric" }, locale);
 }
 
 /** "14:05" 24-hour local time. */
-export function formatClock(ts: number, tz?: string): string {
-  return dtf("clock", tz, { hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(ts));
+export function formatClock(ts: number, tz?: string, locale?: string): string {
+  return dtf("clock", tz, { hour: "2-digit", minute: "2-digit", hourCycle: "h23" }, locale).format(new Date(ts));
 }
 
 /** "2026-10-07 14:05:09" in `tz`. */
@@ -280,13 +359,13 @@ export interface DayGroup {
 }
 
 /** Group events (in the given order) by local day; groups keep first-seen order. */
-export function groupByDay(events: readonly ActivityEvent[], now: number = Date.now(), tz?: string): DayGroup[] {
+export function groupByDay(events: readonly ActivityEvent[], now: number = Date.now(), tz?: string, t?: Translate, locale?: string): DayGroup[] {
   const groups = new Map<string, DayGroup>();
   for (const e of events) {
     const key = localDayKey(e.ts, tz);
     let g = groups.get(key);
     if (!g) {
-      g = { key, label: dayLabel(key, now, tz), events: [] };
+      g = { key, label: dayLabel(key, now, tz, t, locale), events: [] };
       groups.set(key, g);
     }
     g.events.push(e);
@@ -304,7 +383,7 @@ export interface DayBucket {
 }
 
 /** One bucket per local day for the last `days` days (oldest first, today last), zero-filled. */
-export function eventsPerDay(events: readonly ActivityEvent[], now: number = Date.now(), days = 14, tz?: string): DayBucket[] {
+export function eventsPerDay(events: readonly ActivityEvent[], now: number = Date.now(), days = 14, tz?: string, locale?: string): DayBucket[] {
   const today = localDayKey(now, tz);
   const buckets: DayBucket[] = [];
   const index = new Map<string, DayBucket>();
@@ -312,8 +391,8 @@ export function eventsPerDay(events: readonly ActivityEvent[], now: number = Dat
     const key = shiftKey(today, -i);
     const b: DayBucket = {
       key,
-      label: formatDayKey(key, { month: "short", day: "numeric" }),
-      title: formatDayKey(key, { weekday: "short", month: "short", day: "numeric" }),
+      label: formatDayKey(key, { month: "short", day: "numeric" }, locale),
+      title: formatDayKey(key, { weekday: "short", month: "short", day: "numeric" }, locale),
       counts: { error: 0, warn: 0, success: 0, info: 0 },
     };
     buckets.push(b);
@@ -389,10 +468,10 @@ export function summarize(events: readonly ActivityEvent[], now: number = Date.n
 }
 
 /** Plain-text export, one line per event, in the order given. */
-export function exportText(events: readonly ActivityEvent[], tz?: string): string {
+export function exportText(events: readonly ActivityEvent[], tz?: string, t?: Translate): string {
   return events
     .map((e) => {
-      return `${formatStamp(e.ts, tz)} [${SEVERITY_LABEL[e.severity] ?? e.severity}] ${typeLabel(e.type)} - ${e.message}`.replace(/\s+/g, " ");
+      return `${formatStamp(e.ts, tz)} [${severityLabel(e.severity, t)}] ${typeLabel(e.type, t)} - ${e.message}`.replace(/\s+/g, " ");
     })
     .join("\n");
 }

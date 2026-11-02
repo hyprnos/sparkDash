@@ -1,10 +1,10 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { formatMb } from "../../shared/formatBytes";
 import {
   headroomTextClass,
   kvNearlyFull,
   legendItems,
-  verdict,
   type VramBreakdown,
   type VramSegmentKey,
 } from "../../shared/vramBreakdown";
@@ -23,6 +23,37 @@ const gb = (n: number) => `${n.toFixed(1)} GB`;
 
 /** "/usr/bin/python3" → "python3": the card is too narrow for interpreter paths. */
 const processLabel = (name: string) => name.split("/").filter(Boolean).pop() || name;
+
+/** Legend name for a segment (or the free track), in the active language. */
+function legendLabel(key: VramSegmentKey | "free", t: (key: string) => string): string {
+  return key === "free" ? t("vram.free") : segmentLabel(key, t);
+}
+
+/** Legend name for a segment, in the active language. */
+function segmentLabel(key: VramSegmentKey, t: (key: string) => string): string {
+  switch (key) {
+    case "engine":
+      return t("vram.legendModel");
+    case "system":
+      return t("vram.legendSystem");
+    case "other":
+      return t("vram.legendOther");
+    default:
+      return t("vram.legendGpu");
+  }
+}
+
+/** One plain sentence on what the numbers mean, in the active language. */
+function verdictText(b: VramBreakdown, t: (key: string) => string): string {
+  if (b.tone !== "ok") {
+    if (b.model === "unified") {
+      return b.tone === "critical" ? t("vram.verdictCriticalUnified") : t("vram.verdictLowUnified");
+    }
+    return b.tone === "critical" ? t("vram.verdictCriticalDiscrete") : t("vram.verdictLowDiscrete");
+  }
+  if (kvNearlyFull(b)) return t("vram.verdictKvNearlyFull");
+  return t("vram.verdictOk");
+}
 
 function Swatch({ kind }: { kind: VramSegmentKey }) {
   return (
@@ -74,6 +105,7 @@ function TipRow({
  * would otherwise leave the breakdown hanging behind it.
  */
 export function VramBreakdownBar({ label, breakdown: b, showLegend = false }: VramBreakdownBarProps) {
+  const { t } = useTranslation("ui");
   const tipId = useId();
   const [hover, setHover] = useState(false);
   const [focus, setFocus] = useState(false);
@@ -111,7 +143,7 @@ export function VramBreakdownBar({ label, breakdown: b, showLegend = false }: Vr
   const kvPct = b.kv?.usage != null ? `${Math.round(b.kv.usage * 100)}%` : null;
   // Free is already the header's figure; the legend only names what holds the memory.
   const items = legendItems(b).filter((it) => it.key !== "free");
-  const pool = b.model === "unified" ? "Unified memory" : "VRAM";
+  const pool = b.model === "unified" ? t("vram.poolUnified") : t("vram.poolVram");
 
   return (
     <div
@@ -142,7 +174,7 @@ export function VramBreakdownBar({ label, breakdown: b, showLegend = false }: Vr
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-xs text-muted">{label}</span>
         <span className={`font-tabular text-sm ${headroomTextClass(b.tone)}`} data-headroom={b.tone}>
-          {formatMb(b.freeMB)} free
+          {t("vram.freeFigure", { value: formatMb(b.freeMB) })}
         </span>
       </div>
       <div className="flex h-1.5 gap-px overflow-hidden rounded-full bg-border">
@@ -161,7 +193,7 @@ export function VramBreakdownBar({ label, breakdown: b, showLegend = false }: Vr
             <span key={it.key} className="inline-flex items-center gap-1">
               {i > 0 ? <span aria-hidden>{" · "}</span> : null}
               {it.key !== "free" ? <Swatch kind={it.key} /> : null}
-              {it.label} {it.gb} GB
+              {legendLabel(it.key, t)} {it.gb} GB
             </span>
           ))}
         </div>
@@ -173,42 +205,47 @@ export function VramBreakdownBar({ label, breakdown: b, showLegend = false }: Vr
         className="absolute left-0 right-0 top-full z-20 mt-1 space-y-0.5 rounded-md border border-border bg-surface-elevated px-3 py-2 text-left text-[11px] font-normal leading-snug text-text shadow-lg"
       >
         <div className="pb-0.5 text-muted">
-          {pool} · {formatMb(b.usedMB)} of {formatMb(b.totalMB)} used
+          {t("vram.usedOf", { pool, used: formatMb(b.usedMB), total: formatMb(b.totalMB) })}
         </div>
         {b.engine && (
           <>
             <TipRow
               swatch="engine"
-              label="Engine"
-              detail={`${processLabel(b.engine.name)} · pid ${b.engine.pid}`}
+              label={t("vram.engine")}
+              detail={t("vram.engineDetail", { name: processLabel(b.engine.name), pid: b.engine.pid })}
               value={formatMb(b.engine.mb)}
             />
-            {b.kv?.weightsGb != null && <TipRow indent label="Weights" value={gb(b.kv.weightsGb)} />}
-            {b.kv?.poolGb != null && <TipRow indent label="KV pool" value={gb(b.kv.poolGb)} />}
+            {b.kv?.weightsGb != null && <TipRow indent label={t("vram.weights")} value={gb(b.kv.weightsGb)} />}
+            {b.kv?.poolGb != null && <TipRow indent label={t("vram.kvPool")} value={gb(b.kv.poolGb)} />}
             {b.kv && (
               <TipRow
                 indent
-                label="KV in use"
-                value={kvPct ?? `not reported by ${b.kv.backend ?? "this backend"}`}
+                label={t("vram.kvInUse")}
+                value={
+                  kvPct ??
+                  (b.kv.backend
+                    ? t("vram.kvNotReported", { backend: b.kv.backend })
+                    : t("vram.kvNotReportedGeneric"))
+                }
                 valueClass={kvFull ? "text-warning" : kvPct != null ? "text-text" : "text-muted"}
               />
             )}
           </>
         )}
-        {b.systemMB != null && <TipRow swatch="system" label="System / CPU" value={formatMb(b.systemMB)} />}
+        {b.systemMB != null && <TipRow swatch="system" label={t("vram.systemCpu")} value={formatMb(b.systemMB)} />}
         {b.engine ? (
-          b.otherMB > 0 && <TipRow swatch="other" label="Other GPU" value={formatMb(b.otherMB)} />
+          b.otherMB > 0 && <TipRow swatch="other" label={t("vram.otherGpu")} value={formatMb(b.otherMB)} />
         ) : (
-          <TipRow swatch="gpu" label="GPU" value={formatMb(b.otherMB)} />
+          <TipRow swatch="gpu" label={t("vram.gpu")} value={formatMb(b.otherMB)} />
         )}
-        <TipRow label="Free" value={formatMb(b.freeMB)} valueClass={headroomTextClass(b.tone)} />
+        <TipRow label={t("vram.free")} value={formatMb(b.freeMB)} valueClass={headroomTextClass(b.tone)} />
         <div
           className={`mt-1 border-t border-border pt-1 ${
             b.tone === "ok" ? (kvFull ? "text-warning" : "text-muted") : headroomTextClass(b.tone)
           }`}
           data-verdict
         >
-          {verdict(b)}
+          {verdictText(b, t)}
         </div>
       </div>
     </div>

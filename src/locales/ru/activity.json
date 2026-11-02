@@ -1,0 +1,177 @@
+{
+  "title": "Активность",
+  "subtitle": "Всё, что произошло в парке: перезапуски, троттлинг, обновления, бенчмарки, питание и запуски LLM. Сервер хранит последние 2 000 событий.",
+  "refresh": "Обновить",
+  "live": {
+    "connecting": "подключение",
+    "justNow": "только что",
+    "secondsAgo": "{{count}} с назад",
+    "minutesAgo": "{{count}} мин назад",
+    "failed": "Не удалось обновить, повторяем",
+    "paused": "Приостановлено (вкладка скрыта)",
+    "live": "В реальном времени · {{when}}"
+  },
+  "copy": {
+    "asText": "Копировать как текст",
+    "doneOne": "Скопировано событий: {{count}}",
+    "doneMany": "Скопировано событий: {{count}}",
+    "failed": "Не удалось скопировать (буфер обмена заблокирован)"
+  },
+  "clear": {
+    "menu": "Очистить историю…",
+    "note": "Это действие нельзя отменить.",
+    "older7d": "Старше 7 дней",
+    "ask7d": "Удалить события старше 7 дней?",
+    "older24h": "Старше 24 часов",
+    "ask24h": "Удалить события старше 24 часов?",
+    "everything": "Всё",
+    "askAll": "Удалить всю историю активности?"
+  },
+  "common": {
+    "retry": "Повторить",
+    "loading": "Загрузка…"
+  },
+  "tiles": {
+    "summaryAria": "Сводка, нажмите для фильтрации",
+    "events24h": "События, 24 ч",
+    "errors24h": "Ошибки, 24 ч",
+    "warnings24h": "Предупреждения, 24 ч",
+    "problemSparks": "Sparks с проблемами",
+    "mostActive": "Самый активный Spark",
+    "none": "Нет",
+    "noEvents": "событий пока нет",
+    "in7d": "{{count}} за 7 дней",
+    "eventsOne": "{{count}} событие",
+    "eventsMany": "{{count}} событий"
+  },
+  "chart": {
+    "title": "События по дням",
+    "unit": "события",
+    "empty": "За последние 14 дней событий нет.",
+    "ariaLabel": "События по дням за последние 14 дней, всего {{count}}"
+  },
+  "filters": {
+    "aria": "Фильтры",
+    "severity": "Важность",
+    "severityTitle": "События: {{severity}}",
+    "timeRange": "Период",
+    "all": "Все",
+    "searchPlaceholder": "Поиск по сообщению, Spark или типу",
+    "searchAria": "Поиск событий",
+    "category": "Категория",
+    "allCategories": "Все категории",
+    "spark": "Spark",
+    "allSparks": "Все Sparks",
+    "fleetWide": "Весь парк ({{count}})",
+    "reset": "Сбросить фильтры"
+  },
+  "range": {
+    "24h": "24 ч",
+    "7d": "7 дн",
+    "all": "Все"
+  },
+  "count": {
+    "showing": "Показано {{visible}} из {{total}} загруженных событий",
+    "showingFiltered": "Показано {{visible}} из {{total}} загруженных событий (с фильтром)"
+  },
+  "newBar": {
+    "one": "Новое событие: {{count}}, перейти наверх",
+    "many": "Новых событий: {{count}}, перейти наверх"
+  },
+  "more": {
+    "reachedOldest": "Достигнуто самое старое событие, сохранённое сервером.",
+    "loadOlder": "Загрузить более старые",
+    "filtersHint": "Фильтры применяются только к загруженным событиям.",
+    "loadFailed": "Не удалось загрузить более старые события: {{message}}"
+  },
+  "timeline": {
+    "loadingAria": "Загрузка активности",
+    "loadFailedTitle": "Не удалось загрузить активность",
+    "emptyTitle": "Пока ничего не записано",
+    "emptyBody": "Сервер записывает события парка по мере их появления: подключение и отключение Sparks, троттлинг GPU, обновления Hermes, запуски бенчмарков, выключение и пробуждение, запуск и остановка LLM, добавление и удаление Sparks.",
+    "filteredTitle": "Нет событий, подходящих под фильтры",
+    "filteredBody": "Попробуйте больший период или снимите фильтр."
+  },
+  "day": {
+    "today": "Сегодня",
+    "yesterday": "Вчера"
+  },
+  "ago": {
+    "justNow": "только что",
+    "minutes": "{{count}} мин назад",
+    "hours": "{{count}} ч назад",
+    "days": "{{count}} дн назад"
+  },
+  "row": {
+    "openSpark": "Открыть {{name}}",
+    "hideDetails": "Скрыть подробности: {{label}}",
+    "showDetails": "Показать подробности: {{label}}",
+    "message": "Сообщение",
+    "time": "Время",
+    "severity": "Важность",
+    "type": "Тип",
+    "eventId": "ID события",
+    "spark": "Spark",
+    "category": "Категория",
+    "data": "Данные",
+    "copied": "Скопировано",
+    "copy": "Копировать"
+  },
+  "severity": {
+    "error": "Ошибка",
+    "warn": "Предупреждение",
+    "success": "Успех",
+    "info": "Информация",
+    "errors": "Ошибки",
+    "warnings": "Предупреждения",
+    "successMany": "Успехи",
+    "infoMany": "Информация"
+  },
+  "categories": {
+    "status": "Статус (в сети/не в сети)",
+    "thermal": "Температура",
+    "health": "Состояние",
+    "alerts": "Уведомления о тревогах",
+    "hermes": "Hermes",
+    "bench": "Бенчмарки",
+    "power": "Питание",
+    "llm": "Модели LLM",
+    "fleet": "Изменения парка",
+    "other": "Прочее"
+  },
+  "type": {
+    "sparkOnline": "В сети",
+    "sparkOffline": "Не в сети",
+    "sparkAdded": "Spark добавлен",
+    "sparkRemoved": "Spark удалён",
+    "thermalThrottle": "Температурный троттлинг",
+    "throttleCleared": "Троттлинг снят",
+    "hermesUpdateAvailable": "Доступно обновление Hermes",
+    "hermesUpdated": "Hermes обновлён",
+    "hermesUpdateFailed": "Ошибка обновления Hermes",
+    "xidError": "Ошибка Xid",
+    "outOfMemoryKill": "Завершено из-за нехватки памяти",
+    "runningHot": "Перегрев",
+    "lowPowerState": "Режим низкого энергопотребления",
+    "lowMemory": "Мало памяти",
+    "manyModelsLoaded": "Загружено много моделей",
+    "slowLink": "Медленный канал",
+    "roceLinkDown": "Канал RoCE не работает",
+    "rocePacketLoss": "Потери пакетов RoCE",
+    "healthOk": "Состояние в норме",
+    "notificationSent": "Уведомление отправлено",
+    "notificationFailed": "Ошибка уведомления",
+    "shutdown": "Выключение",
+    "wake": "Пробуждение",
+    "decodeBench": "Бенчмарк декодирования",
+    "prefillBench": "Бенчмарк префилла",
+    "qualityBench": "Бенчмарк качества",
+    "stageFinished": "{{name}}",
+    "stageFailed": "{{name}}: ошибка",
+    "stageCancelled": "{{name}} отменён",
+    "llmStart": "Запуск LLM",
+    "llmStop": "Остановка LLM",
+    "llmAttach": "Подключение LLM",
+    "llmNamed": "{{action}} {{target}}"
+  }
+}

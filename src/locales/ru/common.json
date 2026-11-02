@@ -85,5 +85,7 @@
     "resultFailed": "ошибок: {{count}}",
     "resultSkipped": "пропущено: {{count}}",
     "batchFailed": "Групповое выключение не удалось"
-  }
+  },
+  "actions": {"cancel": "Отмена", "save": "Сохранить", "close": "Закрыть", "dismiss": "Скрыть", "delete": "Удалить", "remove": "Убрать", "back": "Назад", "next": "Далее", "retry": "Повторить", "edit": "Изменить", "add": "Добавить", "test": "Тест", "enable": "Включить", "disable": "Отключить", "apply": "Применить", "copy": "Копировать", "copied": "Скопировано"},
+  "state": {"loading": "Загрузка…", "saving": "Сохранение…", "testing": "Тестирование…", "checking": "Проверка…", "working": "Выполняется…", "sending": "Отправка…", "applying": "Применение…", "restarting": "Перезапуск…", "removing": "Удаление…"}
 }

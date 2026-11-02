@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { labelIndexes, niceScale } from "./chartScale";
 import { useElementWidth } from "./useElementWidth";
 import "../../styles/charts.css";
@@ -31,7 +32,7 @@ interface StackedBarChartProps {
   unit?: string;
   /** Extra tooltip line for a bucket (e.g. coverage note). */
   footer?: (bucket: BarBucket) => ReactNode;
-  /** Message when every value is zero. */
+  /** Overrides the catalog's empty-range message. */
   empty?: string;
   ariaLabel: string;
 }
@@ -50,9 +51,10 @@ export function StackedBarChart({
   format,
   unit,
   footer,
-  empty = "No data in this range yet.",
+  empty,
   ariaLabel,
 }: StackedBarChartProps) {
+  const { t } = useTranslation("ui");
   const [ref, width] = useElementWidth();
   const [hover, setHover] = useState<number | null>(null);
 
@@ -119,7 +121,7 @@ export function StackedBarChart({
           );
         })}
       </svg>
-      {!hasData ? <p className="chart__empty">{empty}</p> : null}
+      {!hasData ? <p className="chart__empty">{empty ?? t("charts.empty")}</p> : null}
       {hovered && hover != null ? (
         <div
           className="chart__tip"
@@ -137,7 +139,7 @@ export function StackedBarChart({
               </span>
             ))}
           <span className="chart__tip-total">
-            Total <em>{format(totals[hover])}{unit ? ` ${unit}` : ""}</em>
+            {t("charts.total")} <em>{format(totals[hover])}{unit ? ` ${unit}` : ""}</em>
           </span>
           {footer ? <span className="chart__tip-foot">{footer(hovered)}</span> : null}
         </div>

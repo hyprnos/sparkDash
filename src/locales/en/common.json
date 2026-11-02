@@ -85,5 +85,35 @@
     "loadSettings": "Could not load settings: {{message}}. Reload to retry.",
     "refreshSparks": "Could not refresh Sparks: {{message}}. Previous data remains visible.",
     "saveOrder": "Could not save the Spark order: {{message}}. The previous order was restored."
+  },
+  "actions": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "close": "Close",
+    "dismiss": "Dismiss",
+    "delete": "Delete",
+    "remove": "Remove",
+    "back": "Back",
+    "next": "Next",
+    "retry": "Retry",
+    "edit": "Edit",
+    "add": "Add",
+    "test": "Test",
+    "enable": "Enable",
+    "disable": "Disable",
+    "apply": "Apply",
+    "copy": "Copy",
+    "copied": "Copied"
+  },
+  "state": {
+    "loading": "Loading…",
+    "saving": "Saving…",
+    "testing": "Testing…",
+    "checking": "Checking…",
+    "working": "Working…",
+    "sending": "Sending…",
+    "applying": "Applying…",
+    "restarting": "Restarting…",
+    "removing": "Removing…"
   }
 }

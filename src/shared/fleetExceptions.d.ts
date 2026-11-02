@@ -10,4 +10,9 @@ export interface FleetException {
 }
 
 export function formatTemperature(c: number, unit?: "celsius" | "fahrenheit"): string;
-export function fleetExceptions(spark: SparkSnapshot, unit?: "celsius" | "fahrenheit"): FleetException[];
+/** The optional translator reads the labels from the `bench` catalog. */
+export function fleetExceptions(
+  spark: SparkSnapshot,
+  unit?: "celsius" | "fahrenheit",
+  t?: (key: string, vars?: Record<string, string | number>) => string
+): FleetException[];

@@ -1,4 +1,5 @@
 import type { ToolEvalRun } from "../../../api/types";
+import type { Translate } from "./format";
 import { CATEGORY_NAMES, flattenNumbers, normalizeToolResult, type NormToolResult, type ScenarioStatus } from "./normalize";
 
 export interface Delta {
@@ -63,18 +64,19 @@ const d = (label: string, a: number | null, b: number | null, higherIsBetter = t
 });
 
 /** Compare two tool-call results: `a` is the baseline, `b` the newer one. */
-export function compareToolResults(a: NormToolResult, b: NormToolResult): ToolCompare {
+export function compareToolResults(a: NormToolResult, b: NormToolResult, t?: Translate): ToolCompare {
   const hasScenarios = { a: a.scenarios.length > 0, b: b.scenarios.length > 0 };
   // Counts come from scenarios: a side without any has no counts, not zero of everything.
   const cnt = (n: NormToolResult, has: boolean, k: "pass" | "partial" | "fail") => (has ? n.counts[k] : null);
+  const label = (key: string, english: string) => (t ? t(key) : english);
   const headline = [
-    d("Score", a.score, b.score),
-    d("Deployability", a.deployability, b.deployability),
-    d("Responsiveness", a.responsiveness, b.responsiveness),
-    d("Passed", cnt(a, hasScenarios.a, "pass"), cnt(b, hasScenarios.b, "pass"), true, true),
-    d("Partial", cnt(a, hasScenarios.a, "partial"), cnt(b, hasScenarios.b, "partial"), true, true),
-    d("Failed", cnt(a, hasScenarios.a, "fail"), cnt(b, hasScenarios.b, "fail"), false, true),
-    d("Safety warnings", a.safety.length, b.safety.length, false, true),
+    d(label("te.compare.score", "Score"), a.score, b.score),
+    d(label("te.compare.deployability", "Deployability"), a.deployability, b.deployability),
+    d(label("te.compare.responsiveness", "Responsiveness"), a.responsiveness, b.responsiveness),
+    d(label("te.compare.passed", "Passed"), cnt(a, hasScenarios.a, "pass"), cnt(b, hasScenarios.b, "pass"), true, true),
+    d(label("te.compare.partial", "Partial"), cnt(a, hasScenarios.a, "partial"), cnt(b, hasScenarios.b, "partial"), true, true),
+    d(label("te.compare.failed", "Failed"), cnt(a, hasScenarios.a, "fail"), cnt(b, hasScenarios.b, "fail"), false, true),
+    d(label("te.compare.safetyWarnings", "Safety warnings"), a.safety.length, b.safety.length, false, true),
   ];
   const ids = [...new Set([...a.categories.map((c) => c.id), ...b.categories.map((c) => c.id)])].sort();
   const categories = ids.map((id) => {
@@ -134,18 +136,30 @@ export function compareGeneric(a: unknown, b: unknown, limit = 200): { changed: 
 const IGNORED_OPTIONS = new Set(["label", "output-dir", "api-key", "header", "diff", "resume"]);
 
 /** Differences in model / endpoint / options that make a comparison less meaningful. */
-export function configCaveats(a: Pick<ToolEvalRun, "model" | "baseUrl" | "options" | "type">, b: Pick<ToolEvalRun, "model" | "baseUrl" | "options" | "type">): string[] {
+export function configCaveats(
+  a: Pick<ToolEvalRun, "model" | "baseUrl" | "options" | "type">,
+  b: Pick<ToolEvalRun, "model" | "baseUrl" | "options" | "type">,
+  t?: Translate
+): string[] {
+  const auto = t ? t("te.compare.autoModel") : "auto";
   const out: string[] = [];
-  if (a.type !== b.type) out.push("The runs are of different benchmark types.");
-  if ((a.model ?? "") !== (b.model ?? "")) out.push(`Different models: ${a.model ?? "auto"} vs ${b.model ?? "auto"}.`);
-  if (a.baseUrl !== b.baseUrl) out.push(`Different endpoints: ${a.baseUrl} vs ${b.baseUrl}.`);
+  if (a.type !== b.type) out.push(t ? t("te.compare.diffType") : "The runs are of different benchmark types.");
+  if ((a.model ?? "") !== (b.model ?? "")) {
+    out.push(t ? t("te.compare.diffModel", { a: a.model ?? auto, b: b.model ?? auto }) : `Different models: ${a.model ?? "auto"} vs ${b.model ?? "auto"}.`);
+  }
+  if (a.baseUrl !== b.baseUrl) {
+    out.push(t ? t("te.compare.diffEndpoint", { a: a.baseUrl, b: b.baseUrl }) : `Different endpoints: ${a.baseUrl} vs ${b.baseUrl}.`);
+  }
   const keys = new Set([...Object.keys(a.options ?? {}), ...Object.keys(b.options ?? {})]);
   const differing: string[] = [];
   for (const k of keys) {
     if (IGNORED_OPTIONS.has(k) || k === "model" || k === "base-url") continue;
     if (JSON.stringify(a.options?.[k] ?? null) !== JSON.stringify(b.options?.[k] ?? null)) differing.push(k);
   }
-  if (differing.length) out.push(`Different options: ${differing.map((k) => `--${k}`).join(", ")}.`);
+  if (differing.length) {
+    const flags = differing.map((k) => `--${k}`).join(", ");
+    out.push(t ? t("te.compare.diffOptions", { flags }) : `Different options: ${flags}.`);
+  }
   return out;
 }
 

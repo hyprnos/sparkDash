@@ -85,5 +85,7 @@
     "resultFailed": "{{count}} en échec",
     "resultSkipped": "{{count}} ignorés",
     "batchFailed": "Échec de l’extinction groupée"
-  }
+  },
+  "actions": {"cancel": "Annuler", "save": "Enregistrer", "close": "Fermer", "dismiss": "Ignorer", "delete": "Supprimer", "remove": "Retirer", "back": "Retour", "next": "Suivant", "retry": "Réessayer", "edit": "Modifier", "add": "Ajouter", "test": "Tester", "enable": "Activer", "disable": "Désactiver", "apply": "Appliquer", "copy": "Copier", "copied": "Copié"},
+  "state": {"loading": "Chargement…", "saving": "Enregistrement…", "testing": "Test en cours…", "checking": "Vérification…", "working": "Traitement…", "sending": "Envoi…", "applying": "Application…", "restarting": "Redémarrage…", "removing": "Suppression…"}
 }

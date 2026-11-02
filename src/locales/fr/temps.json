@@ -1,0 +1,23 @@
+{
+  "title": "Températures",
+  "subtitle": "Température GPU de toute la flotte sur {{range}}. L’historique à la minute est conservé une semaine sur le serveur, les graphiques survivent donc à un rechargement.",
+  "rangeGroup": "Période",
+  "range": {
+    "24h": { "label": "24 dernières h", "long": "24 heures" },
+    "7d": { "label": "7 derniers j", "long": "7 jours" }
+  },
+  "loadFailedTitle": "Impossible de charger l’historique GPU",
+  "retry": "Réessayer",
+  "loading": "Chargement de l’historique de température…",
+  "warmingTitle": "Préchauffage",
+  "warmingBody": "Aucune température GPU n’a encore été enregistrée sur cette période. Les graphiques apparaissent dès que les sparks rapportent de la télémétrie et se remplissent vers le passé.",
+  "nowTemp": "maintenant {{temp}}°C",
+  "offline": "hors ligne",
+  "noSamples": "Aucun échantillon de température sur cette période.",
+  "chartAria": "Historique de température GPU",
+  "axisHours": "−{{hours}} h",
+  "axisDays": "−{{days}} j",
+  "axisNow": "maintenant",
+  "gpuTemperature": "Température GPU",
+  "gpuIndex": "GPU {{index}}"
+}

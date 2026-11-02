@@ -1,0 +1,177 @@
+{
+  "title": "活动",
+  "subtitle": "整个机群的动态：重启、降频、更新、基准测试、电源与 LLM 运行。服务器保留最近 2,000 条事件。",
+  "refresh": "刷新",
+  "live": {
+    "connecting": "正在连接",
+    "justNow": "刚刚",
+    "secondsAgo": "{{count}} 秒前",
+    "minutesAgo": "{{count}} 分钟前",
+    "failed": "更新失败，正在重试",
+    "paused": "已暂停（标签页隐藏）",
+    "live": "实时 · {{when}}"
+  },
+  "copy": {
+    "asText": "复制为文本",
+    "doneOne": "已复制 {{count}} 条事件",
+    "doneMany": "已复制 {{count}} 条事件",
+    "failed": "复制失败（剪贴板被阻止）"
+  },
+  "clear": {
+    "menu": "清除历史…",
+    "note": "此操作无法撤销。",
+    "older7d": "早于 7 天",
+    "ask7d": "删除早于 7 天的事件？",
+    "older24h": "早于 24 小时",
+    "ask24h": "删除早于 24 小时的事件？",
+    "everything": "全部",
+    "askAll": "删除全部事件历史？"
+  },
+  "common": {
+    "retry": "重试",
+    "loading": "正在加载…"
+  },
+  "tiles": {
+    "summaryAria": "概览，点击以筛选",
+    "events24h": "事件（24 小时）",
+    "errors24h": "错误（24 小时）",
+    "warnings24h": "警告（24 小时）",
+    "problemSparks": "有问题的 Spark",
+    "mostActive": "最活跃的 Spark",
+    "none": "无",
+    "noEvents": "暂无事件",
+    "in7d": "7 天内 {{count}} 条",
+    "eventsOne": "{{count}} 条事件",
+    "eventsMany": "{{count}} 条事件"
+  },
+  "chart": {
+    "title": "每日事件",
+    "unit": "事件",
+    "empty": "最近 14 天没有事件。",
+    "ariaLabel": "最近 14 天每日事件，共 {{count}} 条"
+  },
+  "filters": {
+    "aria": "筛选",
+    "severity": "级别",
+    "severityTitle": "{{severity}}事件",
+    "timeRange": "时间范围",
+    "all": "全部",
+    "searchPlaceholder": "搜索消息、Spark 或类型",
+    "searchAria": "搜索事件",
+    "category": "类别",
+    "allCategories": "所有类别",
+    "spark": "Spark",
+    "allSparks": "所有 Spark",
+    "fleetWide": "全机群（{{count}}）",
+    "reset": "重置筛选"
+  },
+  "range": {
+    "24h": "24 小时",
+    "7d": "7 天",
+    "all": "全部"
+  },
+  "count": {
+    "showing": "已加载的 {{total}} 条事件中显示 {{visible}} 条",
+    "showingFiltered": "已加载的 {{total}} 条事件中显示 {{visible}} 条（已筛选）"
+  },
+  "newBar": {
+    "one": "{{count}} 条新事件，跳到顶部",
+    "many": "{{count}} 条新事件，跳到顶部"
+  },
+  "more": {
+    "reachedOldest": "已到达服务器保留的最早事件。",
+    "loadOlder": "加载更早",
+    "filtersHint": "筛选仅应用于已加载的事件。",
+    "loadFailed": "无法加载更早的事件：{{message}}"
+  },
+  "timeline": {
+    "loadingAria": "正在加载活动",
+    "loadFailedTitle": "无法加载活动",
+    "emptyTitle": "暂无记录",
+    "emptyBody": "服务器会实时记录机群事件：Spark 上线或离线、GPU 过热降频、Hermes 更新、基准测试运行、关机与唤醒、LLM 启动与停止，以及 Spark 的添加或移除。",
+    "filteredTitle": "没有符合筛选条件的事件",
+    "filteredBody": "尝试扩大时间范围或清除一项筛选。"
+  },
+  "day": {
+    "today": "今天",
+    "yesterday": "昨天"
+  },
+  "ago": {
+    "justNow": "刚刚",
+    "minutes": "{{count}} 分钟前",
+    "hours": "{{count}} 小时前",
+    "days": "{{count}} 天前"
+  },
+  "row": {
+    "openSpark": "打开 {{name}}",
+    "hideDetails": "隐藏详情：{{label}}",
+    "showDetails": "显示详情：{{label}}",
+    "message": "消息",
+    "time": "时间",
+    "severity": "级别",
+    "type": "类型",
+    "eventId": "事件 ID",
+    "spark": "Spark",
+    "category": "类别",
+    "data": "数据",
+    "copied": "已复制",
+    "copy": "复制"
+  },
+  "severity": {
+    "error": "错误",
+    "warn": "警告",
+    "success": "成功",
+    "info": "信息",
+    "errors": "错误",
+    "warnings": "警告",
+    "successMany": "成功",
+    "infoMany": "信息"
+  },
+  "categories": {
+    "status": "状态（上线/离线）",
+    "thermal": "温度",
+    "health": "健康",
+    "alerts": "告警通知",
+    "hermes": "Hermes",
+    "bench": "基准测试",
+    "power": "电源",
+    "llm": "LLM 模型",
+    "fleet": "机群变更",
+    "other": "其他"
+  },
+  "type": {
+    "sparkOnline": "上线",
+    "sparkOffline": "离线",
+    "sparkAdded": "已添加 Spark",
+    "sparkRemoved": "已移除 Spark",
+    "thermalThrottle": "温度降频",
+    "throttleCleared": "降频解除",
+    "hermesUpdateAvailable": "Hermes 有可用更新",
+    "hermesUpdated": "Hermes 已更新",
+    "hermesUpdateFailed": "Hermes 更新失败",
+    "xidError": "Xid 错误",
+    "outOfMemoryKill": "内存不足被终止",
+    "runningHot": "温度过高",
+    "lowPowerState": "低功耗状态",
+    "lowMemory": "内存不足",
+    "manyModelsLoaded": "加载了多个模型",
+    "slowLink": "链路缓慢",
+    "roceLinkDown": "RoCE 链路断开",
+    "rocePacketLoss": "RoCE 丢包",
+    "healthOk": "健康正常",
+    "notificationSent": "已发送通知",
+    "notificationFailed": "通知失败",
+    "shutdown": "关机",
+    "wake": "唤醒",
+    "decodeBench": "解码基准测试",
+    "prefillBench": "预填充基准测试",
+    "qualityBench": "质量基准测试",
+    "stageFinished": "{{name}}",
+    "stageFailed": "{{name}} 失败",
+    "stageCancelled": "{{name}} 已取消",
+    "llmStart": "LLM 启动",
+    "llmStop": "LLM 停止",
+    "llmAttach": "LLM 挂载",
+    "llmNamed": "{{action}} {{target}}"
+  }
+}

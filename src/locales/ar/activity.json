@@ -1,0 +1,177 @@
+{
+  "title": "النشاط",
+  "subtitle": "كل ما حدث عبر الأسطول: إعادة التشغيل، وخفض الأداء الحراري، والتحديثات، والاختبارات المعيارية، والطاقة، وتشغيل LLM. يحتفظ الخادم بآخر 2,000 حدث.",
+  "refresh": "تحديث",
+  "live": {
+    "connecting": "جارٍ الاتصال",
+    "justNow": "الآن",
+    "secondsAgo": "قبل {{count}} ث",
+    "minutesAgo": "قبل {{count}} دقيقة",
+    "failed": "فشل التحديث، تجري إعادة المحاولة",
+    "paused": "متوقف مؤقتًا (علامة التبويب مخفية)",
+    "live": "مباشر · {{when}}"
+  },
+  "copy": {
+    "asText": "نسخ كنص",
+    "doneOne": "تم نسخ {{count}} حدث",
+    "doneMany": "تم نسخ {{count}} أحداث",
+    "failed": "تعذّر النسخ (الحافظة محظورة)"
+  },
+  "clear": {
+    "menu": "مسح السجل…",
+    "note": "لا يمكن التراجع عن هذا الإجراء.",
+    "older7d": "أقدم من 7 أيام",
+    "ask7d": "حذف الأحداث الأقدم من 7 أيام؟",
+    "older24h": "أقدم من 24 ساعة",
+    "ask24h": "حذف الأحداث الأقدم من 24 ساعة؟",
+    "everything": "كل شيء",
+    "askAll": "حذف سجل النشاط كله؟"
+  },
+  "common": {
+    "retry": "إعادة المحاولة",
+    "loading": "جارٍ التحميل…"
+  },
+  "tiles": {
+    "summaryAria": "ملخص، انقر للتصفية",
+    "events24h": "الأحداث، 24 ساعة",
+    "errors24h": "الأخطاء، 24 ساعة",
+    "warnings24h": "التحذيرات، 24 ساعة",
+    "problemSparks": "Sparks بها مشكلات",
+    "mostActive": "Spark الأكثر نشاطًا",
+    "none": "لا شيء",
+    "noEvents": "لا أحداث بعد",
+    "in7d": "{{count}} خلال 7 أيام",
+    "eventsOne": "{{count}} حدث",
+    "eventsMany": "{{count}} أحداث"
+  },
+  "chart": {
+    "title": "الأحداث يوميًا",
+    "unit": "أحداث",
+    "empty": "لا أحداث خلال آخر 14 يومًا.",
+    "ariaLabel": "الأحداث يوميًا خلال آخر 14 يومًا، المجموع {{count}}"
+  },
+  "filters": {
+    "aria": "عوامل التصفية",
+    "severity": "الخطورة",
+    "severityTitle": "أحداث {{severity}}",
+    "timeRange": "النطاق الزمني",
+    "all": "الكل",
+    "searchPlaceholder": "ابحث في الرسالة أو Spark أو النوع",
+    "searchAria": "بحث في الأحداث",
+    "category": "الفئة",
+    "allCategories": "كل الفئات",
+    "spark": "Spark",
+    "allSparks": "كل Sparks",
+    "fleetWide": "على مستوى الأسطول ({{count}})",
+    "reset": "إعادة تعيين عوامل التصفية"
+  },
+  "range": {
+    "24h": "24 ساعة",
+    "7d": "7 أيام",
+    "all": "الكل"
+  },
+  "count": {
+    "showing": "عرض {{visible}} من {{total}} حدثًا محمّلًا",
+    "showingFiltered": "عرض {{visible}} من {{total}} حدثًا محمّلًا (مُصفّى)"
+  },
+  "newBar": {
+    "one": "{{count}} حدث جديد، انتقل إلى الأعلى",
+    "many": "{{count}} أحداث جديدة، انتقل إلى الأعلى"
+  },
+  "more": {
+    "reachedOldest": "وصلت إلى أقدم حدث احتفظ به الخادم.",
+    "loadOlder": "تحميل الأقدم",
+    "filtersHint": "تنطبق عوامل التصفية على الأحداث المحمّلة حتى الآن.",
+    "loadFailed": "تعذّر تحميل الأحداث الأقدم: {{message}}"
+  },
+  "timeline": {
+    "loadingAria": "جارٍ تحميل النشاط",
+    "loadFailedTitle": "تعذّر تحميل النشاط",
+    "emptyTitle": "لم يُسجَّل شيء بعد",
+    "emptyBody": "يسجّل الخادم أحداث الأسطول عند وقوعها: اتصال Sparks أو انقطاعها، وخفض الأداء الحراري لوحدة GPU، وتحديثات Hermes، وتشغيل الاختبارات المعيارية، والإطفاء والتنبيه، وبدء LLM وإيقافه، وإضافة Sparks أو إزالتها.",
+    "filteredTitle": "لا أحداث تطابق عوامل التصفية",
+    "filteredBody": "جرّب نطاقًا زمنيًا أوسع أو أزل أحد العوامل."
+  },
+  "day": {
+    "today": "اليوم",
+    "yesterday": "أمس"
+  },
+  "ago": {
+    "justNow": "الآن",
+    "minutes": "قبل {{count}} دقيقة",
+    "hours": "قبل {{count}} ساعة",
+    "days": "قبل {{count}} يوم"
+  },
+  "row": {
+    "openSpark": "فتح {{name}}",
+    "hideDetails": "إخفاء التفاصيل: {{label}}",
+    "showDetails": "عرض التفاصيل: {{label}}",
+    "message": "الرسالة",
+    "time": "الوقت",
+    "severity": "الخطورة",
+    "type": "النوع",
+    "eventId": "معرّف الحدث",
+    "spark": "Spark",
+    "category": "الفئة",
+    "data": "البيانات",
+    "copied": "تم النسخ",
+    "copy": "نسخ"
+  },
+  "severity": {
+    "error": "خطأ",
+    "warn": "تحذير",
+    "success": "نجاح",
+    "info": "معلومة",
+    "errors": "أخطاء",
+    "warnings": "تحذيرات",
+    "successMany": "نجاحات",
+    "infoMany": "معلومات"
+  },
+  "categories": {
+    "status": "الحالة (متصل/غير متصل)",
+    "thermal": "حرارة",
+    "health": "السلامة",
+    "alerts": "إشعارات التنبيه",
+    "hermes": "Hermes",
+    "bench": "الاختبارات المعيارية",
+    "power": "الطاقة",
+    "llm": "نماذج LLM",
+    "fleet": "تغييرات الأسطول",
+    "other": "أخرى"
+  },
+  "type": {
+    "sparkOnline": "متصل",
+    "sparkOffline": "غير متصل",
+    "sparkAdded": "تمت إضافة Spark",
+    "sparkRemoved": "تمت إزالة Spark",
+    "thermalThrottle": "خفض أداء حراري",
+    "throttleCleared": "زوال خفض الأداء",
+    "hermesUpdateAvailable": "تحديث Hermes متاح",
+    "hermesUpdated": "تم تحديث Hermes",
+    "hermesUpdateFailed": "فشل تحديث Hermes",
+    "xidError": "خطأ Xid",
+    "outOfMemoryKill": "إنهاء بسبب نفاد الذاكرة",
+    "runningHot": "حرارة مرتفعة",
+    "lowPowerState": "حالة طاقة منخفضة",
+    "lowMemory": "ذاكرة منخفضة",
+    "manyModelsLoaded": "نماذج كثيرة محمّلة",
+    "slowLink": "رابط بطيء",
+    "roceLinkDown": "انقطاع رابط RoCE",
+    "rocePacketLoss": "فقدان حزم RoCE",
+    "healthOk": "السلامة جيدة",
+    "notificationSent": "أُرسل الإشعار",
+    "notificationFailed": "فشل الإشعار",
+    "shutdown": "إطفاء",
+    "wake": "إيقاظ",
+    "decodeBench": "اختبار فك الترميز",
+    "prefillBench": "اختبار التعبئة المسبقة",
+    "qualityBench": "اختبار الجودة",
+    "stageFinished": "{{name}}",
+    "stageFailed": "فشل {{name}}",
+    "stageCancelled": "أُلغي {{name}}",
+    "llmStart": "بدء LLM",
+    "llmStop": "إيقاف LLM",
+    "llmAttach": "ربط LLM",
+    "llmNamed": "{{action}} {{target}}"
+  }
+}

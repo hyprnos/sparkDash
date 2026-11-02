@@ -1,4 +1,5 @@
 import { useId, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { labelIndexes, niceScale } from "./chartScale";
 import { useElementWidth } from "./useElementWidth";
 import "../../styles/charts.css";
@@ -30,9 +31,10 @@ export function LineAreaChart({
   height = 200,
   format,
   unit,
-  empty = "No data in this range yet.",
+  empty,
   ariaLabel,
 }: LineAreaChartProps) {
+  const { t } = useTranslation("ui");
   const gradId = useId();
   const [ref, width] = useElementWidth();
   const [hover, setHover] = useState<number | null>(null);
@@ -98,7 +100,7 @@ export function LineAreaChart({
               height={ih}
               fill="transparent"
               tabIndex={0}
-              aria-label={`${p.title}: ${p.value == null ? "no data" : format(p.value)}`}
+              aria-label={`${p.title}: ${p.value == null ? t("charts.noData") : format(p.value)}`}
               onMouseEnter={() => setHover(i)}
               onFocus={() => setHover(i)}
               onBlur={() => setHover(null)}
@@ -111,12 +113,12 @@ export function LineAreaChart({
           </g>
         ))}
       </svg>
-      {max <= 0 ? <p className="chart__empty">{empty}</p> : null}
+      {max <= 0 ? <p className="chart__empty">{empty ?? t("charts.empty")}</p> : null}
       {hovered ? (
         <div className="chart__tip" role="status" style={{ left: Math.min(Math.max(x(hover!), 90), width - 90) }}>
           <b>{hovered.title}</b>
           <span className="chart__tip-total">
-            {hovered.value == null ? "No data" : <em>{format(hovered.value)}{unit ? ` ${unit}` : ""}</em>}
+            {hovered.value == null ? t("charts.noData") : <em>{format(hovered.value)}{unit ? ` ${unit}` : ""}</em>}
           </span>
         </div>
       ) : null}

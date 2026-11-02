@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { HealthFinding } from "../../api/types";
 import { Tag } from "./Tag";
 import { AlertTriangleIcon } from "./icons";
@@ -17,14 +18,19 @@ export function worstSeverity(list: readonly HealthFinding[] | undefined): Healt
   return list.some((f) => f.severity === "critical") ? "critical" : "warn";
 }
 
-/** Alert strip for an Overview card: icon + title per finding, details in the tooltip. */
+/**
+ * Alert strip for an Overview card: icon + title per finding, details in the
+ * tooltip. Finding titles, details and hints are authored by the server's Health
+ * rules and arrive already written, so they are shown as received.
+ */
 export function HealthChips({ findings }: { findings: readonly HealthFinding[] | undefined }) {
+  const { t } = useTranslation("ui");
   const list = sortFindings(findings);
   if (list.length === 0) return null;
   const shown = list.slice(0, 2);
   const more = list.length - shown.length;
   return (
-    <div className="health-strip" role="status" aria-label="Health findings">
+    <div className="health-strip" role="status" aria-label={t("health.findingsAria")}>
       {shown.map((f) => (
         <div key={f.id} className={`health-row health-row--${f.severity}`} title={`${f.detail} ${f.hint}`}>
           <AlertTriangleIcon className="health-row__icon" />
@@ -33,7 +39,7 @@ export function HealthChips({ findings }: { findings: readonly HealthFinding[] |
       ))}
       {more > 0 ? (
         <div className="health-more" title={list.slice(2).map((f) => f.title).join("\n")}>
-          +{more} more
+          {t("health.more", { count: more })}
         </div>
       ) : null}
     </div>
@@ -42,14 +48,17 @@ export function HealthChips({ findings }: { findings: readonly HealthFinding[] |
 
 /** Full list for the Spark page: what is wrong, the evidence, and what to try. */
 export function HealthList({ findings }: { findings: readonly HealthFinding[] | undefined }) {
+  const { t } = useTranslation("ui");
   const list = sortFindings(findings);
   if (list.length === 0) return null;
   return (
-    <section className="health-list" aria-label="Health findings">
+    <section className="health-list" aria-label={t("health.findingsAria")}>
       {list.map((f) => (
         <div key={f.id} className={`health-item health-item--${f.severity}`}>
           <div className="health-item__title">
-            <Tag tone={f.severity === "critical" ? "bad" : "warn"}>{f.severity === "critical" ? "Critical" : "Warning"}</Tag>
+            <Tag tone={f.severity === "critical" ? "bad" : "warn"}>
+              {f.severity === "critical" ? t("health.critical") : t("health.warning")}
+            </Tag>
             <strong>{f.title}</strong>
           </div>
           <div className="health-item__detail">{f.detail}</div>

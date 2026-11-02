@@ -1,0 +1,133 @@
+{
+  "title": "عرض المطالبات",
+  "brandHome": "صفحة sparkDash الرئيسية",
+  "loading": "جارٍ التحميل…",
+  "controls": {
+    "show": "إظهار عناصر التحكم",
+    "showTitle": "إظهار عناصر التحكم",
+    "hide": "إخفاء",
+    "hideTitle": "إخفاء عناصر التحكم"
+  },
+  "actions": {
+    "run": "تشغيل",
+    "starting": "جارٍ البدء…",
+    "stop": "إيقاف",
+    "copyAll": "نسخ الكل",
+    "copied": "تم النسخ!",
+    "copyAllTitle": "نسخ كل الطرفيات كنص عادي",
+    "history": "السجل",
+    "historyTitle": "عمليات العرض السابقة"
+  },
+  "confirm": {
+    "stopAll": "إيقاف كل تدفقات العرض؟",
+    "clearHistory": "مسح كل سجل العرض المحفوظ لهذا Spark؟"
+  },
+  "errors": {
+    "notFound": "لم يتم العثور على Spark",
+    "loadFailed": "تعذّر تحميل Spark",
+    "copy": "تعذّر النسخ إلى الحافظة",
+    "promptRange": "استخدم بين {{min}} و{{max}} من المطالبات غير الفارغة",
+    "monitoringOff": "مراقبة LLM متوقفة أو أن هذا Spark عقدة عاملة — العرض غير متاح."
+  },
+  "fields": {
+    "port": "المنفذ",
+    "terminals": "الطرفيات",
+    "promptType": "نوع المطالبة",
+    "maxTokens": "الحد الأقصى للرموز",
+    "temp": "الحرارة",
+    "tempTitle": "حرارة أخذ العينات (0–2)",
+    "thinking": "التفكير",
+    "thinkingTitle": "تفعيل رموز تفكير/استدلال النموذج",
+    "showPrompts": "إظهار المطالبات",
+    "model": "النموذج"
+  },
+  "promptType": {
+    "text": "نص",
+    "textHint": "سرد أو قصة — بلا شيفرة أو صيغ منظمة",
+    "structural": "منظم",
+    "structuralHint": "JSON وHTML وYAML وSQL والمخططات والجداول والسجلات",
+    "mixed": "مختلط",
+    "mixedHint": "نصف منظم ونصف نص — بالتناوب",
+    "tok": "{{tokens}} tok"
+  },
+  "promptLabel": "المطالبة {{n}}",
+  "history": {
+    "title": "العمليات السابقة",
+    "refresh": "تحديث",
+    "clear": "مسح",
+    "empty": "لا عمليات محفوظة بعد. تظهر العروض المكتملة هنا تلقائيًا.",
+    "viewTitle": "عرض هذه العملية",
+    "terms": "{{count}} طرفية",
+    "promptType": "مطالبة {{type}}",
+    "avg": "المتوسط {{value}} tok/s",
+    "reuse": "إعادة استخدام",
+    "reuseTitle": "تحميل المطالبات والإعدادات إلى النموذج (دون إعادة التشغيل)"
+  },
+  "metrics": {
+    "aggregate": "الإجمالي",
+    "aggregateHero": "مجموع tok/s لفك الترميز المباشر عبر كل الطرفيات",
+    "aggregateTitle": "إجمالي الرموز في الثانية عبر كل الطرفيات",
+    "avg": "المتوسط",
+    "avgTitle": "متوسط tok/s لفك الترميز لكل طرفية في هذه الجلسة",
+    "perStream": "لكل تدفق",
+    "tokens": "الرموز",
+    "server": "الخادم",
+    "streams": "التدفقات",
+    "peak": "الذروة {{value}}"
+  },
+  "plain": {
+    "status": "الحالة: {{status}}",
+    "tps": "tok/s: {{value}}",
+    "thinking": "### التفكير",
+    "answer": "### الإجابة",
+    "error": "[خطأ] {{message}}",
+    "head": "{{name}} | عرض المطالبات",
+    "port": "المنفذ {{port}}",
+    "avgPerStream": "المتوسط {{value}} tok/s/تدفق",
+    "server": "الخادم {{value}} tok/s"
+  },
+  "status": {
+    "pending": "قيد الانتظار",
+    "running": "قيد التشغيل",
+    "completed": "مكتمل",
+    "failed": "فشل",
+    "cancelled": "أُلغي",
+    "error": "خطأ"
+  },
+  "footer": {
+    "historyRun": "السجل · {{status}}",
+    "sessionRun": "الجلسة {{status}}",
+    "readOnly": " · للقراءة فقط"
+  },
+  "terminal": {
+    "title": "طرفية",
+    "tokensOne": "{{count}} رمز",
+    "tokensMany": "{{count}} رموز",
+    "tpsTitle": "مباشر {{live}} tok/s · الذروة {{peak}} tok/s",
+    "peak": "الذروة {{value}}",
+    "copyTitle": "نسخ هذه الطرفية",
+    "copied": "تم النسخ",
+    "copy": "نسخ",
+    "waiting": "في الانتظار…",
+    "reasoning": "الاستدلال",
+    "chars": "{{count}} حرفًا"
+  },
+  "view": {
+    "workspace": "مساحة العمل",
+    "heading": "العرض",
+    "subtitle": "شغّل المطالبات على عدة طرفيات في آن واحد وراقب بث نموذجك.",
+    "openWindow": "فتح في نافذة جديدة ↗",
+    "openWindowTitle": "فتح العرض في نافذة ملء الشاشة خاصة به",
+    "runOn": "التشغيل على",
+    "noSparks": "لا Sparks متاحة",
+    "sparkPickerAria": "Spark المطلوب تقييمه",
+    "offlineTitle": "{{name}} غير متصل",
+    "offlineBody": "أعده إلى الاتصال أو شغّل العرض على Spark آخر.",
+    "workerTitle": "{{name}} عقدة عاملة",
+    "workerBody": "تشارك العقد العاملة نموذجًا يقدمه Spark الرئيسي، لذا لا يوجد ما يُبث من هذه العقدة. شغّل العرض على الرئيسي بدلًا من ذلك.",
+    "offTitle": "العرض متوقف لهذا Spark",
+    "offBody": "مراقبة LLM متوقفة في {{name}}، لذا لا يوجد نموذج للتواصل معه.",
+    "runOnName": "التشغيل على {{name}}",
+    "noReachable": "لا يوجد حاليًا Spark متصل بنموذج يمكن الوصول إليه."
+  }
+}

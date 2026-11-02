@@ -1,0 +1,23 @@
+{
+  "title": "온도",
+  "subtitle": "최근 {{range}} 동안 플릿 전체의 GPU 온도입니다. 분 단위 기록이 서버에 일주일 보관되어 새로 고침해도 그래프가 유지됩니다.",
+  "rangeGroup": "시간 범위",
+  "range": {
+    "24h": { "label": "최근 24시간", "long": "24시간" },
+    "7d": { "label": "최근 7일", "long": "7일" }
+  },
+  "loadFailedTitle": "GPU 기록을 불러오지 못했습니다",
+  "retry": "다시 시도",
+  "loading": "온도 기록을 불러오는 중…",
+  "warmingTitle": "준비 중",
+  "warmingBody": "이 범위에는 아직 GPU 온도가 기록되지 않았습니다. Spark가 원격 측정을 보고하면 그래프가 나타나고 시간이 지나며 과거로 채워집니다.",
+  "nowTemp": "현재 {{temp}}°C",
+  "offline": "오프라인",
+  "noSamples": "이 범위에 온도 샘플이 없습니다.",
+  "chartAria": "GPU 온도 기록",
+  "axisHours": "−{{hours}}시간",
+  "axisDays": "−{{days}}일",
+  "axisNow": "현재",
+  "gpuTemperature": "GPU 온도",
+  "gpuIndex": "GPU {{index}}"
+}

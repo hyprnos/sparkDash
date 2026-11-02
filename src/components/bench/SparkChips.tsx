@@ -1,4 +1,5 @@
 import { createContext, useContext, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import type { SparkSnapshot } from "../../api/types";
 import { isWorkerSpark } from "../../api/sparkRole";
 
@@ -21,9 +22,10 @@ interface SparkChipsProps {
 }
 
 /** One chip per Spark, with a status dot; the chosen one is highlighted. */
-export function SparkChips({ sparks, activeId, onSelect, extra, ariaLabel = "Spark to benchmark" }: SparkChipsProps) {
+export function SparkChips({ sparks, activeId, onSelect, extra, ariaLabel }: SparkChipsProps) {
+  const { t } = useTranslation("bench");
   return (
-    <div className="bench-runon__chips" role="group" aria-label={ariaLabel}>
+    <div className="bench-runon__chips" role="group" aria-label={ariaLabel ?? t("runOn.chipsAria")}>
       {sparks.map((s) => (
         <button
           key={s.id}
@@ -31,11 +33,11 @@ export function SparkChips({ sparks, activeId, onSelect, extra, ariaLabel = "Spa
           className={`bench-runon__chip${activeId === s.id ? " is-on" : ""}`}
           aria-pressed={activeId === s.id}
           onClick={() => onSelect(s.id)}
-          title={s.online ? (isWorkerSpark(s) ? `${s.name} is a worker: no local LLM, saved results only` : undefined) : `${s.name} is offline`}
+          title={s.online ? (isWorkerSpark(s) ? t("runOn.workerHint", { name: s.name }) : undefined) : t("runOn.offlineHint", { name: s.name })}
         >
           <i className={`sdot ${s.online ? "" : "sdot--warn"}`} aria-hidden />
           {s.name}
-          {isWorkerSpark(s) ? <small className="bench-runon__tag">worker</small> : null}
+          {isWorkerSpark(s) ? <small className="bench-runon__tag">{t("runOn.workerTag")}</small> : null}
         </button>
       ))}
       {extra}

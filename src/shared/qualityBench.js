@@ -8,6 +8,19 @@ export const QUALITY_CATEGORIES = ["qa", "reason", "arith", "track", "gsm8k", "m
 
 export const QUALITY_DEFAULT_CATEGORIES = ["qa", "reason", "arith", "track", "gsm8k", "mmlu"];
 
+/** Catalog key per quality category (see `qualityCategoryLabels`). */
+const QUALITY_CATEGORY_KEYS = {
+  qa: "te.quality.categories.qa",
+  reason: "te.quality.categories.reason",
+  arith: "te.quality.categories.arith",
+  track: "te.quality.categories.track",
+  gsm8k: "te.quality.categories.gsm8k",
+  mmlu: "te.quality.categories.mmlu",
+  follow: "te.quality.categories.follow",
+  long: "te.quality.categories.long",
+};
+
+/** English category labels; use `qualityCategoryLabels` for the catalog copy. */
 export const QUALITY_CATEGORY_LABELS = {
   qa: "QA",
   reason: "Reasoning",
@@ -28,6 +41,18 @@ export const QUALITY_MAX_LONG_ITEMS = 5;
 export const QUALITY_DEFAULT_CONCURRENCY = 4;
 export const QUALITY_MAX_CONCURRENCY = 16;
 export const QUALITY_LABEL_MAX = 60;
+
+/**
+ * Category labels from the `bench` catalog; English when no translator is passed.
+ * @param {(key: string, vars?: Record<string, string | number>) => string} [t]
+ * @returns {Record<string, string>}
+ */
+export function qualityCategoryLabels(t) {
+  if (!t) return { ...QUALITY_CATEGORY_LABELS };
+  const out = {};
+  for (const [id, key] of Object.entries(QUALITY_CATEGORY_KEYS)) out[id] = t(key);
+  return out;
+}
 
 /**
  * Exact two-sided McNemar p-value from the discordant counts b and c:
@@ -64,22 +89,27 @@ function versionsOf(run) {
  * Can two runs be paired item-by-item? Different suite versions mean different items/seeds under
  * the same ids; different scoring versions mean the same reply can pass in one and fail in the
  * other. Both make a McNemar table meaningless, so comparison is refused.
+ * @param {(key: string, vars?: Record<string, string | number>) => string} [t] reads the refusal wording from the `bench` catalog
  * @returns {{ ok: boolean, reason: string | null }}
  */
-export function checkQualityComparable(a, b) {
+export function checkQualityComparable(a, b, t) {
   if (!a || !b) return { ok: true, reason: null };
   const va = versionsOf(a);
   const vb = versionsOf(b);
   if (va.suite !== vb.suite) {
     return {
       ok: false,
-      reason: `These runs used different item sets (suite v${va.suite} vs v${vb.suite}), so items with the same id are not the same question. Re-run one of them to compare.`,
+      reason: t
+        ? t("te.quality.diffSuite", { a: va.suite, b: vb.suite })
+        : `These runs used different item sets (suite v${va.suite} vs v${vb.suite}), so items with the same id are not the same question. Re-run one of them to compare.`,
     };
   }
   if (va.scoring !== vb.scoring) {
     return {
       ok: false,
-      reason: `These runs were scored by different rules (scoring v${va.scoring} vs v${vb.scoring}), so a pass in one is not a pass in the other. Re-run one of them to compare.`,
+      reason: t
+        ? t("te.quality.diffScoring", { a: va.scoring, b: vb.scoring })
+        : `These runs were scored by different rules (scoring v${va.scoring} vs v${vb.scoring}), so a pass in one is not a pass in the other. Re-run one of them to compare.`,
     };
   }
   return { ok: true, reason: null };
@@ -100,8 +130,8 @@ export function checkQualityComparable(a, b) {
  *   onlyA: number, onlyB: number, p: number, withinNoise: boolean,
  * }>}
  */
-export function compareQualityRuns(a, b) {
-  if (!checkQualityComparable(a, b).ok) return [];
+export function compareQualityRuns(a, b, t) {
+  if (!checkQualityComparable(a, b, t).ok) return [];
   const itemsA = Array.isArray(a?.results?.items) ? a.results.items : [];
   const itemsB = Array.isArray(b?.results?.items) ? b.results.items : [];
   const byIdB = new Map(itemsB.map((it) => [it.id, it]));

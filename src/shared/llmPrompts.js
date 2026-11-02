@@ -158,6 +158,28 @@ export const DECODE_BENCH_TYPE_META = [
   },
 ];
 
+/** Catalog key per decode-bench output type (label and hint). */
+const DECODE_TYPE_KEYS = {
+  structured: { label: "te.decode.typeStructured", hint: "te.decode.typeStructuredHint" },
+  prose: { label: "te.decode.typeProse", hint: "te.decode.typeProseHint" },
+  code: { label: "te.decode.typeCode", hint: "te.decode.typeCodeHint" },
+  json: { label: "te.decode.typeJson", hint: "te.decode.typeJsonHint" },
+};
+
+/**
+ * The type picker copy from the `bench` catalog. Without a translator the English
+ * table above is returned, so the share-card and server paths keep their wording.
+ * @param {(key: string, vars?: Record<string, string | number>) => string} [t]
+ */
+export function decodeBenchTypeMeta(t) {
+  if (!t) return DECODE_BENCH_TYPE_META;
+  return DECODE_BENCH_TYPE_META.map((meta) => ({
+    id: meta.id,
+    label: t(DECODE_TYPE_KEYS[meta.id].label),
+    hint: t(DECODE_TYPE_KEYS[meta.id].hint),
+  }));
+}
+
 /**
  * @param {unknown} type
  * @returns {"structured" | "prose" | "code" | "json"}
@@ -177,10 +199,12 @@ export function decodeBenchPromptForType(type) {
 
 /**
  * @param {unknown} type
+ * @param {(key: string, vars?: Record<string, string | number>) => string} [t]
  * @returns {string}
  */
-export function decodeBenchTypeLabel(type) {
+export function decodeBenchTypeLabel(type, t) {
   const id = normalizeDecodeBenchType(type);
+  if (t) return t(DECODE_TYPE_KEYS[id].label);
   return DECODE_BENCH_TYPE_META.find((m) => m.id === id)?.label || "Structured";
 }
 

@@ -1,0 +1,177 @@
+{
+  "title": "Activity",
+  "subtitle": "Everything that happened across the fleet: restarts, throttling, updates, benchmarks, power and LLM runs. The server keeps the latest 2,000 events.",
+  "refresh": "Refresh",
+  "live": {
+    "connecting": "connecting",
+    "justNow": "just now",
+    "secondsAgo": "{{count}} s ago",
+    "minutesAgo": "{{count}} min ago",
+    "failed": "Update failed, retrying",
+    "paused": "Paused (tab hidden)",
+    "live": "Live · {{when}}"
+  },
+  "copy": {
+    "asText": "Copy as text",
+    "doneOne": "Copied {{count}} event",
+    "doneMany": "Copied {{count}} events",
+    "failed": "Couldn't copy (clipboard blocked)"
+  },
+  "clear": {
+    "menu": "Clear history…",
+    "note": "This can't be undone.",
+    "older7d": "Older than 7 days",
+    "ask7d": "Delete events older than 7 days?",
+    "older24h": "Older than 24 hours",
+    "ask24h": "Delete events older than 24 hours?",
+    "everything": "Everything",
+    "askAll": "Delete the whole activity history?"
+  },
+  "common": {
+    "retry": "Retry",
+    "loading": "Loading…"
+  },
+  "tiles": {
+    "summaryAria": "Summary, click to filter",
+    "events24h": "Events, 24 h",
+    "errors24h": "Errors, 24 h",
+    "warnings24h": "Warnings, 24 h",
+    "problemSparks": "Sparks with problems",
+    "mostActive": "Most active Spark",
+    "none": "None",
+    "noEvents": "no events yet",
+    "in7d": "{{count}} in 7 d",
+    "eventsOne": "{{count}} event",
+    "eventsMany": "{{count}} events"
+  },
+  "chart": {
+    "title": "Events per day",
+    "unit": "events",
+    "empty": "No events in the last 14 days.",
+    "ariaLabel": "Events per day over the last 14 days, {{count}} in total"
+  },
+  "filters": {
+    "aria": "Filters",
+    "severity": "Severity",
+    "severityTitle": "{{severity}} events",
+    "timeRange": "Time range",
+    "all": "All",
+    "searchPlaceholder": "Search message, Spark or type",
+    "searchAria": "Search events",
+    "category": "Category",
+    "allCategories": "All categories",
+    "spark": "Spark",
+    "allSparks": "All Sparks",
+    "fleetWide": "Fleet-wide ({{count}})",
+    "reset": "Reset filters"
+  },
+  "range": {
+    "24h": "24 h",
+    "7d": "7 d",
+    "all": "All"
+  },
+  "count": {
+    "showing": "Showing {{visible}} of {{total}} loaded events",
+    "showingFiltered": "Showing {{visible}} of {{total}} loaded events (filtered)"
+  },
+  "newBar": {
+    "one": "{{count}} new event, jump to top",
+    "many": "{{count}} new events, jump to top"
+  },
+  "more": {
+    "reachedOldest": "You've reached the oldest event the server kept.",
+    "loadOlder": "Load older",
+    "filtersHint": "Filters apply to the events loaded so far.",
+    "loadFailed": "Couldn't load older events: {{message}}"
+  },
+  "timeline": {
+    "loadingAria": "Loading activity",
+    "loadFailedTitle": "Couldn't load activity",
+    "emptyTitle": "Nothing recorded yet",
+    "emptyBody": "The server logs fleet events as they happen: Sparks going online or offline, GPU thermal throttling, Hermes updates, benchmark runs, shutdown and wake, LLM start and stop runs, and Sparks being added or removed.",
+    "filteredTitle": "No events match your filters",
+    "filteredBody": "Try a wider time range or clear a filter."
+  },
+  "day": {
+    "today": "Today",
+    "yesterday": "Yesterday"
+  },
+  "ago": {
+    "justNow": "just now",
+    "minutes": "{{count}} min ago",
+    "hours": "{{count}} h ago",
+    "days": "{{count}} d ago"
+  },
+  "row": {
+    "openSpark": "Open {{name}}",
+    "hideDetails": "Hide details: {{label}}",
+    "showDetails": "Show details: {{label}}",
+    "message": "Message",
+    "time": "Time",
+    "severity": "Severity",
+    "type": "Type",
+    "eventId": "Event id",
+    "spark": "Spark",
+    "category": "Category",
+    "data": "Data",
+    "copied": "Copied",
+    "copy": "Copy"
+  },
+  "severity": {
+    "error": "Error",
+    "warn": "Warning",
+    "success": "Success",
+    "info": "Info",
+    "errors": "Errors",
+    "warnings": "Warnings",
+    "successMany": "Success",
+    "infoMany": "Info"
+  },
+  "categories": {
+    "status": "Status (online/offline)",
+    "thermal": "Thermal",
+    "health": "Health",
+    "alerts": "Alert notifications",
+    "hermes": "Hermes",
+    "bench": "Benchmarks",
+    "power": "Power",
+    "llm": "LLM models",
+    "fleet": "Fleet changes",
+    "other": "Other"
+  },
+  "type": {
+    "sparkOnline": "Online",
+    "sparkOffline": "Offline",
+    "sparkAdded": "Spark added",
+    "sparkRemoved": "Spark removed",
+    "thermalThrottle": "Thermal throttle",
+    "throttleCleared": "Throttle cleared",
+    "hermesUpdateAvailable": "Hermes update available",
+    "hermesUpdated": "Hermes updated",
+    "hermesUpdateFailed": "Hermes update failed",
+    "xidError": "Xid error",
+    "outOfMemoryKill": "Out of memory kill",
+    "runningHot": "Running hot",
+    "lowPowerState": "Low power state",
+    "lowMemory": "Low memory",
+    "manyModelsLoaded": "Many models loaded",
+    "slowLink": "Slow link",
+    "roceLinkDown": "RoCE link down",
+    "rocePacketLoss": "RoCE packet loss",
+    "healthOk": "Health OK",
+    "notificationSent": "Notification sent",
+    "notificationFailed": "Notification failed",
+    "shutdown": "Shutdown",
+    "wake": "Wake",
+    "decodeBench": "Decode bench",
+    "prefillBench": "Prefill bench",
+    "qualityBench": "Quality bench",
+    "stageFinished": "{{name}}",
+    "stageFailed": "{{name}} failed",
+    "stageCancelled": "{{name}} cancelled",
+    "llmStart": "LLM start",
+    "llmStop": "LLM stop",
+    "llmAttach": "LLM attach",
+    "llmNamed": "{{action}} {{target}}"
+  }
+}

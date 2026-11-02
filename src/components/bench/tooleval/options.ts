@@ -1,5 +1,6 @@
 import type { ToolEvalArgSpec, ToolEvalRun, ToolEvalSpec } from "../../../api/types";
-import { PRESETS, type Preset } from "./presets";
+import type { Translate } from "./format";
+import { presetsFor, type Preset } from "./presets";
 
 /**
  * Form state for the Tool Eval pages and its mapping to the API payload.
@@ -17,11 +18,22 @@ export interface FormState {
   suites: string[];
 }
 
+/** English suite labels; `suites` reads the catalog. The suite ids are the tool's own names. */
 export const SUITES = [
   { id: "gsm8k", label: "GSM8K", help: "Grade-school math" },
   { id: "mmlu", label: "MMLU", help: "Multitask knowledge" },
   { id: "ifeval", label: "IFEval", help: "Instruction following" },
 ] as const;
+
+/** Suite picker copy from the `bench` catalog; English when no translator is passed. */
+export function suites(t?: Translate): { id: string; label: string; help: string }[] {
+  if (!t) return SUITES.map((s) => ({ ...s }));
+  return [
+    { id: "gsm8k", label: "GSM8K", help: t("te.suites.gsm8k") },
+    { id: "mmlu", label: "MMLU", help: t("te.suites.mmlu") },
+    { id: "ifeval", label: "IFEval", help: t("te.suites.ifeval") },
+  ];
+}
 
 /** A group on a page; `only` limits it to named fields (a field from another group can join a page this way). */
 export interface GroupSel {
@@ -112,9 +124,7 @@ export function applyPreset(type: string, preset: Preset): FormState {
   return { ...base, values: { ...preset.values }, suites: preset.suites ? [...preset.suites] : base.suites };
 }
 
-export function presetsFor(type: string): Preset[] {
-  return PRESETS[type] ?? [];
-}
+export { presetsFor };
 
 const isBlank = (v: FieldValue | undefined): boolean => v === undefined || v === "" || v === false || (Array.isArray(v) && v.every((x) => !x.trim()));
 
@@ -175,61 +185,79 @@ export function buildRequest(spec: ToolEvalSpec, type: string, state: FormState,
   return out;
 }
 
-/** Client-side check of one raw field value, mirroring the server so errors show while typing. */
-export function validateField(spec: ToolEvalArgSpec, v: FieldValue | undefined): string | null {
+/**
+ * Client-side check of one raw field value, mirroring the server so errors show
+ * while typing. Pass the page's translator to have the messages translated; the
+ * English wording is unchanged when it is omitted.
+ */
+export function validateField(spec: ToolEvalArgSpec, v: FieldValue | undefined, t?: Translate): string | null {
   if (isBlank(v)) return null;
   const label = spec.label;
   const s = typeof v === "string" ? v.trim() : "";
+  // Messages go through the catalog when the page passes a translator.
+  const msg = (key: string, vars: Record<string, string | number>, english: string) => (t ? t(key, vars) : english);
   // Whitespace-only text is dropped by toApiValue, so it is not an error either.
   if (typeof v === "string" && !s) return null;
   switch (spec.kind) {
     case "int":
     case "float": {
       const n = Number(s);
-      if (!s || !Number.isFinite(n)) return `${label} must be a number`;
-      if (spec.kind === "int" && !Number.isInteger(n)) return `${label} must be a whole number`;
-      if (spec.min != null && n < spec.min) return `${label} must be at least ${spec.min}`;
-      if (spec.max != null && n > spec.max) return `${label} must be at most ${spec.max}`;
+      if (!s || !Number.isFinite(n)) return msg("te.validate.number", { label }, `${label} must be a number`);
+      if (spec.kind === "int" && !Number.isInteger(n)) return msg("te.validate.wholeNumber", { label }, `${label} must be a whole number`);
+      if (spec.min != null && n < spec.min) return msg("te.validate.atLeast", { label, min: spec.min }, `${label} must be at least ${spec.min}`);
+      if (spec.max != null && n > spec.max) return msg("te.validate.atMost", { label, max: spec.max }, `${label} must be at most ${spec.max}`);
       return null;
     }
     case "choice":
-      return spec.choices?.includes(s) ? null : `${label} must be one of ${spec.choices?.join(", ")}`;
+      return spec.choices?.includes(s)
+        ? null
+        : msg("te.validate.oneOf", { label, choices: spec.choices?.join(", ") ?? "" }, `${label} must be one of ${spec.choices?.join(", ")}`);
     case "string":
     case "csv":
     case "range":
-      if (s.length > (spec.maxLen ?? 500)) return `${label} is too long`;
-      if (spec.pattern && !new RegExp(spec.pattern).test(s)) return `${label} has an invalid format`;
+      if (s.length > (spec.maxLen ?? 500)) return msg("te.validate.tooLong", { label }, `${label} is too long`);
+      if (spec.pattern && !new RegExp(spec.pattern).test(s)) return msg("te.validate.invalidFormat", { label }, `${label} has an invalid format`);
       return null;
     case "text": {
       const bytes = byteLength(typeof v === "string" ? v : "");
-      return bytes > (spec.maxBytes ?? 32768) ? `${label} is longer than ${(spec.maxBytes ?? 32768) / 1024} KiB` : null;
+      return bytes > (spec.maxBytes ?? 32768)
+        ? msg("te.validate.longerThan", { label, kib: (spec.maxBytes ?? 32768) / 1024 }, `${label} is longer than ${(spec.maxBytes ?? 32768) / 1024} KiB`)
+        : null;
     }
     case "path":
-      if (!/^(~\/|\/)[A-Za-z0-9._@+=,/ -]{0,300}$/.test(s)) return `${label} must be an absolute path (or start with ~/)`;
-      return s.split("/").includes("..") ? `${label} must not contain ..` : null;
+      if (!/^(~\/|\/)[A-Za-z0-9._@+=,/ -]{0,300}$/.test(s)) {
+        return msg("te.validate.absolutePath", { label }, `${label} must be an absolute path (or start with ~/)`);
+      }
+      return s.split("/").includes("..") ? msg("te.validate.noDotDot", { label }, `${label} must not contain ..`) : null;
     case "url":
       try {
         const u = new URL(s);
-        if (u.protocol !== "http:" && u.protocol !== "https:") return `${label} must start with http:// or https://`;
-        return u.username || u.password ? `${label} must not contain credentials (use the API key field)` : null;
+        if (u.protocol !== "http:" && u.protocol !== "https:") {
+          return msg("te.validate.httpPrefix", { label }, `${label} must start with http:// or https://`);
+        }
+        return u.username || u.password
+          ? msg("te.validate.noCredentials", { label }, `${label} must not contain credentials (use the API key field)`)
+          : null;
       } catch {
-        return `${label} is not a valid URL`;
+        return msg("te.validate.invalidUrl", { label }, `${label} is not a valid URL`);
       }
-    case "json":
-      return jsonObjectError(s) ? `${label}: ${jsonObjectError(s)}` : null;
+    case "json": {
+      const bad = jsonObjectError(s, t);
+      return bad ? msg("te.validate.jsonPrefix", { label, reason: bad }, `${label}: ${jsonObjectError(s)}`) : null;
+    }
     case "list": {
       const items = Array.isArray(v) ? v : splitList(String(v));
-      if (spec.maxItems && items.length > spec.maxItems) return `${label} has too many items`;
+      if (spec.maxItems && items.length > spec.maxItems) return msg("te.validate.tooManyItems", { label }, `${label} has too many items`);
       const re = spec.itemPattern ? new RegExp(spec.itemPattern) : null;
       const bad = re ? items.find((i) => !re.test(i)) : undefined;
-      return bad ? `${label} has an invalid item "${bad.slice(0, 40)}"` : null;
+      return bad ? msg("te.validate.invalidItem", { label, item: bad.slice(0, 40) }, `${label} has an invalid item "${bad.slice(0, 40)}"`) : null;
     }
     case "repeat": {
       const items = (Array.isArray(v) ? v : [String(v)]).map((x) => x.trim()).filter(Boolean);
-      if (spec.maxItems && items.length > spec.maxItems) return `${label} has too many items`;
+      if (spec.maxItems && items.length > spec.maxItems) return msg("te.validate.tooManyItems", { label }, `${label} has too many items`);
       const re = spec.itemPattern ? new RegExp(spec.itemPattern) : null;
       const bad = re ? items.find((i) => !re.test(i)) : undefined;
-      return bad ? `${label} has an invalid entry "${bad.slice(0, 40)}"` : null;
+      return bad ? msg("te.validate.invalidEntry", { label, item: bad.slice(0, 40) }, `${label} has an invalid entry "${bad.slice(0, 40)}"`) : null;
     }
     default:
       return null;
@@ -241,32 +269,39 @@ export function byteLength(s: string): number {
 }
 
 /** null when `s` is a JSON object; otherwise a short reason. */
-export function jsonObjectError(s: string): string | null {
+export function jsonObjectError(s: string, t?: Translate): string | null {
   try {
     const p = JSON.parse(s);
-    return p && typeof p === "object" && !Array.isArray(p) ? null : "must be a JSON object";
+    if (p && typeof p === "object" && !Array.isArray(p)) return null;
+    return t ? t("te.validate.notJsonObject") : "must be a JSON object";
   } catch {
-    return "is not valid JSON";
+    return t ? t("te.validate.invalidJson") : "is not valid JSON";
   }
 }
 
 /** Errors per option name plus form-level ones (cross-field rules). */
-export function validateState(spec: ToolEvalSpec, type: string, state: FormState): { fields: Record<string, string>; form: string[] } {
+export function validateState(spec: ToolEvalSpec, type: string, state: FormState, t?: Translate): { fields: Record<string, string>; form: string[] } {
   const fields: Record<string, string> = {};
   const managed = managedNames(type);
   for (const arg of spec.args) {
     if (arg.kind === "secret" || managed.has(arg.name)) continue;
-    const e = validateField(arg, state.values[arg.name]);
+    const e = validateField(arg, state.values[arg.name], t);
     if (e) fields[arg.name] = e;
   }
   const form: string[] = [];
   const set = (n: string) => !isBlank(state.values[n]);
-  if (set("system-prompt") && set("system-prompt-file")) form.push("Use either the system prompt text or the system prompt file, not both");
-  if (set("context-pressure") && set("context-pressure-sweep")) form.push("Use either a single context pressure or a sweep, not both");
-  if (set("short") && set("scenarios")) form.push("A short run and a specific scenario list cannot be combined");
-  if (type === "accuracy" && state.suites.length === 0) form.push("Tick at least one suite to run");
+  if (set("system-prompt") && set("system-prompt-file")) {
+    form.push(t ? t("te.form.systemPromptBoth") : "Use either the system prompt text or the system prompt file, not both");
+  }
+  if (set("context-pressure") && set("context-pressure-sweep")) {
+    form.push(t ? t("te.form.contextPressureBoth") : "Use either a single context pressure or a sweep, not both");
+  }
+  if (set("short") && set("scenarios")) {
+    form.push(t ? t("te.form.shortAndScenarios") : "A short run and a specific scenario list cannot be combined");
+  }
+  if (type === "accuracy" && state.suites.length === 0) form.push(t ? t("te.form.noSuite") : "Tick at least one suite to run");
   if (type === "context-pressure" && !set("context-pressure") && !set("context-pressure-sweep")) {
-    form.push("Set a pressure ratio or a sweep range, otherwise this is a plain tool-call run");
+    form.push(t ? t("te.form.noPressure") : "Set a pressure ratio or a sweep range, otherwise this is a plain tool-call run");
   }
   return { fields, form };
 }

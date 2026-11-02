@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { SparkSnapshot } from "../../api/types";
 import { benchTypeById } from "./benchCatalog";
 import { BenchPageShell } from "./BenchPageShell";
@@ -14,10 +15,11 @@ interface BenchPageProps {
 
 /** Router for the benchmark pages: shared header + Spark picker, then the page for this benchmark type. */
 export function BenchPage({ type, sparks, benchShareImage = false }: BenchPageProps) {
+  const { t } = useTranslation("bench");
   const { spark, select, eligible } = useBenchSpark(sparks);
   const bench = benchTypeById(type);
   let body;
-  if (!bench) body = <p className="page-stub">Unknown benchmark.</p>;
+  if (!bench) body = <p className="page-stub">{t("shell.unknown")}</p>;
   else if (type === "decode") body = <DecodeBenchPage spark={spark} benchShareImage={benchShareImage} />;
   else if (type === "prefill") body = <PrefillBenchPage spark={spark} benchShareImage={benchShareImage} />;
   else if (type === "quality") body = <QualityBenchPage spark={spark} benchShareImage={benchShareImage} />;

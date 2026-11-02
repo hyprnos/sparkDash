@@ -1,0 +1,177 @@
+{
+  "title": "Activité",
+  "subtitle": "Tout ce qui s'est passé dans la flotte : redémarrages, bridage thermique, mises à jour, benchmarks, alimentation et exécutions LLM. Le serveur conserve les 2 000 derniers événements.",
+  "refresh": "Actualiser",
+  "live": {
+    "connecting": "connexion",
+    "justNow": "à l'instant",
+    "secondsAgo": "il y a {{count}} s",
+    "minutesAgo": "il y a {{count}} min",
+    "failed": "Échec de la mise à jour, nouvelle tentative",
+    "paused": "En pause (onglet masqué)",
+    "live": "En direct · {{when}}"
+  },
+  "copy": {
+    "asText": "Copier en texte",
+    "doneOne": "{{count}} événement copié",
+    "doneMany": "{{count}} événements copiés",
+    "failed": "Copie impossible (presse-papiers bloqué)"
+  },
+  "clear": {
+    "menu": "Effacer l'historique…",
+    "note": "Cette action est irréversible.",
+    "older7d": "Plus de 7 jours",
+    "ask7d": "Supprimer les événements de plus de 7 jours ?",
+    "older24h": "Plus de 24 heures",
+    "ask24h": "Supprimer les événements de plus de 24 heures ?",
+    "everything": "Tout",
+    "askAll": "Supprimer tout l'historique d'activité ?"
+  },
+  "common": {
+    "retry": "Réessayer",
+    "loading": "Chargement…"
+  },
+  "tiles": {
+    "summaryAria": "Résumé, cliquez pour filtrer",
+    "events24h": "Événements, 24 h",
+    "errors24h": "Erreurs, 24 h",
+    "warnings24h": "Avertissements, 24 h",
+    "problemSparks": "Sparks avec problèmes",
+    "mostActive": "Spark le plus actif",
+    "none": "Aucun",
+    "noEvents": "aucun événement",
+    "in7d": "{{count}} en 7 j",
+    "eventsOne": "{{count}} événement",
+    "eventsMany": "{{count}} événements"
+  },
+  "chart": {
+    "title": "Événements par jour",
+    "unit": "événements",
+    "empty": "Aucun événement ces 14 derniers jours.",
+    "ariaLabel": "Événements par jour sur les 14 derniers jours, {{count}} au total"
+  },
+  "filters": {
+    "aria": "Filtres",
+    "severity": "Gravité",
+    "severityTitle": "Événements {{severity}}",
+    "timeRange": "Période",
+    "all": "Tous",
+    "searchPlaceholder": "Rechercher un message, un Spark ou un type",
+    "searchAria": "Rechercher des événements",
+    "category": "Catégorie",
+    "allCategories": "Toutes les catégories",
+    "spark": "Spark",
+    "allSparks": "Tous les Sparks",
+    "fleetWide": "Toute la flotte ({{count}})",
+    "reset": "Réinitialiser les filtres"
+  },
+  "range": {
+    "24h": "24 h",
+    "7d": "7 j",
+    "all": "Tout"
+  },
+  "count": {
+    "showing": "Affichage de {{visible}} événements chargés sur {{total}}",
+    "showingFiltered": "Affichage de {{visible}} événements chargés sur {{total}} (filtré)"
+  },
+  "newBar": {
+    "one": "{{count}} nouvel événement, aller en haut",
+    "many": "{{count}} nouveaux événements, aller en haut"
+  },
+  "more": {
+    "reachedOldest": "Vous avez atteint l'événement le plus ancien conservé par le serveur.",
+    "loadOlder": "Charger les plus anciens",
+    "filtersHint": "Les filtres s'appliquent aux événements déjà chargés.",
+    "loadFailed": "Impossible de charger les événements plus anciens : {{message}}"
+  },
+  "timeline": {
+    "loadingAria": "Chargement de l'activité",
+    "loadFailedTitle": "Impossible de charger l'activité",
+    "emptyTitle": "Rien d'enregistré pour l'instant",
+    "emptyBody": "Le serveur journalise les événements de la flotte au fur et à mesure : Sparks en ligne ou hors ligne, bridage thermique du GPU, mises à jour Hermes, exécutions de benchmarks, arrêt et réveil, démarrages et arrêts de LLM, et ajouts ou retraits de Sparks.",
+    "filteredTitle": "Aucun événement ne correspond à vos filtres",
+    "filteredBody": "Essayez une période plus large ou retirez un filtre."
+  },
+  "day": {
+    "today": "Aujourd'hui",
+    "yesterday": "Hier"
+  },
+  "ago": {
+    "justNow": "à l'instant",
+    "minutes": "il y a {{count}} min",
+    "hours": "il y a {{count}} h",
+    "days": "il y a {{count}} j"
+  },
+  "row": {
+    "openSpark": "Ouvrir {{name}}",
+    "hideDetails": "Masquer les détails : {{label}}",
+    "showDetails": "Afficher les détails : {{label}}",
+    "message": "Message",
+    "time": "Heure",
+    "severity": "Gravité",
+    "type": "Type",
+    "eventId": "Id de l'événement",
+    "spark": "Spark",
+    "category": "Catégorie",
+    "data": "Données",
+    "copied": "Copié",
+    "copy": "Copier"
+  },
+  "severity": {
+    "error": "Erreur",
+    "warn": "Avertissement",
+    "success": "Réussite",
+    "info": "Information",
+    "errors": "Erreurs",
+    "warnings": "Avertissements",
+    "successMany": "Réussites",
+    "infoMany": "Informations"
+  },
+  "categories": {
+    "status": "État (en ligne/hors ligne)",
+    "thermal": "Thermique",
+    "health": "Santé",
+    "alerts": "Notifications d'alerte",
+    "hermes": "Hermes",
+    "bench": "Benchmarks",
+    "power": "Alimentation",
+    "llm": "Modèles LLM",
+    "fleet": "Changements de flotte",
+    "other": "Autres"
+  },
+  "type": {
+    "sparkOnline": "En ligne",
+    "sparkOffline": "Hors ligne",
+    "sparkAdded": "Spark ajouté",
+    "sparkRemoved": "Spark retiré",
+    "thermalThrottle": "Bridage thermique",
+    "throttleCleared": "Bridage levé",
+    "hermesUpdateAvailable": "Mise à jour Hermes disponible",
+    "hermesUpdated": "Hermes mis à jour",
+    "hermesUpdateFailed": "Échec de mise à jour Hermes",
+    "xidError": "Erreur Xid",
+    "outOfMemoryKill": "Arrêt par manque de mémoire",
+    "runningHot": "Température élevée",
+    "lowPowerState": "État basse consommation",
+    "lowMemory": "Mémoire faible",
+    "manyModelsLoaded": "Nombreux modèles chargés",
+    "slowLink": "Lien lent",
+    "roceLinkDown": "Lien RoCE coupé",
+    "rocePacketLoss": "Perte de paquets RoCE",
+    "healthOk": "Santé normale",
+    "notificationSent": "Notification envoyée",
+    "notificationFailed": "Échec de notification",
+    "shutdown": "Arrêt",
+    "wake": "Réveil",
+    "decodeBench": "Bench de décodage",
+    "prefillBench": "Bench de prefill",
+    "qualityBench": "Bench de qualité",
+    "stageFinished": "{{name}}",
+    "stageFailed": "{{name}} en échec",
+    "stageCancelled": "{{name}} annulé",
+    "llmStart": "Démarrage LLM",
+    "llmStop": "Arrêt LLM",
+    "llmAttach": "Connexion LLM",
+    "llmNamed": "{{action}} {{target}}"
+  }
+}

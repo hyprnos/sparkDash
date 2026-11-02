@@ -1,0 +1,23 @@
+{
+  "title": "Temperature",
+  "subtitle": "Temperatura GPU dell’intera flotta in {{range}}. La cronologia al minuto è conservata una settimana sul server, quindi i grafici sopravvivono a un ricaricamento.",
+  "rangeGroup": "Intervallo di tempo",
+  "range": {
+    "24h": { "label": "Ultime 24 h", "long": "24 ore" },
+    "7d": { "label": "Ultimi 7 g", "long": "7 giorni" }
+  },
+  "loadFailedTitle": "Impossibile caricare la cronologia GPU",
+  "retry": "Riprova",
+  "loading": "Caricamento della cronologia delle temperature…",
+  "warmingTitle": "Riscaldamento",
+  "warmingBody": "In questo intervallo non è ancora stata registrata alcuna temperatura GPU. I grafici compaiono quando gli Spark riportano telemetria e si riempiono all’indietro nel tempo.",
+  "nowTemp": "ora {{temp}}°C",
+  "offline": "offline",
+  "noSamples": "Nessun campione di temperatura in questo intervallo.",
+  "chartAria": "Cronologia temperatura GPU",
+  "axisHours": "−{{hours}} h",
+  "axisDays": "−{{days}} g",
+  "axisNow": "ora",
+  "gpuTemperature": "Temperatura GPU",
+  "gpuIndex": "GPU {{index}}"
+}

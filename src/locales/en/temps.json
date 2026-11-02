@@ -1,0 +1,23 @@
+{
+  "title": "Temps",
+  "subtitle": "GPU temperature across the fleet over the last {{range}}. Minute-resolution history is kept for a week on the server, so the graphs survive a refresh.",
+  "rangeGroup": "Time range",
+  "range": {
+    "24h": { "label": "Last 24 h", "long": "24 hours" },
+    "7d": { "label": "Last 7 d", "long": "7 days" }
+  },
+  "loadFailedTitle": "Could not load GPU history",
+  "retry": "Retry",
+  "loading": "Loading temperature history…",
+  "warmingTitle": "Warming up",
+  "warmingBody": "No GPU temperature was recorded in this range yet. Graphs appear as sparks report telemetry and fill in backwards over time.",
+  "nowTemp": "now {{temp}}°C",
+  "offline": "offline",
+  "noSamples": "No temperature samples in this range.",
+  "chartAria": "GPU temperature history",
+  "axisHours": "−{{hours}} h",
+  "axisDays": "−{{days}} d",
+  "axisNow": "now",
+  "gpuTemperature": "GPU temperature",
+  "gpuIndex": "GPU {{index}}"
+}

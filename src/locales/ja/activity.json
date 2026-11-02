@@ -1,0 +1,177 @@
+{
+  "title": "アクティビティ",
+  "subtitle": "フリート全体の出来事：再起動、サーマル制限、更新、ベンチマーク、電源、LLM の実行。サーバーは最新 2,000 件のイベントを保持します。",
+  "refresh": "更新",
+  "live": {
+    "connecting": "接続中",
+    "justNow": "たった今",
+    "secondsAgo": "{{count}} 秒前",
+    "minutesAgo": "{{count}} 分前",
+    "failed": "更新に失敗しました。再試行中",
+    "paused": "一時停止中（タブ非表示）",
+    "live": "ライブ · {{when}}"
+  },
+  "copy": {
+    "asText": "テキストとしてコピー",
+    "doneOne": "{{count}} 件のイベントをコピーしました",
+    "doneMany": "{{count}} 件のイベントをコピーしました",
+    "failed": "コピーできませんでした（クリップボードがブロック）"
+  },
+  "clear": {
+    "menu": "履歴を消去…",
+    "note": "この操作は取り消せません。",
+    "older7d": "7 日より前",
+    "ask7d": "7 日より前のイベントを削除しますか？",
+    "older24h": "24 時間より前",
+    "ask24h": "24 時間より前のイベントを削除しますか？",
+    "everything": "すべて",
+    "askAll": "アクティビティ履歴をすべて削除しますか？"
+  },
+  "common": {
+    "retry": "再試行",
+    "loading": "読み込み中…"
+  },
+  "tiles": {
+    "summaryAria": "概要。クリックで絞り込み",
+    "events24h": "イベント（24 時間）",
+    "errors24h": "エラー（24 時間）",
+    "warnings24h": "警告（24 時間）",
+    "problemSparks": "問題のある Spark",
+    "mostActive": "最も活動した Spark",
+    "none": "なし",
+    "noEvents": "イベントはまだありません",
+    "in7d": "7 日間で {{count}} 件",
+    "eventsOne": "{{count}} 件のイベント",
+    "eventsMany": "{{count}} 件のイベント"
+  },
+  "chart": {
+    "title": "1 日あたりのイベント",
+    "unit": "イベント",
+    "empty": "過去 14 日間のイベントはありません。",
+    "ariaLabel": "過去 14 日間の 1 日あたりのイベント、合計 {{count}} 件"
+  },
+  "filters": {
+    "aria": "フィルター",
+    "severity": "重大度",
+    "severityTitle": "{{severity}}イベント",
+    "timeRange": "期間",
+    "all": "すべて",
+    "searchPlaceholder": "メッセージ、Spark、種類を検索",
+    "searchAria": "イベントを検索",
+    "category": "カテゴリ",
+    "allCategories": "すべてのカテゴリ",
+    "spark": "Spark",
+    "allSparks": "すべての Spark",
+    "fleetWide": "フリート全体（{{count}}）",
+    "reset": "フィルターをリセット"
+  },
+  "range": {
+    "24h": "24 時間",
+    "7d": "7 日",
+    "all": "すべて"
+  },
+  "count": {
+    "showing": "読み込み済み {{total}} 件中 {{visible}} 件を表示",
+    "showingFiltered": "読み込み済み {{total}} 件中 {{visible}} 件を表示（絞り込み中）"
+  },
+  "newBar": {
+    "one": "{{count}} 件の新しいイベント。先頭へ移動",
+    "many": "{{count}} 件の新しいイベント。先頭へ移動"
+  },
+  "more": {
+    "reachedOldest": "サーバーが保持する最も古いイベントに到達しました。",
+    "loadOlder": "さらに古いものを読み込む",
+    "filtersHint": "フィルターは読み込み済みのイベントにのみ適用されます。",
+    "loadFailed": "古いイベントを読み込めませんでした：{{message}}"
+  },
+  "timeline": {
+    "loadingAria": "アクティビティを読み込み中",
+    "loadFailedTitle": "アクティビティを読み込めませんでした",
+    "emptyTitle": "まだ記録がありません",
+    "emptyBody": "サーバーはフリートのイベントを発生時に記録します：Spark のオンライン／オフライン、GPU のサーマル制限、Hermes の更新、ベンチマーク実行、シャットダウンとウェイク、LLM の起動と停止、Spark の追加と削除など。",
+    "filteredTitle": "フィルターに一致するイベントはありません",
+    "filteredBody": "期間を広げるか、フィルターを解除してください。"
+  },
+  "day": {
+    "today": "今日",
+    "yesterday": "昨日"
+  },
+  "ago": {
+    "justNow": "たった今",
+    "minutes": "{{count}} 分前",
+    "hours": "{{count}} 時間前",
+    "days": "{{count}} 日前"
+  },
+  "row": {
+    "openSpark": "{{name}} を開く",
+    "hideDetails": "詳細を隠す：{{label}}",
+    "showDetails": "詳細を表示：{{label}}",
+    "message": "メッセージ",
+    "time": "時刻",
+    "severity": "重大度",
+    "type": "種類",
+    "eventId": "イベント ID",
+    "spark": "Spark",
+    "category": "カテゴリ",
+    "data": "データ",
+    "copied": "コピーしました",
+    "copy": "コピー"
+  },
+  "severity": {
+    "error": "エラー",
+    "warn": "警告",
+    "success": "成功",
+    "info": "情報",
+    "errors": "エラー",
+    "warnings": "警告",
+    "successMany": "成功",
+    "infoMany": "情報"
+  },
+  "categories": {
+    "status": "状態（オンライン／オフライン）",
+    "thermal": "サーマル",
+    "health": "ヘルス",
+    "alerts": "アラート通知",
+    "hermes": "Hermes",
+    "bench": "ベンチマーク",
+    "power": "電源",
+    "llm": "LLM モデル",
+    "fleet": "フリート変更",
+    "other": "その他"
+  },
+  "type": {
+    "sparkOnline": "オンライン",
+    "sparkOffline": "オフライン",
+    "sparkAdded": "Spark を追加",
+    "sparkRemoved": "Spark を削除",
+    "thermalThrottle": "サーマル制限",
+    "throttleCleared": "制限解除",
+    "hermesUpdateAvailable": "Hermes の更新あり",
+    "hermesUpdated": "Hermes を更新",
+    "hermesUpdateFailed": "Hermes の更新に失敗",
+    "xidError": "Xid エラー",
+    "outOfMemoryKill": "メモリ不足で終了",
+    "runningHot": "高温",
+    "lowPowerState": "低電力状態",
+    "lowMemory": "メモリ不足",
+    "manyModelsLoaded": "多数のモデルを読み込み",
+    "slowLink": "リンク速度低下",
+    "roceLinkDown": "RoCE リンクダウン",
+    "rocePacketLoss": "RoCE パケットロス",
+    "healthOk": "ヘルス正常",
+    "notificationSent": "通知を送信",
+    "notificationFailed": "通知に失敗",
+    "shutdown": "シャットダウン",
+    "wake": "ウェイク",
+    "decodeBench": "デコードベンチ",
+    "prefillBench": "プリフィルベンチ",
+    "qualityBench": "品質ベンチ",
+    "stageFinished": "{{name}}",
+    "stageFailed": "{{name}} 失敗",
+    "stageCancelled": "{{name}} 中止",
+    "llmStart": "LLM 起動",
+    "llmStop": "LLM 停止",
+    "llmAttach": "LLM 接続",
+    "llmNamed": "{{action}} {{target}}"
+  }
+}

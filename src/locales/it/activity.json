@@ -1,0 +1,177 @@
+{
+  "title": "Attività",
+  "subtitle": "Tutto ciò che è successo nella flotta: riavvii, throttling termico, aggiornamenti, benchmark, alimentazione ed esecuzioni LLM. Il server conserva gli ultimi 2.000 eventi.",
+  "refresh": "Aggiorna",
+  "live": {
+    "connecting": "connessione",
+    "justNow": "adesso",
+    "secondsAgo": "{{count}} s fa",
+    "minutesAgo": "{{count}} min fa",
+    "failed": "Aggiornamento non riuscito, nuovo tentativo",
+    "paused": "In pausa (scheda nascosta)",
+    "live": "In diretta · {{when}}"
+  },
+  "copy": {
+    "asText": "Copia come testo",
+    "doneOne": "Copiato {{count}} evento",
+    "doneMany": "Copiati {{count}} eventi",
+    "failed": "Impossibile copiare (appunti bloccati)"
+  },
+  "clear": {
+    "menu": "Cancella cronologia…",
+    "note": "L'operazione non può essere annullata.",
+    "older7d": "Più vecchi di 7 giorni",
+    "ask7d": "Eliminare gli eventi più vecchi di 7 giorni?",
+    "older24h": "Più vecchi di 24 ore",
+    "ask24h": "Eliminare gli eventi più vecchi di 24 ore?",
+    "everything": "Tutto",
+    "askAll": "Eliminare tutta la cronologia delle attività?"
+  },
+  "common": {
+    "retry": "Riprova",
+    "loading": "Caricamento…"
+  },
+  "tiles": {
+    "summaryAria": "Riepilogo, fai clic per filtrare",
+    "events24h": "Eventi, 24 h",
+    "errors24h": "Errori, 24 h",
+    "warnings24h": "Avvisi, 24 h",
+    "problemSparks": "Spark con problemi",
+    "mostActive": "Spark più attivo",
+    "none": "Nessuno",
+    "noEvents": "nessun evento",
+    "in7d": "{{count}} in 7 gg",
+    "eventsOne": "{{count}} evento",
+    "eventsMany": "{{count}} eventi"
+  },
+  "chart": {
+    "title": "Eventi al giorno",
+    "unit": "eventi",
+    "empty": "Nessun evento negli ultimi 14 giorni.",
+    "ariaLabel": "Eventi al giorno negli ultimi 14 giorni, {{count}} in totale"
+  },
+  "filters": {
+    "aria": "Filtri",
+    "severity": "Gravità",
+    "severityTitle": "Eventi: {{severity}}",
+    "timeRange": "Intervallo di tempo",
+    "all": "Tutti",
+    "searchPlaceholder": "Cerca messaggio, Spark o tipo",
+    "searchAria": "Cerca eventi",
+    "category": "Categoria",
+    "allCategories": "Tutte le categorie",
+    "spark": "Spark",
+    "allSparks": "Tutti gli Spark",
+    "fleetWide": "Tutta la flotta ({{count}})",
+    "reset": "Reimposta filtri"
+  },
+  "range": {
+    "24h": "24 h",
+    "7d": "7 gg",
+    "all": "Tutto"
+  },
+  "count": {
+    "showing": "Visualizzati {{visible}} di {{total}} eventi caricati",
+    "showingFiltered": "Visualizzati {{visible}} di {{total}} eventi caricati (filtrati)"
+  },
+  "newBar": {
+    "one": "{{count}} nuovo evento, vai in cima",
+    "many": "{{count}} nuovi eventi, vai in cima"
+  },
+  "more": {
+    "reachedOldest": "Hai raggiunto l'evento più vecchio conservato dal server.",
+    "loadOlder": "Carica i precedenti",
+    "filtersHint": "I filtri valgono per gli eventi già caricati.",
+    "loadFailed": "Impossibile caricare gli eventi precedenti: {{message}}"
+  },
+  "timeline": {
+    "loadingAria": "Caricamento attività",
+    "loadFailedTitle": "Impossibile caricare l'attività",
+    "emptyTitle": "Nessun dato registrato",
+    "emptyBody": "Il server registra gli eventi della flotta man mano che accadono: Spark online o offline, throttling termico della GPU, aggiornamenti di Hermes, esecuzioni dei benchmark, spegnimento e riattivazione, avvio e arresto di LLM e Spark aggiunti o rimossi.",
+    "filteredTitle": "Nessun evento corrisponde ai filtri",
+    "filteredBody": "Prova un intervallo più ampio o rimuovi un filtro."
+  },
+  "day": {
+    "today": "Oggi",
+    "yesterday": "Ieri"
+  },
+  "ago": {
+    "justNow": "adesso",
+    "minutes": "{{count}} min fa",
+    "hours": "{{count}} h fa",
+    "days": "{{count}} gg fa"
+  },
+  "row": {
+    "openSpark": "Apri {{name}}",
+    "hideDetails": "Nascondi dettagli: {{label}}",
+    "showDetails": "Mostra dettagli: {{label}}",
+    "message": "Messaggio",
+    "time": "Ora",
+    "severity": "Gravità",
+    "type": "Tipo",
+    "eventId": "ID evento",
+    "spark": "Spark",
+    "category": "Categoria",
+    "data": "Dati",
+    "copied": "Copiato",
+    "copy": "Copia"
+  },
+  "severity": {
+    "error": "Errore",
+    "warn": "Avviso",
+    "success": "Successo",
+    "info": "Informazione",
+    "errors": "Errori",
+    "warnings": "Avvisi",
+    "successMany": "Successi",
+    "infoMany": "Informazioni"
+  },
+  "categories": {
+    "status": "Stato (online/offline)",
+    "thermal": "Termico",
+    "health": "Salute",
+    "alerts": "Notifiche di avviso",
+    "hermes": "Hermes",
+    "bench": "Benchmark",
+    "power": "Alimentazione",
+    "llm": "Modelli LLM",
+    "fleet": "Modifiche alla flotta",
+    "other": "Altro"
+  },
+  "type": {
+    "sparkOnline": "Online",
+    "sparkOffline": "Offline",
+    "sparkAdded": "Spark aggiunto",
+    "sparkRemoved": "Spark rimosso",
+    "thermalThrottle": "Throttling termico",
+    "throttleCleared": "Throttling rimosso",
+    "hermesUpdateAvailable": "Aggiornamento Hermes disponibile",
+    "hermesUpdated": "Hermes aggiornato",
+    "hermesUpdateFailed": "Aggiornamento Hermes non riuscito",
+    "xidError": "Errore Xid",
+    "outOfMemoryKill": "Terminato per memoria esaurita",
+    "runningHot": "Surriscaldamento",
+    "lowPowerState": "Stato di basso consumo",
+    "lowMemory": "Memoria scarsa",
+    "manyModelsLoaded": "Molti modelli caricati",
+    "slowLink": "Collegamento lento",
+    "roceLinkDown": "Collegamento RoCE inattivo",
+    "rocePacketLoss": "Perdita di pacchetti RoCE",
+    "healthOk": "Salute regolare",
+    "notificationSent": "Notifica inviata",
+    "notificationFailed": "Notifica non riuscita",
+    "shutdown": "Spegnimento",
+    "wake": "Riattivazione",
+    "decodeBench": "Bench di decodifica",
+    "prefillBench": "Bench di prefill",
+    "qualityBench": "Bench di qualità",
+    "stageFinished": "{{name}}",
+    "stageFailed": "{{name}} non riuscito",
+    "stageCancelled": "{{name}} annullato",
+    "llmStart": "Avvio LLM",
+    "llmStop": "Arresto LLM",
+    "llmAttach": "Connessione LLM",
+    "llmNamed": "{{action}} {{target}}"
+  }
+}

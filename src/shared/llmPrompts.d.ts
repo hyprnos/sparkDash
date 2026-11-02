@@ -27,7 +27,13 @@ export function pickShowcasePrompts(
 
 export function normalizeDecodeBenchType(type: unknown): DecodeBenchPromptType;
 export function decodeBenchPromptForType(type: unknown): string;
-export function decodeBenchTypeLabel(type: unknown): string;
+/** The four type labels and hints, English or from the `bench` catalog when a translator is passed. */
+export function decodeBenchTypeMeta(t?: (key: string, vars?: Record<string, string | number>) => string): {
+  id: DecodeBenchPromptType;
+  label: string;
+  hint: string;
+}[];
+export function decodeBenchTypeLabel(type: unknown, t?: (key: string, vars?: Record<string, string | number>) => string): string;
 export function pickDecodeBenchPrompts(
   count: number,
   type?: unknown

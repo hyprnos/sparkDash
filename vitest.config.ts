@@ -10,6 +10,9 @@ export default defineConfig({
     },
   },
   test: {
+    /* React 19 only exports `act` from its development build, so the suite must
+       not inherit NODE_ENV=production from the container it runs in. */
+    env: { NODE_ENV: "test" },
     environment: "jsdom",
     setupFiles: ["./src/testing/setup.ts"],
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],

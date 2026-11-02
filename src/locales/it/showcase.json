@@ -1,0 +1,133 @@
+{
+  "title": "Vetrina dei prompt",
+  "brandHome": "Home di sparkDash",
+  "loading": "Caricamento…",
+  "controls": {
+    "show": "Mostra controlli",
+    "showTitle": "Mostra controlli",
+    "hide": "Nascondi",
+    "hideTitle": "Nascondi controlli"
+  },
+  "actions": {
+    "run": "Esegui",
+    "starting": "Avvio…",
+    "stop": "Ferma",
+    "copyAll": "Copia tutto",
+    "copied": "Copiato!",
+    "copyAllTitle": "Copia tutti i terminali come testo semplice",
+    "history": "Cronologia",
+    "historyTitle": "Esecuzioni precedenti della vetrina"
+  },
+  "confirm": {
+    "stopAll": "Fermare tutti i flussi della vetrina?",
+    "clearHistory": "Cancellare tutta la cronologia della vetrina salvata per questo Spark?"
+  },
+  "errors": {
+    "notFound": "Spark non trovato",
+    "loadFailed": "Impossibile caricare lo Spark",
+    "copy": "Impossibile copiare negli appunti",
+    "promptRange": "Usa da {{min}} a {{max}} prompt non vuoti",
+    "monitoringOff": "Il monitoraggio LLM è disattivato o questo Spark è un worker — vetrina non disponibile."
+  },
+  "fields": {
+    "port": "Porta",
+    "terminals": "Terminali",
+    "promptType": "Tipo di prompt",
+    "maxTokens": "Token massimi",
+    "temp": "Temp.",
+    "tempTitle": "Temperatura di campionamento (0–2)",
+    "thinking": "Ragionamento",
+    "thinkingTitle": "Attiva i token di pensiero/ragionamento del modello",
+    "showPrompts": "Mostra prompt",
+    "model": "Modello"
+  },
+  "promptType": {
+    "text": "Testo",
+    "textHint": "Prosa o narrazione, senza codice o formati strutturati",
+    "structural": "Strutturato",
+    "structuralHint": "JSON, HTML, YAML, SQL, schemi, tabelle, log",
+    "mixed": "Misto",
+    "mixedHint": "Metà strutturato, metà testo, alternati",
+    "tok": "{{tokens}} tok"
+  },
+  "promptLabel": "Prompt {{n}}",
+  "history": {
+    "title": "Esecuzioni precedenti",
+    "refresh": "Aggiorna",
+    "clear": "Cancella",
+    "empty": "Nessuna esecuzione salvata. Le vetrine completate compaiono qui automaticamente.",
+    "viewTitle": "Visualizza questa esecuzione",
+    "terms": "{{count}} terminale",
+    "promptType": "prompt {{type}}",
+    "avg": "media {{value}} tok/s",
+    "reuse": "Riusa",
+    "reuseTitle": "Carica prompt e impostazioni nel modulo (non riesegue)"
+  },
+  "metrics": {
+    "aggregate": "Totale",
+    "aggregateHero": "Somma dei tok/s di decodifica live di tutti i terminali",
+    "aggregateTitle": "Token aggregati al secondo di tutti i terminali",
+    "avg": "Media",
+    "avgTitle": "Tok/s di decodifica medi per terminale in questa sessione",
+    "perStream": "per flusso",
+    "tokens": "Token",
+    "server": "Server",
+    "streams": "Flussi",
+    "peak": "picco {{value}}"
+  },
+  "plain": {
+    "status": "stato: {{status}}",
+    "tps": "tok/s: {{value}}",
+    "thinking": "### Ragionamento",
+    "answer": "### Risposta",
+    "error": "[errore] {{message}}",
+    "head": "{{name}} | vetrina dei prompt",
+    "port": "porta {{port}}",
+    "avgPerStream": "media {{value}} tok/s/flusso",
+    "server": "server {{value}} tok/s"
+  },
+  "status": {
+    "pending": "in attesa",
+    "running": "in esecuzione",
+    "completed": "completato",
+    "failed": "non riuscito",
+    "cancelled": "annullato",
+    "error": "errore"
+  },
+  "footer": {
+    "historyRun": "Cronologia · {{status}}",
+    "sessionRun": "Sessione {{status}}",
+    "readOnly": " · sola lettura"
+  },
+  "terminal": {
+    "title": "Terminale",
+    "tokensOne": "{{count}} token",
+    "tokensMany": "{{count}} token",
+    "tpsTitle": "Live {{live}} tok/s · picco {{peak}} tok/s",
+    "peak": "picco {{value}}",
+    "copyTitle": "Copia questo terminale",
+    "copied": "Copiato",
+    "copy": "Copia",
+    "waiting": "In attesa…",
+    "reasoning": "Ragionamento",
+    "chars": "{{count}} caratteri"
+  },
+  "view": {
+    "workspace": "Area di lavoro",
+    "heading": "Vetrina",
+    "subtitle": "Esegui prompt su più terminali contemporaneamente e guarda il modello in streaming.",
+    "openWindow": "Apri in una nuova finestra ↗",
+    "openWindowTitle": "Apri la vetrina in una finestra a schermo intero",
+    "runOn": "Esegui su",
+    "noSparks": "Nessuno Spark disponibile",
+    "sparkPickerAria": "Spark da valutare",
+    "offlineTitle": "{{name}} è offline",
+    "offlineBody": "Riportalo online oppure esegui la vetrina su un altro Spark.",
+    "workerTitle": "{{name}} è un worker",
+    "workerBody": "I worker condividono un modello servito dallo Spark head, quindi non c'è nulla da trasmettere da questa macchina. Esegui la vetrina sull'head.",
+    "offTitle": "La vetrina è disattivata per questo Spark",
+    "offBody": "Il monitoraggio LLM è disattivato per {{name}}, quindi non c'è alcun modello con cui parlare.",
+    "runOnName": "Esegui su {{name}}",
+    "noReachable": "Nessuno Spark online con un modello raggiungibile in questo momento."
+  }
+}

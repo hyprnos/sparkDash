@@ -3,6 +3,11 @@ export type QualityCategoryId = "qa" | "reason" | "arith" | "track" | "gsm8k" | 
 export const QUALITY_CATEGORIES: QualityCategoryId[];
 export const QUALITY_DEFAULT_CATEGORIES: QualityCategoryId[];
 export const QUALITY_CATEGORY_LABELS: Record<QualityCategoryId, string>;
+
+export type SharedTranslate = (key: string, vars?: Record<string, string | number>) => string;
+
+/** Catalog labels for the quality categories; English when no translator is passed. */
+export function qualityCategoryLabels(t?: SharedTranslate): Record<QualityCategoryId, string>;
 export const QUALITY_LONG_SIZES: number[];
 export const QUALITY_DEFAULT_LONG_SIZES: number[];
 export const QUALITY_DEFAULT_LONG_ITEMS: number;
@@ -39,10 +44,12 @@ export interface QualityComparable {
 
 export function compareQualityRuns(
   a: QualityComparable | null,
-  b: QualityComparable | null
+  b: QualityComparable | null,
+  t?: SharedTranslate
 ): QualityCompareRow[];
 
 export function checkQualityComparable(
   a: QualityComparable | null,
-  b: QualityComparable | null
+  b: QualityComparable | null,
+  t?: SharedTranslate
 ): { ok: boolean; reason: string | null };

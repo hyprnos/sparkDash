@@ -1,4 +1,5 @@
 import type { ToolEvalRunStatus } from "../../../api/types";
+import type { Translate } from "./format";
 
 export type StatusTone = "good" | "bad" | "warn" | "acc" | "neutral";
 
@@ -18,18 +19,19 @@ export function statusTone(status: ToolEvalRunStatus): StatusTone {
   }
 }
 
-export function statusLabel(status: ToolEvalRunStatus, watching = true): string {
+export function statusLabel(status: ToolEvalRunStatus, watching = true, t?: Translate): string {
   switch (status) {
     case "running":
+      if (t) return watching ? t("te.status.running") : t("te.status.runningUnwatched");
       return watching ? "Running" : "Running (not watched)";
     case "completed":
-      return "Completed";
+      return t ? t("te.status.completed") : "Completed";
     case "failed":
-      return "Failed";
+      return t ? t("te.status.failed") : "Failed";
     case "stopped":
-      return "Stopped";
+      return t ? t("te.status.stopped") : "Stopped";
     case "gone":
-      return "Gone";
+      return t ? t("te.status.gone") : "Gone";
     default:
       return status;
   }

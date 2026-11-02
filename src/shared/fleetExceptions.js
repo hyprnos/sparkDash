@@ -12,34 +12,49 @@ export function formatTemperature(c, unit = "celsius") {
 
 /**
  * The exceptions one unit has right now, in the strip's order.
+ *
+ * The optional `t` reads the labels from the `bench` catalog; without it the
+ * English wording is returned, which is what the server's alert notifications use.
  * @param {any} spark a SparkMonitor snapshot
  * @param {"celsius"|"fahrenheit"} [unit]
+ * @param {(key: string, vars?: Record<string, string | number>) => string} [t]
  * @returns {Array<{ id: "offline"|"throttle"|"disk"|"llm"|"tailnet", label: string, detail?: string, severity: "critical"|"warning" }>}
  */
-export function fleetExceptions(spark, unit = "celsius") {
+export function fleetExceptions(spark, unit = "celsius", t) {
+  const label = (key, english, vars) => (t ? t(key, vars) : english);
   const out = [];
   if (!spark) return out;
   const metrics = spark.metrics || {};
-  if (!spark.online) out.push({ id: "offline", label: "Host unreachable", severity: "critical" });
+  if (!spark.online) out.push({ id: "offline", label: label("te.fleet.offline", "Host unreachable"), severity: "critical" });
   const th = metrics.gpu?.throttle;
   // A software power cap on an idle GPU is normal; only thermal / hardware slowdown is an alert.
   if (th?.thermal || th?.hwSlowdown) {
     const bits = [];
     const temp = metrics.gpu?.temperature;
-    if (temp) bits.push(`GPU at ${formatTemperature(temp, unit)}`);
-    if (th.smClockMHz) bits.push(`SM clock ${(th.smClockMHz / 1000).toFixed(1)} GHz${th.smClockPct != null ? ` (${Math.round(th.smClockPct)}% of max)` : ""}`);
+    if (temp) bits.push(label("te.fleet.gpuAt", `GPU at ${formatTemperature(temp, unit)}`, { temp: formatTemperature(temp, unit) }));
+    if (th.smClockMHz) {
+      const ghz = (th.smClockMHz / 1000).toFixed(1);
+      const ofMax = th.smClockPct != null ? label("te.fleet.smClockOfMax", ` (${Math.round(th.smClockPct)}% of max)`, { pct: Math.round(th.smClockPct) }) : "";
+      bits.push(`${label("te.fleet.smClock", `SM clock ${ghz} GHz`, { ghz })}${ofMax}`);
+    }
     out.push({
       id: "throttle",
-      label: th.thermal ? "is thermal throttling" : "has a hardware slowdown",
+      label: th.thermal ? label("te.fleet.throttle", "is thermal throttling") : label("te.fleet.hwSlowdown", "has a hardware slowdown"),
       detail: [th.detail, ...bits].filter(Boolean).join(" · "),
       severity: "critical",
     });
   }
   const storage = Array.isArray(metrics.storage) ? metrics.storage : [];
-  if (storage.some((disk) => disk.percentage >= 90)) out.push({ id: "disk", label: "storage is at or above 90%", severity: "warning" });
+  if (storage.some((disk) => disk.percentage >= 90)) {
+    out.push({ id: "disk", label: label("te.fleet.disk", "storage is at or above 90%"), severity: "warning" });
+  }
   const llm = Array.isArray(metrics.llm) ? metrics.llm : [];
-  if (spark.llmMonitoring !== false && llm.length > 0 && llm.every((l) => !l.available)) out.push({ id: "llm", label: "LLM is unavailable", severity: "warning" });
+  if (spark.llmMonitoring !== false && llm.length > 0 && llm.every((l) => !l.available)) {
+    out.push({ id: "llm", label: label("te.fleet.llm", "LLM is unavailable"), severity: "warning" });
+  }
   const ts = metrics.tailscale;
-  if (spark.tailscaleMonitoring && ts && (!ts.available || ts.online === false)) out.push({ id: "tailnet", label: "tailnet is unavailable", severity: "warning" });
+  if (spark.tailscaleMonitoring && ts && (!ts.available || ts.online === false)) {
+    out.push({ id: "tailnet", label: label("te.fleet.tailnet", "tailnet is unavailable"), severity: "warning" });
+  }
   return out;
 }

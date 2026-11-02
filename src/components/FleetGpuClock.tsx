@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { fetchGpuClock, fetchSparks, resetFleetGpuClock, setFleetGpuClock } from "../api/client";
 import type { FleetGpuClockResult, GpuClockStatus } from "../api/types";
 
@@ -77,13 +78,15 @@ export function FleetGpuClock({
   onPendingChange,
   readTimeoutMs = READ_TIMEOUT_MS,
 }: FleetGpuClockProps) {
+  const { t } = useTranslation("ui");
+  const { t: tc } = useTranslation("common");
   const [now, setNow] = useState<FleetNow | null>(null);
   /** The state the user picked. `undefined` = nothing picked, the fleet's own state stands. */
   const [picked, setPicked] = useState<number | null | undefined>(undefined);
   /**
    * The last Save of `picked` did not take everywhere. Kept apart from comparing
-   * the pick with the fleet: a cap can land while its boot hook is refused, and the
-   * read after it then matches the pick although the request failed.
+   * the pick with the fleet: a cap can land while its boot hook is refused, and
+   * the read after it then matches the pick although the request failed.
    */
   const [unsettled, setUnsettled] = useState(false);
   const [persist, setPersist] = useState(false);
@@ -211,11 +214,11 @@ export function FleetGpuClock({
       const reasons = Object.keys(byReason).map((error) => `${byReason[error].join(", ")}: ${error}`);
       const detail = [
         ...reasons,
-        ...skipped.map((r) => `${r.id}: skipped — ${r.reason}`),
+        ...skipped.map((r) => t("fleetClock.skippedUnit", { id: r.id, reason: r.reason })),
         // The common fleet-wide refusal is a permission the boot service needs and
         // the cap itself does not, so name the way out instead of only the wall.
         ...(reasons.length > 0 && reasons.every((reason) => reason.includes("keeping the cap after reboot"))
-          ? ["Untick “Keep after reboot” to cap until the next reboot instead."]
+          ? [t("fleetClock.untickHint")]
           : []),
       ].join("; ");
       // Which hook took, per unit: one Spark may take the boot service where another
@@ -228,24 +231,27 @@ export function FleetGpuClock({
         kept.length === 0
           ? ""
           : kept.every((k) => k === "cron")
-            ? " — kept by an @reboot cron job on each unit"
+            ? t("fleetClock.keptCron")
             : kept.some((k) => k === "cron")
-              ? " — kept after reboot (boot service or @reboot job, per unit)"
-              : " — kept after reboot";
+              ? t("fleetClock.keptMixed")
+              : t("fleetClock.keptUnit");
       // A skipped unit is not a failure, but it is not a change either: a fleet where
       // nothing was capped must not read as a success.
       const nothingChanged = capped === 0;
+      const total = res.results.length;
+      const skippedText = skipped.length ? t("fleetClock.skipped", { count: skipped.length }) : "";
+      const untouched = capMHz === null
+        ? t("fleetClock.msgNothingUnlocked", { total })
+        : t("fleetClock.msgNothingCapped", { total });
+      const applied = capMHz === null
+        ? t("fleetClock.msgFull", { capped, total })
+        : t("fleetClock.msgCapped", { mhz: capMHz, capped, total });
+      const text = nothingChanged
+        ? `${failed.length ? t("fleetClock.msgNoUnit") : untouched}${skippedText}`
+        : `${applied}${skippedText}${howKept}`;
       setMsg({
         ok: failed.length === 0 && !nothingChanged,
-        text: nothingChanged
-          ? failed.length
-            ? `No unit completed the requested change — some changes may have applied${skipped.length ? `, ${skipped.length} skipped` : ""}`
-            : `Nothing changed — 0 of ${res.results.length} units ${capMHz === null ? "unlocked" : "capped"}${
-                skipped.length ? `, ${skipped.length} skipped` : ""
-              }`
-          : `${capMHz === null ? "Full capacity" : `Capped at ${capMHz} MHz`} — ${capped} of ${
-              res.results.length
-            } units${skipped.length ? `, ${skipped.length} skipped` : ""}${howKept}`,
+        text,
         detail: detail || undefined,
       });
       // The pick is spent once every unit took it (skips are not failures) and at least one did.
@@ -264,7 +270,7 @@ export function FleetGpuClock({
     } catch (err: unknown) {
       setMsg({
         ok: false,
-        text: err instanceof Error ? err.message : "GPU clock request failed",
+        text: err instanceof Error ? err.message : t("fleetClock.requestFailed"),
       });
       setUnsettled(true);
       if (persist && capMHz !== null) persistHeld.current = true;
@@ -274,7 +280,7 @@ export function FleetGpuClock({
       window.clearTimeout(timer.current);
       timer.current = window.setTimeout(() => setMsg(null), 12_000);
     }
-  }, [picked, persist, read]);
+  }, [picked, persist, read, t]);
 
   /** A new pick starts over; picking the failed state again keeps its retry. */
   const pick = (state: number | null) => {
@@ -293,28 +299,24 @@ export function FleetGpuClock({
     };
   }, [apiRef, pending, apply]);
 
+  const unreadableText = (count: number) => (count ? t("fleetClock.unreadable", { count }) : "");
+
   return (
     <div className="set-fleetcap">
       <p className="gpu-clock__now" data-testid="fleet-now">
         {now === null ? (
-          "Reading the fleet…"
+          t("fleetClock.reading")
         ) : now.kind === "unknown" ? (
-          "No unit reports its clock right now — reopen Settings to try again."
+          t("fleetClock.unknown")
         ) : now.kind === "mixed" ? (
-          `Now: mixed — ${now.caps.map((cap) => (cap === null ? "full capacity" : `${cap} MHz`)).join(", ")}${
-            now.unreadable ? `, ${now.unreadable} unreadable` : ""
-          }`
+          `${t("fleetClock.mixed", { caps: now.caps.map((cap) => (cap === null ? t("fleetClock.fullCapacityLower") : `${cap} MHz`)).join(", ") })}${unreadableText(now.unreadable)}`
         ) : now.capMHz === null ? (
-          `Now: full capacity on ${now.units} unit${now.units === 1 ? "" : "s"}${
-            now.unreadable ? `, ${now.unreadable} unreadable` : ""
-          }`
+          `${now.units === 1 ? t("fleetClock.nowFullOne", { count: now.units }) : t("fleetClock.nowFullMany", { count: now.units })}${unreadableText(now.unreadable)}`
         ) : (
-          `Now: capped at ${now.capMHz} MHz on ${now.units} unit${now.units === 1 ? "" : "s"}${
-            now.unreadable ? `, ${now.unreadable} unreadable` : ""
-          }`
+          `${now.units === 1 ? t("fleetClock.nowCappedOne", { mhz: now.capMHz, count: now.units }) : t("fleetClock.nowCappedMany", { mhz: now.capMHz, count: now.units })}${unreadableText(now.unreadable)}`
         )}
       </p>
-      <div className="set-fleetcap__presets" role="group" aria-label="GPU clock cap states">
+      <div className="set-fleetcap__presets" role="group" aria-label={t("fleetClock.presetsAria")}>
         <button
           type="button"
           className={`btn btn--sm${shared === null ? " is-current" : ""}${
@@ -323,7 +325,7 @@ export function FleetGpuClock({
           onClick={() => pick(null)}
           disabled={busy}
         >
-          Full capacity
+          {t("fleetClock.fullCapacity")}
         </button>
         {CAP_PRESETS.map((mhz) => (
           <button
@@ -352,18 +354,15 @@ export function FleetGpuClock({
           // A tick held from a refused Save can still be cleared, to cap until reboot instead.
           disabled={busy || (canPersist === false && !persist)}
         />
-        Keep after reboot — the state you pick also installs a boot hook on each unit
+        {t("fleetClock.keepAfterReboot")}
       </label>
       {canPersist === false ? (
-        <p className="set-fleetcap__hint">
-          Not offered here: these units have no boot hook the cap can use — neither a root shell for the boot service nor
-          a running cron service for an @reboot job. The cap applies until the next reboot.
-        </p>
+        <p className="set-fleetcap__hint">{t("fleetClock.noHook")}</p>
       ) : null}
       {pending ? (
-        <p className="set-fleetcap__hint">Not applied yet — press Save to change every unit.</p>
+        <p className="set-fleetcap__hint">{t("fleetClock.pendingHint")}</p>
       ) : null}
-      {busy ? <p className="set-fleetcap__hint">Applying…</p> : null}
+      {busy ? <p className="set-fleetcap__hint">{tc("state.applying")}</p> : null}
       {msg ? (
         <p className={`set-fleetcap__msg${msg.ok ? "" : " is-err"}`} role="status" aria-live="polite">
           {msg.text}

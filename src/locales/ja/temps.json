@@ -1,0 +1,23 @@
+{
+  "title": "温度",
+  "subtitle": "直近{{range}}の機材全体の GPU 温度。1 分単位の履歴はサーバーに 1 週間保持されるため、再読み込みしてもグラフは残ります。",
+  "rangeGroup": "期間",
+  "range": {
+    "24h": { "label": "直近 24 時間", "long": "24 時間" },
+    "7d": { "label": "直近 7 日間", "long": "7 日間" }
+  },
+  "loadFailedTitle": "GPU 履歴を読み込めませんでした",
+  "retry": "再試行",
+  "loading": "温度履歴を読み込み中…",
+  "warmingTitle": "準備中",
+  "warmingBody": "この期間にはまだ GPU 温度が記録されていません。Spark がテレメトリを報告するとグラフが表示され、時間とともに過去へ埋まっていきます。",
+  "nowTemp": "現在 {{temp}}°C",
+  "offline": "オフライン",
+  "noSamples": "この期間に温度サンプルはありません。",
+  "chartAria": "GPU 温度履歴",
+  "axisHours": "−{{hours}} 時間",
+  "axisDays": "−{{days}} 日",
+  "axisNow": "現在",
+  "gpuTemperature": "GPU 温度",
+  "gpuIndex": "GPU {{index}}"
+}

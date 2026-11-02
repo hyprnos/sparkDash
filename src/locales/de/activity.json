@@ -1,0 +1,177 @@
+{
+  "title": "Aktivität",
+  "subtitle": "Alles, was in der Flotte passiert ist: Neustarts, Drosselung, Updates, Benchmarks, Stromversorgung und LLM-Läufe. Der Server behält die letzten 2.000 Ereignisse.",
+  "refresh": "Aktualisieren",
+  "live": {
+    "connecting": "verbinde",
+    "justNow": "gerade eben",
+    "secondsAgo": "vor {{count}} s",
+    "minutesAgo": "vor {{count}} Min.",
+    "failed": "Aktualisierung fehlgeschlagen, neuer Versuch",
+    "paused": "Pausiert (Tab ausgeblendet)",
+    "live": "Live · {{when}}"
+  },
+  "copy": {
+    "asText": "Als Text kopieren",
+    "doneOne": "{{count}} Ereignis kopiert",
+    "doneMany": "{{count}} Ereignisse kopiert",
+    "failed": "Kopieren fehlgeschlagen (Zwischenablage blockiert)"
+  },
+  "clear": {
+    "menu": "Verlauf löschen…",
+    "note": "Das lässt sich nicht rückgängig machen.",
+    "older7d": "Älter als 7 Tage",
+    "ask7d": "Ereignisse älter als 7 Tage löschen?",
+    "older24h": "Älter als 24 Stunden",
+    "ask24h": "Ereignisse älter als 24 Stunden löschen?",
+    "everything": "Alles",
+    "askAll": "Den gesamten Aktivitätsverlauf löschen?"
+  },
+  "common": {
+    "retry": "Wiederholen",
+    "loading": "Wird geladen…"
+  },
+  "tiles": {
+    "summaryAria": "Übersicht, zum Filtern klicken",
+    "events24h": "Ereignisse, 24 Std.",
+    "errors24h": "Fehler, 24 Std.",
+    "warnings24h": "Warnungen, 24 Std.",
+    "problemSparks": "Sparks mit Problemen",
+    "mostActive": "Aktivster Spark",
+    "none": "Keine",
+    "noEvents": "noch keine Ereignisse",
+    "in7d": "{{count}} in 7 Tagen",
+    "eventsOne": "{{count}} Ereignis",
+    "eventsMany": "{{count}} Ereignisse"
+  },
+  "chart": {
+    "title": "Ereignisse pro Tag",
+    "unit": "Ereignisse",
+    "empty": "Keine Ereignisse in den letzten 14 Tagen.",
+    "ariaLabel": "Ereignisse pro Tag der letzten 14 Tage, insgesamt {{count}}"
+  },
+  "filters": {
+    "aria": "Filter",
+    "severity": "Schweregrad",
+    "severityTitle": "Ereignisse: {{severity}}",
+    "timeRange": "Zeitraum",
+    "all": "Alle",
+    "searchPlaceholder": "Nachricht, Spark oder Typ suchen",
+    "searchAria": "Ereignisse suchen",
+    "category": "Kategorie",
+    "allCategories": "Alle Kategorien",
+    "spark": "Spark",
+    "allSparks": "Alle Sparks",
+    "fleetWide": "Flottenweit ({{count}})",
+    "reset": "Filter zurücksetzen"
+  },
+  "range": {
+    "24h": "24 Std.",
+    "7d": "7 T.",
+    "all": "Alle"
+  },
+  "count": {
+    "showing": "{{visible}} von {{total}} geladenen Ereignissen werden angezeigt",
+    "showingFiltered": "{{visible}} von {{total}} geladenen Ereignissen werden angezeigt (gefiltert)"
+  },
+  "newBar": {
+    "one": "{{count}} neues Ereignis, nach oben springen",
+    "many": "{{count}} neue Ereignisse, nach oben springen"
+  },
+  "more": {
+    "reachedOldest": "Das älteste vom Server behaltene Ereignis ist erreicht.",
+    "loadOlder": "Ältere laden",
+    "filtersHint": "Filter gelten nur für die bereits geladenen Ereignisse.",
+    "loadFailed": "Ältere Ereignisse konnten nicht geladen werden: {{message}}"
+  },
+  "timeline": {
+    "loadingAria": "Aktivität wird geladen",
+    "loadFailedTitle": "Aktivität konnte nicht geladen werden",
+    "emptyTitle": "Noch nichts aufgezeichnet",
+    "emptyBody": "Der Server protokolliert Flottenereignisse, sobald sie passieren: Sparks online oder offline, GPU-Drosselung, Hermes-Updates, Benchmark-Läufe, Herunterfahren und Aufwecken, LLM-Start und -Stopp sowie hinzugefügte oder entfernte Sparks.",
+    "filteredTitle": "Keine Ereignisse passen zu den Filtern",
+    "filteredBody": "Wählen Sie einen größeren Zeitraum oder entfernen Sie einen Filter."
+  },
+  "day": {
+    "today": "Heute",
+    "yesterday": "Gestern"
+  },
+  "ago": {
+    "justNow": "gerade eben",
+    "minutes": "vor {{count}} Min.",
+    "hours": "vor {{count}} Std.",
+    "days": "vor {{count}} T."
+  },
+  "row": {
+    "openSpark": "{{name}} öffnen",
+    "hideDetails": "Details ausblenden: {{label}}",
+    "showDetails": "Details anzeigen: {{label}}",
+    "message": "Nachricht",
+    "time": "Zeit",
+    "severity": "Schweregrad",
+    "type": "Typ",
+    "eventId": "Ereignis-ID",
+    "spark": "Spark",
+    "category": "Kategorie",
+    "data": "Daten",
+    "copied": "Kopiert",
+    "copy": "Kopieren"
+  },
+  "severity": {
+    "error": "Fehler",
+    "warn": "Warnung",
+    "success": "Erfolg",
+    "info": "Info",
+    "errors": "Fehler",
+    "warnings": "Warnungen",
+    "successMany": "Erfolge",
+    "infoMany": "Infos"
+  },
+  "categories": {
+    "status": "Status (online/offline)",
+    "thermal": "Temperatur",
+    "health": "Zustand",
+    "alerts": "Alarmbenachrichtigungen",
+    "hermes": "Hermes",
+    "bench": "Benchmarks",
+    "power": "Stromversorgung",
+    "llm": "LLM-Modelle",
+    "fleet": "Flottenänderungen",
+    "other": "Sonstiges"
+  },
+  "type": {
+    "sparkOnline": "Online",
+    "sparkOffline": "Offline",
+    "sparkAdded": "Spark hinzugefügt",
+    "sparkRemoved": "Spark entfernt",
+    "thermalThrottle": "Thermische Drosselung",
+    "throttleCleared": "Drosselung aufgehoben",
+    "hermesUpdateAvailable": "Hermes-Update verfügbar",
+    "hermesUpdated": "Hermes aktualisiert",
+    "hermesUpdateFailed": "Hermes-Update fehlgeschlagen",
+    "xidError": "Xid-Fehler",
+    "outOfMemoryKill": "Wegen Speichermangel beendet",
+    "runningHot": "Zu heiß",
+    "lowPowerState": "Niedriger Energiezustand",
+    "lowMemory": "Wenig Speicher",
+    "manyModelsLoaded": "Viele Modelle geladen",
+    "slowLink": "Langsame Verbindung",
+    "roceLinkDown": "RoCE-Verbindung getrennt",
+    "rocePacketLoss": "RoCE-Paketverlust",
+    "healthOk": "Zustand in Ordnung",
+    "notificationSent": "Benachrichtigung gesendet",
+    "notificationFailed": "Benachrichtigung fehlgeschlagen",
+    "shutdown": "Herunterfahren",
+    "wake": "Aufwecken",
+    "decodeBench": "Decode-Bench",
+    "prefillBench": "Prefill-Bench",
+    "qualityBench": "Qualitäts-Bench",
+    "stageFinished": "{{name}}",
+    "stageFailed": "{{name}} fehlgeschlagen",
+    "stageCancelled": "{{name}} abgebrochen",
+    "llmStart": "LLM-Start",
+    "llmStop": "LLM-Stopp",
+    "llmAttach": "LLM-Verbindung",
+    "llmNamed": "{{action}} {{target}}"
+  }
+}

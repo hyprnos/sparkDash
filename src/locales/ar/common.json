@@ -85,5 +85,7 @@
     "resultFailed": "فشل {{count}}",
     "resultSkipped": "تُخطي {{count}}",
     "batchFailed": "فشل الإيقاف الجماعي"
-  }
+  },
+  "actions": {"cancel": "إلغاء", "save": "حفظ", "close": "إغلاق", "dismiss": "تجاهل", "delete": "حذف", "remove": "إزالة", "back": "رجوع", "next": "التالي", "retry": "إعادة المحاولة", "edit": "تعديل", "add": "إضافة", "test": "اختبار", "enable": "تفعيل", "disable": "تعطيل", "apply": "تطبيق", "copy": "نسخ", "copied": "تم النسخ"},
+  "state": {"loading": "جارٍ التحميل…", "saving": "جارٍ الحفظ…", "testing": "جارٍ الاختبار…", "checking": "جارٍ الفحص…", "working": "جارٍ التنفيذ…", "sending": "جارٍ الإرسال…", "applying": "جارٍ التطبيق…", "restarting": "جارٍ إعادة التشغيل…", "removing": "جارٍ الإزالة…"}
 }

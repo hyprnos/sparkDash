@@ -85,5 +85,7 @@
     "resultFailed": "{{count}}대 실패",
     "resultSkipped": "{{count}}대 건너뜀",
     "batchFailed": "일괄 종료 실패"
-  }
+  },
+  "actions": {"cancel": "취소", "save": "저장", "close": "닫기", "dismiss": "닫기", "delete": "삭제", "remove": "제거", "back": "뒤로", "next": "다음", "retry": "재시도", "edit": "편집", "add": "추가", "test": "테스트", "enable": "사용", "disable": "사용 안 함", "apply": "적용", "copy": "복사", "copied": "복사됨"},
+  "state": {"loading": "불러오는 중…", "saving": "저장 중…", "testing": "테스트 중…", "checking": "확인 중…", "working": "처리 중…", "sending": "전송 중…", "applying": "적용 중…", "restarting": "다시 시작 중…", "removing": "제거 중…"}
 }

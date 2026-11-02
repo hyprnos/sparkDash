@@ -1,0 +1,804 @@
+{
+  "shell": {
+    "eyebrow": "Benchmarks",
+    "eyebrowFamily": "Benchmarks · {{family}}",
+    "titleFallback": "Benchmark",
+    "unknown": "Unbekannter Benchmark."
+  },
+  "types": {
+    "decode": {
+      "label": "Decode",
+      "blurb": "Generierungsgeschwindigkeit (Tokens/s) bei steigender Parallelität."
+    },
+    "prefill": {
+      "label": "Prefill",
+      "blurb": "Prompt-Verarbeitungsgeschwindigkeit und Zeit bis zum ersten Token über verschiedene Kontextgrößen."
+    },
+    "quality": {
+      "label": "Qualität",
+      "blurb": "Eine feste, gesäte Qualitätssuite zum Vergleich von Modellen, Quantisierungen und KV-Cache-Formaten."
+    },
+    "toolEval": {
+      "label": "Tool-Evaluierung",
+      "blurb": "Qualität von Tool-Aufrufen in 69 deterministischen Szenarien (Auswahl, Parameter, mehrstufig, Sicherheit)."
+    }
+  },
+  "runOn": {
+    "label": "Ausführen auf",
+    "none": "Keine Sparks verfügbar",
+    "chipsAria": "Spark für den Benchmark",
+    "workerHint": "{{name}} ist ein Worker: kein lokales LLM, nur gespeicherte Ergebnisse",
+    "offlineHint": "{{name}} ist offline",
+    "workerTag": "Worker"
+  },
+  "layout": {
+    "configAria": "Laufkonfiguration",
+    "configuration": "Konfiguration"
+  },
+  "history": {
+    "date": "Datum",
+    "model": "Modell",
+    "result": "Ergebnis",
+    "actions": "Aktionen",
+    "open": "Öffnen",
+    "view": "Ansehen",
+    "compare": "Vergleichen",
+    "comparing": "Vergleich läuft"
+  },
+  "historyRows": {
+    "tps": "{{value}} tok/s",
+    "peakAt": "Spitze bei ×{{concurrency}}",
+    "perStreamAt1": "{{value}}/Stream bei ×1",
+    "startCtx": "Startkontext {{size}}",
+    "bestAt": "bestes bei {{size}}",
+    "percent": "{{value}} %",
+    "categoryOne": "{{count}} Kategorie",
+    "categoryMany": "{{count}} Kategorien"
+  },
+  "live": {
+    "aria": "Live-Generierungsgeschwindigkeit",
+    "label": "Live-Generierung",
+    "peak": "Spitze {{value}} tok/s"
+  },
+  "target": {
+    "aria": "Benchmark-Ziel",
+    "emptyTitle": "Kein Spark zum Benchmarken",
+    "emptyBody": "Fügen Sie zuerst einen Spark über die Flottenleiste hinzu. Benchmarks laufen gegen den LLM-Server eines Sparks oder gegen einen Remote-Endpunkt, den Sie eingeben.",
+    "enterHost": "Geben Sie den Host des zu testenden LLM-Endpunkts ein.",
+    "remote": "Remote",
+    "remoteTitle": "Einen anderen LLM-Endpunkt statt des eines Sparks testen",
+    "llmPort": "LLM-Port",
+    "portTag": "Port {{port}}",
+    "modelTitle": "Aktuell auf diesem Port bereitgestelltes Modell",
+    "ctxTag": "Kontext {{value}}",
+    "host": "Host",
+    "hostPlaceholder": "https://name.tailxxxxx.ts.net/v1/models",
+    "hostAria": "Remote-Host",
+    "port": "Port",
+    "portAria": "Remote-Port",
+    "https": "HTTPS",
+    "remoteHint": "On-Demand-Endpunkt: Es wird nichts geprüft, bis Sie ausführen. Remote-Einheiten nutzen HTTP im LAN oder einen SSH-Tunnel zum Loopback, wenn der Server nur auf 127.0.0.1 lauscht.",
+    "offlineTitle": "{{name}} ist offline.",
+    "offlineBody": " Bringen Sie ihn wieder online, um sein LLM zu testen, oder wechseln Sie das Ziel auf Remote und zeigen auf einen anderen Endpunkt. Gespeicherte Läufe bleiben lesbar.",
+    "workerTitle": "{{name}} ist ein Worker",
+    "workerBody": " und stellt kein eigenes LLM bereit, hier kann also nichts laufen. Gespeicherte Läufe bleiben lesbar.",
+    "noLlmTitle": "Kein erreichbares LLM auf Port {{port}}.",
+    "noLlmBody": "{{error}}Starten Sie ein Modell auf diesem Spark (Modell-Panel auf seiner Seite), prüfen Sie den LLM-Port in seinen Einstellungen oder wechseln Sie das Ziel auf Remote. Gespeicherte Läufe bleiben lesbar."
+  },
+  "te": {
+    "units": {
+      "seconds": "{{value}} s",
+      "minutes": "{{minutes}} Min. {{seconds}} s",
+      "hours": "{{hours}} Std. {{minutes}} Min."
+    },
+    "tier": {
+      "excellent": "Ausgezeichnet",
+      "good": "Gut",
+      "adequate": "Ausreichend",
+      "weak": "Schwach",
+      "poor": "Mangelhaft"
+    },
+    "error": {
+      "tail": " ({{message}})",
+      "noServer": "Es wurde kein Modellserver gefunden. Starten Sie das Modell auf diesem Spark (oder setzen Sie eine Basis-URL) und versuchen Sie es erneut.",
+      "connectionFailed": "Das Tool konnte den Modellserver nicht erreichen. Prüfen Sie URL, Port und ob der Server läuft.",
+      "noModels": "Der Server antwortet, listet aber keine Modelle. Laden Sie zuerst ein Modell oder geben Sie den Modellnamen an.",
+      "authFailed": "Der Server hat den API-Schlüssel abgelehnt. Geben Sie den richtigen Schlüssel ein oder speichern Sie einen für diesen Port.",
+      "modelNotFound": "Der Server stellt diesen Modellnamen nicht bereit. Lassen Sie das Modell leer, um es automatisch zu erkennen.",
+      "generic": "Das Tool hat einen Fehler gemeldet.",
+      "genericWithCode": "Das Tool hat einen Fehler gemeldet ({{code}})."
+    },
+    "notes": {
+      "toolChoiceOne": "Dieser Modellserver unterstützt erzwungene Tool-Aufrufe (tool_choice \"required\") nicht, daher wurde das Szenario, das sie benötigt, aus der Wertung genommen ({{scenarios}}). Der Lauf ist in Ordnung; die Wertung umfasst die übrigen Szenarien und ist daher nicht direkt mit einem Server vergleichbar, der dies unterstützt.",
+      "toolChoiceMany": "Dieser Modellserver unterstützt erzwungene Tool-Aufrufe (tool_choice \"required\") nicht, daher wurden die Szenarien, die sie benötigen, aus der Wertung genommen ({{scenarios}}). Der Lauf ist in Ordnung; die Wertung umfasst die übrigen Szenarien und ist daher nicht direkt mit einem Server vergleichbar, der dies unterstützt.",
+      "excludedOne": "{{scenarios}} wurde vom Tool aus der Wertung genommen (Grund siehe Rohausgabe).",
+      "excludedMany": "{{scenarios}} wurden vom Tool aus der Wertung genommen (Grund siehe Rohausgabe)."
+    },
+    "status": {
+      "running": "Läuft",
+      "runningUnwatched": "Läuft (nicht beobachtet)",
+      "completed": "Abgeschlossen",
+      "failed": "Fehlgeschlagen",
+      "stopped": "Gestoppt",
+      "gone": "Verschwunden"
+    },
+    "validate": {
+      "number": "{{label}} muss eine Zahl sein",
+      "wholeNumber": "{{label}} muss eine ganze Zahl sein",
+      "atLeast": "{{label}} muss mindestens {{min}} sein",
+      "atMost": "{{label}} darf höchstens {{max}} sein",
+      "oneOf": "{{label}} muss eines von {{choices}} sein",
+      "tooLong": "{{label}} ist zu lang",
+      "invalidFormat": "{{label}} hat ein ungültiges Format",
+      "longerThan": "{{label}} ist länger als {{kib}} KiB",
+      "absolutePath": "{{label}} muss ein absoluter Pfad sein (oder mit ~/ beginnen)",
+      "noDotDot": "{{label}} darf kein .. enthalten",
+      "httpPrefix": "{{label}} muss mit http:// oder https:// beginnen",
+      "noCredentials": "{{label}} darf keine Zugangsdaten enthalten (nutzen Sie das API-Schlüsselfeld)",
+      "invalidUrl": "{{label}} ist keine gültige URL",
+      "notJsonObject": "muss ein JSON-Objekt sein",
+      "invalidJson": "ist kein gültiges JSON",
+      "jsonPrefix": "{{label}}: {{reason}}",
+      "tooManyItems": "{{label}} hat zu viele Einträge",
+      "invalidItem": "{{label}} enthält einen ungültigen Eintrag \"{{item}}\"",
+      "invalidEntry": "{{label}} enthält einen ungültigen Eintrag \"{{item}}\""
+    },
+    "form": {
+      "systemPromptBoth": "Verwenden Sie entweder den System-Prompt-Text oder die Datei, nicht beides",
+      "contextPressureBoth": "Verwenden Sie entweder einen einzelnen Kontextdruck oder einen Sweep, nicht beides",
+      "shortAndScenarios": "Ein kurzer Lauf und eine bestimmte Szenarioliste lassen sich nicht kombinieren",
+      "noSuite": "Wählen Sie mindestens eine Suite aus",
+      "noPressure": "Legen Sie ein Druckverhältnis oder einen Sweep-Bereich fest, sonst ist dies ein normaler Tool-Aufruf-Lauf",
+      "presets": "Voreinstellungen",
+      "presetsAria": "Voreinstellungen",
+      "optionOne": "{{count}} Option gesetzt",
+      "optionMany": "{{count}} Optionen gesetzt",
+      "reset": "Zurücksetzen",
+      "suitesLegend": "Auszuführende Suiten",
+      "suiteHint": "Jede ausgewählte Suite wird mit ihrem eigenen --…-only-Flag gesendet; mehrere ausgewählte laufen nacheinander.",
+      "suiteNotSelected": "Suite nicht ausgewählt",
+      "nSet": "{{count}} gesetzt",
+      "llmPortOn": "LLM-Port auf {{name}}",
+      "portHint": "Wird verwendet, wenn die Basis-URL leer ist; bestimmt auch, welcher gespeicherte API-Schlüssel genutzt wird.",
+      "liveModelPrefix": "Aktuell auf diesem Spark bereitgestelltes Modell:",
+      "liveModelSuffix": "(lassen Sie das Modellfeld leer, um es zu verwenden).",
+      "apiKey": "API-Schlüssel",
+      "apiKeySaved": "Der für diesen Port gespeicherte Schlüssel wird verwendet",
+      "apiKeyEmpty": "Leer lassen, um den gespeicherten Schlüssel zu verwenden",
+      "apiKeyHintBase": "Leer verwendet den für den Port dieses Sparks gespeicherten Schlüssel (falls vorhanden)",
+      "apiKeyHintSaved": ", und für diesen Port ist einer gespeichert",
+      "apiKeyHintTail": ". Ein eingegebener Schlüssel wird nur zusammen mit einer Basis-URL gesendet, gelangt über die Umgebung nur für diesen Lauf zum Spark und wird nie in diesem Browser gespeichert.",
+      "advancedTitle": "Erweitert / alle Optionen",
+      "moreOptionsOne": "{{count}} weitere Option",
+      "moreOptionsMany": "{{count}} weitere Optionen",
+      "advancedHelp": "Alle anderen Optionen von tool-eval-bench, damit nichts unerreichbar bleibt. Optionen, die diese Seite selbst setzt, entfallen.",
+      "extraLabel": "Zusätzliche Argumente",
+      "extraHint": "Freie Flags, die als separate Argumente übergeben werden (keine Shell). Nützlich für Optionen neuer als dieses Formular. Flags, die sparkDash steuert (--json, --probe, …), werden abgelehnt."
+    },
+    "suites": {
+      "gsm8k": "Grundschulmathematik",
+      "mmlu": "Fachübergreifendes Wissen",
+      "ifeval": "Anweisungsbefolgung"
+    },
+    "parts": {
+      "copy": "Kopieren",
+      "copied": "Kopiert",
+      "copyFailed": "Kopieren fehlgeschlagen",
+      "rawJson": "Roh-JSON",
+      "show": "anzeigen",
+      "copyJson": "JSON kopieren",
+      "rawOutput": "Rohausgabe des Tools",
+      "hiddenLines": "… {{count}} frühere Zeilen ausgeblendet (Kopieren enthält alles)",
+      "waiting": "Warte auf Ausgabe…",
+      "noOutput": "Keine Ausgabe."
+    },
+    "trials": {
+      "label": "Wiederholungen",
+      "hint": "Wiederholt den gesamten Lauf N-mal für Pass@k-Statistiken.",
+      "single": "1 = ein einzelner Lauf.",
+      "takesLonger": "Dauert etwa {{count}}× so lange.",
+      "groupAria": "Anzahl der Wiederholungen",
+      "fewer": "Weniger Wiederholungen",
+      "inputAria": "Wiederholungen (1 bis {{max}})",
+      "more": "Mehr Wiederholungen"
+    },
+    "xspark": {
+      "note": "Vergleichen Sie einen Lauf auf diesem Spark mit einem abgeschlossenen Lauf eines anderen Sparks. Wählen Sie unten einen Lauf aus und dann den Spark und Lauf zum Vergleich.",
+      "sparkAria": "Spark zum Vergleichen",
+      "loadFailed": "Läufe dieses Sparks konnten nicht geladen werden: {{message}}",
+      "empty": "Keine abgeschlossenen Läufe dieses Benchmarks auf diesem Spark.",
+      "runAria": "Lauf vom anderen Spark",
+      "autoModel": "automatisches Modell",
+      "clear": "Auswahl aufheben"
+    },
+    "simple": {
+      "testing": "Getestet wird",
+      "whatToTest": "Was testen",
+      "modelOn": "Modell auf {{name}}",
+      "customUrl": "Eigene URL",
+      "baseUrl": "Basis-URL",
+      "baseUrlPlaceholder": "https://host/v1  oder  http://192.168.1.50:8000",
+      "baseUrlAria": "Eigene Basis-URL",
+      "model": "Modell",
+      "autoDetect": "automatisch erkennen",
+      "modelAria": "Modellname",
+      "apiKey": "API-Schlüssel",
+      "apiKeyPlaceholder": "falls nötig",
+      "apiKeyAria": "API-Schlüssel",
+      "urlHint": "Der Lauf findet auf {{name}} statt, der Host muss diese URL also erreichen können. Der Schlüssel wird nur für diesen Lauf an {{name}} gesendet und nicht hier gespeichert.",
+      "urlRequired": "Geben Sie die URL des zu testenden OpenAI-kompatiblen Servers ein.",
+      "localModel": "Das Modell auf diesem DGX Spark",
+      "port": "Port",
+      "portAria": "Zu testender LLM-Port",
+      "noModel": "Auf diesem Port antwortet derzeit kein Modell. Starten Sie eines im Modell-Panel des Sparks oder wechseln Sie zu einer eigenen URL.",
+      "templatesAria": "Fertige Läufe",
+      "customApplied": "Es gelten eigene Einstellungen.",
+      "reviewAdvanced": "In Erweitert prüfen",
+      "orPick": "oder wählen Sie oben eine Vorlage, um neu zu beginnen.",
+      "moreControl": "Mehr Kontrolle nötig (Sampling, Kategorien, System-Prompt, andere Endpunkte, alle Optionen)?",
+      "openAdvanced": "Erweitert öffnen"
+    },
+    "presets": {
+      "tool-eval": {
+        "quick": {
+          "label": "Schnellprüfung",
+          "help": "Nur die 15 Kernszenarien (etwa 2 Minuten)."
+        },
+        "full": {
+          "label": "Vollständig",
+          "help": "Alle Standardszenarien mit den Standardwerten des Tools."
+        },
+        "hard": {
+          "label": "Nur Hard Mode",
+          "help": "Nur die Hard-Mode-Szenarien (Kategorie P)."
+        },
+        "repro": {
+          "label": "Reproduzierbar",
+          "help": "Temperatur 0 und fester Seed, damit Wiederholungen vergleichbar sind."
+        },
+        "thinking": {
+          "label": "Denkendes Modell",
+          "help": "Deaktiviert die Denkausgabe und erlaubt 120 s pro Anfrage (Qwen3-/DeepSeek-Stil)."
+        }
+      },
+      "throughput": {
+        "quick": {
+          "label": "Schnell",
+          "help": "Kurze Prompts, eine Tiefe, ein Lauf pro Punkt."
+        },
+        "standard": {
+          "label": "Standard",
+          "help": "Die Standardwerte des Tools."
+        },
+        "deep": {
+          "label": "Tiefer Kontext",
+          "help": "Bis zu 32k Kontext und 8 gleichzeitige Anfragen."
+        }
+      },
+      "spec-decode": {
+        "quick": {
+          "label": "Schnell",
+          "help": "Ein Prompt-Typ, ein Lauf pro Zelle."
+        },
+        "standard": {
+          "label": "Standard",
+          "help": "Die Standardwerte des Tools."
+        },
+        "code": {
+          "label": "Code und strukturiert",
+          "help": "Die Prompt-Typen, bei denen Spekulation am meisten hilft."
+        }
+      },
+      "context-pressure": {
+        "single": {
+          "label": "Einzelne Stufe (75 %)",
+          "help": "Kernszenarien mit zu 75 % gefülltem Kontext."
+        },
+        "sweep": {
+          "label": "Sweep 50–100 %",
+          "help": "Kernszenarien auf fünf Druckstufen."
+        },
+        "fine": {
+          "label": "Feiner Sweep",
+          "help": "Zehn Stufen von 10 % bis 100 % (lang)."
+        }
+      },
+      "accuracy": {
+        "quick": {
+          "label": "Schnell",
+          "help": "Eine kleine Stichprobe jeder Suite."
+        },
+        "standard": {
+          "label": "Standard",
+          "help": "Die Standard-Fragenlimits des Tools."
+        },
+        "full": {
+          "label": "Vollständige Datensätze",
+          "help": "Jede Frage (langsam)."
+        },
+        "repro": {
+          "label": "Reproduzierbar",
+          "help": "Fester Seed und gemischtes GSM8K."
+        }
+      },
+      "needle": {
+        "quick": {
+          "label": "Schnell",
+          "help": "Drei Tiefen und zwei Längen."
+        },
+        "standard": {
+          "label": "Standard",
+          "help": "Die Standardwerte (5 Tiefen, 4 Längen)."
+        },
+        "thorough": {
+          "label": "Gründlich",
+          "help": "Zehn Tiefen und acht Längen (lang)."
+        }
+      },
+      "decision": {
+        "standard": {
+          "label": "Standard",
+          "help": "Die Standardwerte des Tools."
+        }
+      }
+    },
+    "templates": {
+      "regular": {
+        "label": "Normaler Lauf",
+        "help": "Die vollständige Standardsuite: Tool-Auswahl, Parameter, mehrstufige Ketten, Fehlerbehebung, Sicherheit und mehr.",
+        "size": "69 Szenarien",
+        "time": "etwa 10–20 Min."
+      },
+      "regular-hard": {
+        "label": "Normal + Hard Mode",
+        "help": "Die vollständige Suite plus die Hard-Mode-Szenarien.",
+        "size": "92 Szenarien",
+        "time": "etwa 15–30 Min."
+      },
+      "short": {
+        "label": "Kurzer Lauf",
+        "help": "Nur die 15 Kernszenarien. Eine schnelle Prüfung nach Modell- oder Einstellungsänderungen.",
+        "size": "15 Szenarien",
+        "time": "etwa 2 Min."
+      },
+      "hard": {
+        "label": "Nur Hard Mode",
+        "help": "Nur die adversarialen Hard-Mode-Szenarien: zustandsbehaftet, transaktional und knifflig. Für Modelle, die den normalen Lauf bestehen.",
+        "size": "23 Szenarien",
+        "time": "etwa 5–10 Min."
+      }
+    },
+    "categories": {
+      "A": "Tool-Auswahl",
+      "B": "Parametergenauigkeit",
+      "C": "Mehrstufige Ketten",
+      "D": "Zurückhaltung und Ablehnung",
+      "E": "Fehlerbehebung",
+      "F": "Lokalisierung",
+      "G": "Strukturiertes Denken",
+      "H": "Anweisungsbefolgung",
+      "I": "Kontext und Zustand",
+      "J": "Code-Muster",
+      "K": "Sicherheit und Grenzen",
+      "L": "Skalierung des Toolsets",
+      "M": "Autonome Planung",
+      "N": "Kreative Komposition",
+      "O": "Strukturierte Ausgabe",
+      "P": "Hard Mode"
+    },
+    "compare": {
+      "aria": "Laufvergleich",
+      "title": "Vergleichen",
+      "showCard": "Vergleichskarte anzeigen",
+      "cardDialog": "Vergleichskarte der Tool-Evaluierung",
+      "cardAlt": "Vergleichskarte zweier Tool-Evaluierungsläufe",
+      "cardTitle": "Diesen Vergleich als kopierbares oder speicherbares Bild darstellen",
+      "notComparable": "Diese Läufe sind nicht direkt vergleichbar",
+      "caveatNote": "Solche Unterschiede können eine Score-Änderung allein erklären.",
+      "fair": "Gleiches Modell, gleicher Endpunkt und gleiche Optionen: ein fairer Vergleich.",
+      "fairAmong": "Gleiches Modell, gleicher Endpunkt und gleiche Optionen: ein fairer Vergleich von {{a}} und {{b}}.",
+      "loadFailed": "Ein Ergebnis konnte nicht geladen werden",
+      "metric": "Messwert",
+      "change": "Änderung",
+      "identical": "{{count}} Zahlen sind identisch.",
+      "noDiff": "Keine Zahlen unterscheiden sich zwischen diesen Läufen.",
+      "nothing": "Noch nichts zu vergleichen.",
+      "score": "Score",
+      "deployability": "Einsatzbereitschaft",
+      "responsiveness": "Reaktionsfähigkeit",
+      "passed": "Bestanden",
+      "partial": "Teilweise",
+      "failed": "Fehlgeschlagen",
+      "safetyWarnings": "Sicherheitswarnungen",
+      "diffType": "Die Läufe sind von unterschiedlichen Benchmark-Typen.",
+      "diffModel": "Unterschiedliche Modelle: {{a}} vs. {{b}}.",
+      "diffEndpoint": "Unterschiedliche Endpunkte: {{a}} vs. {{b}}.",
+      "diffOptions": "Unterschiedliche Optionen: {{flags}}.",
+      "autoModel": "auto"
+    },
+    "fields": {
+      "min": "Min. {{value}}",
+      "max": "Max. {{value}}",
+      "default": "Standard {{value}}",
+      "defaultWith": "Standard ({{value}})",
+      "defaultOnly": "Standard",
+      "jsonIssue": "JSON {{reason}}",
+      "jsonOk": "Gültiges JSON-Objekt",
+      "spaceSeparated": "durch Leerzeichen getrennt",
+      "itemCount": "{{count}} Eintrag/Einträge",
+      "categoriesAria": "Kategorien",
+      "all": "Alle",
+      "none": "Keine",
+      "rowAria": "{{label}} {{n}}",
+      "remove": "Entfernen",
+      "removeAria": "{{label}} {{n}} entfernen",
+      "addRow": "Zeile hinzufügen",
+      "showValues": "Werte anzeigen",
+      "hideValues": "Werte ausblenden"
+    },
+    "generic": {
+      "yes": "ja",
+      "no": "nein",
+      "empty": "leer",
+      "more": "… {{count}} weitere",
+      "showingRows": "300 von {{rows}} Zeilen werden angezeigt.",
+      "keyNumbers": "Kennzahlen",
+      "nothing": "Keine erkennbaren Zahlen in diesem Ergebnis. Die vollständigen Daten stehen unten.",
+      "configReported": "Vom Tool gemeldete Konfiguration",
+      "allValues": "Alle Werte"
+    },
+    "card": {
+      "show": "Karte anzeigen",
+      "rendering": "Wird dargestellt…",
+      "failed": "Darstellung fehlgeschlagen — erneut versuchen",
+      "hintClipboard": "In die Zwischenablage kopieren oder als PNG speichern. Die Karte folgt dem aktuellen Theme des Dashboards.",
+      "hintBefore": "Rechtsklick →",
+      "copyImage": "Bild kopieren",
+      "hintAfter": " oder ziehen Sie die Karte in Ihren Beitrag. Browser erlauben das Kopieren von Bildern nur über HTTPS oder localhost, daher wird die Karte hier angezeigt.",
+      "copied": "Kopiert!",
+      "copyFailed": "Kopieren fehlgeschlagen"
+    },
+    "run": {
+      "aria": "Befehl und Start",
+      "command": "Befehl",
+      "updating": "wird aktualisiert…",
+      "valid": "gültig",
+      "needsAttention": "Aufmerksamkeit nötig",
+      "runsOn": "Läuft auf {{name}} gegen",
+      "commandLine": "Befehlszeile",
+      "fixToSee": "(Fehler beheben, um den Befehl zu sehen)",
+      "previewUnavailable": "(Vorschau nicht verfügbar)",
+      "usesSavedKey": "Verwendet den für den Port dieses Sparks gespeicherten API-Schlüssel (über die Umgebung übergeben). ",
+      "keyNote": "API-Schlüssel und Header-Werte erscheinen hier nie. Der Pfad der Ergebnisdatei wird beim Start des Laufs ergänzt.",
+      "previewFailed": "Vorschau fehlgeschlagen",
+      "startFailed": "Start fehlgeschlagen",
+      "starting": "Wird gestartet…",
+      "startEvaluation": "Evaluierung starten",
+      "startBenchmark": "Benchmark starten",
+      "checking": "Prüfe…",
+      "checkConnection": "Verbindung prüfen",
+      "loading": "Wird geladen…",
+      "previewScenarios": "Szenarien in der Vorschau",
+      "reachable": "Erreichbar",
+      "notReachable": "Nicht erreichbar",
+      "scenariosTitle": "Szenarien, die laufen würden",
+      "noOutput": "Keine Ausgabe.",
+      "exitCode": "Beendet mit Code {{code}}",
+      "installFirst": "Installieren Sie zuerst Tool Eval Bench auf diesem Spark.",
+      "fixOptions": "Beheben Sie zuerst die markierten Optionen."
+    },
+    "result": {
+      "took": "dauerte {{duration}}",
+      "command": "Befehl",
+      "optionsUsed": "Verwendete Optionen ({{count}})",
+      "cardDialog": "Tool-Evaluierungs-Karte zum Teilen",
+      "cardAlt": "Ergebniskarte der Tool-Evaluierung: Score {{score}}",
+      "cardTitle": "Diese Ergebnisse als kopierbares oder speicherbares Bild darstellen",
+      "failed": "Der Lauf ist fehlgeschlagen",
+      "failedCode": "Der Lauf ist fehlgeschlagen (Exit-Code {{code}})",
+      "stopped": "Der Lauf wurde gestoppt",
+      "gone": "Der Lauf ist verschwunden",
+      "goneBody": "Die Dateien dieses Laufs existieren nicht mehr auf dem Spark.",
+      "incomplete": "Das Tool wurde beendet, bevor ein vollständiges Ergebnis geschrieben wurde.",
+      "goodToKnow": "Gut zu wissen",
+      "output": "Ausgabe des Laufs",
+      "notFinished": "Dieser Lauf ist noch nicht abgeschlossen. Sein Ergebnis erscheint hier, sobald er es ist.",
+      "noResult": "Es wurde kein Ergebnis gespeichert",
+      "loadFailed": "Ergebnis konnte nicht geladen werden",
+      "retry": "Erneut versuchen"
+    },
+    "live": {
+      "aria": "Lauffortschritt",
+      "lastRun": "Letzter Lauf",
+      "runInProgress": "Lauf läuft",
+      "model": "Modell",
+      "progressAria": "Fortschritt",
+      "starting": "Wird gestartet…",
+      "startingTool": "Tool wird auf dem Spark gestartet…",
+      "connected": "Verbunden mit {{target}}{{backend}}…",
+      "theServer": "dem Server",
+      "runningScenarios": "Szenarien laufen",
+      "measuring": "Messung läuft",
+      "finished": "Abgeschlossen",
+      "error": "Fehler",
+      "scenariosOf": "{{done}} von {{total}} Szenarien",
+      "scenarios": "Szenarien",
+      "elapsed": "{{duration}} vergangen",
+      "left": " · etwa {{duration}} übrig",
+      "pass": "bestanden",
+      "partial": "teilweise",
+      "fail": "fehlgeschlagen",
+      "other": "andere",
+      "points": "{{count}} Punkte",
+      "now": "Jetzt:",
+      "goodToKnow": "Gut zu wissen",
+      "toolError": "Das Tool hat einen Fehler gemeldet",
+      "runFailed": "Der Lauf ist fehlgeschlagen",
+      "runFailedCode": "Der Lauf ist fehlgeschlagen (Exit-Code {{code}})",
+      "openRawOutput": "Details finden Sie in der Rohausgabe unten.",
+      "stoppedTitle": "Der Lauf wurde gestoppt",
+      "stoppedBody": "Er wurde vor dem Ende gestoppt, daher gibt es möglicherweise kein Ergebnis.",
+      "lostViewTitle": "Live-Ansicht verloren",
+      "reattach": "Erneut verbinden",
+      "checkStatus": "Status prüfen",
+      "mayStillRun": "Der Lauf läuft möglicherweise noch auf dem Spark.",
+      "notWatchingTitle": "Dieser Lauf wird nicht beobachtet",
+      "detachedTitle": "Lauf ist getrennt",
+      "watchAgain": "Erneut beobachten",
+      "notWatchingBody": "Der Lauf wird auf dem Spark fortgesetzt. Beobachten Sie ihn erneut, um den Fortschritt zu sehen, oder prüfen Sie, ob er beendet ist.",
+      "pollLost": "Verbindung zu sparkDash verloren, neuer Versuch…",
+      "collapseList": "Liste einklappen",
+      "expandList": "Liste ausklappen",
+      "scenariosSoFar": "Bisherige Szenarien",
+      "recentActivity": "Letzte Aktivität",
+      "stopConfirm": "Diesen Lauf auf dem Spark stoppen? Teilergebnisse gehen verloren.",
+      "stopping": "Wird gestoppt…",
+      "yesStop": "Ja, stoppen",
+      "keepRunning": "Weiterlaufen lassen",
+      "stopRun": "Lauf stoppen",
+      "stopWatching": "Beobachtung beenden",
+      "stopWatchingTitle": "Der Lauf läuft auf dem Spark weiter; Sie können ihn im Verlauf erneut beobachten.",
+      "viewResult": "Ergebnis ansehen",
+      "dismiss": "Schließen",
+      "hideRaw": "Rohausgabe ausblenden",
+      "rawOutput": "Rohausgabe ({{count}})",
+      "stopWatchingHint": "Das Beenden der Beobachtung lässt den Lauf auf dem Spark weiterlaufen; er erscheint im Verlauf und kann erneut verbunden werden.",
+      "termNote": "stderr-Zeilen sind abgeblendet. Meldungen zu Funktionen, die der Server nicht bietet (HTTP 400, „rejected“), sind die Prüfung durch das Tool, kein Fehler.",
+      "copyOutput": "Ausgabe kopieren"
+    },
+    "history": {
+      "loadFailed": "Verlauf konnte nicht geladen werden",
+      "retry": "Erneut versuchen",
+      "emptyTitle": "Noch keine Läufe",
+      "emptyBody": "Läufe dieses Benchmarks auf {{name}} erscheinen hier mit ihren Ergebnissen, sodass Sie sie öffnen, wiederholen und vergleichen können.",
+      "note": "Wählen Sie zwei Läufe zum Vergleich und nutzen Sie dann Vergleichskarte anzeigen, um ein Bild des Ergebnisses zu erhalten. Ergebnisse sind nur vergleichbar, wenn Modell, Endpunkt und Optionen übereinstimmen; Unterschiede werden beim Vergleich aufgeführt.",
+      "compareOwn": "Stattdessen Läufe dieses Sparks vergleichen",
+      "compareOther": "Mit einem anderen Spark vergleichen…",
+      "pickTitle": "Zum Vergleich auswählen",
+      "pickAria": "Lauf vom {{date}} vergleichen",
+      "autoModel": "automatisches Modell",
+      "inProgress": "läuft",
+      "counts": "{{pass}}/{{partial}}/{{fail}} bestanden/teilweise/fehlgeschlagen",
+      "safetyWarnings": "{{count}} Sicherheitswarnung(en)",
+      "finalScore": "Endscore",
+      "noHeadline": "Keine Kennzahl",
+      "deleteConfirm": "Diesen Lauf löschen?",
+      "delete": "Löschen",
+      "cancel": "Abbrechen",
+      "open": "Öffnen",
+      "rerunTitle": "Diese Optionen ins Formular laden",
+      "rerun": "Wiederholen…",
+      "watch": "Beobachten",
+      "refreshTitle": "Den Spark fragen, ob dieser Lauf beendet ist",
+      "checking": "Prüfe…",
+      "refreshStatus": "Status aktualisieren",
+      "stopFirst": "Stoppen Sie zuerst den Lauf",
+      "chooseOther": "Wählen Sie einen Lauf des anderen Sparks zum Vergleich.",
+      "tickOwn": "Wählen Sie den Lauf auf {{name}} zum Vergleich.",
+      "selectMore": "Wählen Sie noch einen Lauf zum Vergleich."
+    },
+    "page": {
+      "addSpark": "Fügen Sie einen Spark hinzu, um Tool Eval Bench auszuführen.",
+      "offlineTitle": "{{name}} ist offline",
+      "offlineBody": "Das Tool läuft auf dem Spark, daher benötigen Läufe und Prüfungen eine Online-Verbindung. Konfiguration und Verlauf bleiben verfügbar.",
+      "elsewhereTitle": "Auf diesem Spark läuft eine andere Tool-Evaluierung",
+      "elsewhereOwn": "Sie gehört zur Seite {{page}} und wird hier daher nicht angezeigt.",
+      "otherPage": "anderen",
+      "openThatPage": "Diese Seite öffnen",
+      "sectionsAria": "Bereiche der Tool-Evaluierung",
+      "tabRun": "Konfigurieren und starten",
+      "tabResults": "Ergebnisse",
+      "tabHistory": "Verlauf",
+      "stripAria": "Lauf aktiv, Fortschritt anzeigen",
+      "runInProgress": "Lauf läuft",
+      "listError": "Läufe dieses Sparks konnten nicht gelesen werden",
+      "specError": "Optionsliste konnte nicht geladen werden",
+      "retry": "Erneut versuchen",
+      "configAria": "Konfiguration",
+      "viewAria": "Konfigurationsansicht",
+      "simple": "Einfach",
+      "advanced": "Erweitert",
+      "pickReady": "Wählen Sie einen fertigen Lauf.",
+      "everyOption": "Jede Option, die das Tool bietet.",
+      "busyAlready": "Auf diesem Spark läuft bereits ein Lauf.",
+      "busyOther": "Auf diesem Spark läuft ein anderer Tool-Evaluierungs-Job.",
+      "noResultTitle": "Noch kein Ergebnis",
+      "noResultBody": "Schließen Sie einen Lauf ab oder öffnen Sie einen aus dem Verlauf.",
+      "configureRun": "Lauf konfigurieren",
+      "creditPowered": "Bereitgestellt von",
+      "creditBy": "von SeraphimSerapis. sparkDash liefert die Oberfläche; die Benchmarks gehören zum Tool."
+    },
+    "setup": {
+      "checkFailedTitle": "Installation von Tool Eval Bench konnte nicht geprüft werden",
+      "retry": "Erneut versuchen",
+      "noAnswer": "Keine Antwort vom Server.",
+      "commandOn": "Befehl auf {{name}}",
+      "upgradeNote": "Dies führt uv tool upgrade auf {{name}} aus: Es holt die neueste Version von tool-eval-bench von GitHub (SeraphimSerapis/tool-eval-bench) und ersetzt die installierte Kopie. Wurde die aktuelle Kopie nicht mit uv installiert, wird stattdessen von GitHub neu installiert. Setzen Sie ein Häkchen bei Neuinstallation erzwingen, um von Grund auf neu zu installieren.",
+      "installNote": "Dies führt uv tool install von GitHub (SeraphimSerapis/tool-eval-bench) auf {{name}} aus, als der Benutzer, mit dem sparkDash sich verbindet.",
+      "needsInternet": "Es lädt Python-Pakete herunter und benötigt Internetzugang auf diesem Spark. Auf dem Rechner, der sparkDash ausführt, wird nichts installiert.",
+      "uvMissingTitle": "uv ist auf diesem Spark nicht installiert",
+      "uvMissingBody": "Die Installation nutzt uv. Installieren Sie es zuerst (curl -LsSf https://astral.sh/uv/install.sh | sh auf dem Spark) und prüfen Sie dann erneut.",
+      "installing": "Wird installiert…",
+      "installed": "Installiert",
+      "installFailed": "Installation fehlgeschlagen",
+      "copyOutput": "Ausgabe kopieren",
+      "doneChecking": "Fertig. Installation wird geprüft…",
+      "installDidNotFinish": "Die Installation wurde nicht abgeschlossen",
+      "uvNotFound": "uv wurde auf dem Spark nicht gefunden. Installieren Sie uv und versuchen Sie es erneut.",
+      "installFailedHint": "Die Ursache steht in der Ausgabe oben (kein Internet, fehlendes Python, volle Festplatte…).",
+      "upgradeNow": "Jetzt aktualisieren",
+      "installOn": "Auf {{name}} installieren…",
+      "confirmRun": "Den obigen Befehl auf {{name}} ausführen?",
+      "yesUpgrade": "Ja, aktualisieren",
+      "yesInstall": "Ja, installieren",
+      "cancel": "Abbrechen",
+      "jobRunning": "Auf diesem Spark läuft ein anderer Tool-Evaluierungs-Job.",
+      "forceReinstall": "Neuinstallation erzwingen",
+      "checking": "Prüfe…",
+      "checkAgain": "Erneut prüfen",
+      "setup": "Einrichtung",
+      "notInstalledTitle": "Tool Eval Bench ist auf {{name}} nicht installiert",
+      "notInstalledTag": "Nicht installiert",
+      "lead": "Diese Seite steuert die externe CLI tool-eval-bench, die auf dem Spark selbst läuft. Installieren Sie sie einmal, dann stehen alle Seiten der Tool-Evaluierung zur Verfügung. In der Zwischenzeit können Sie Läufe konfigurieren und in der Vorschau ansehen; Start bleibt bis zur Installation deaktiviert.",
+      "unreachable": "Der Spark war nicht erreichbar",
+      "statusAria": "Installationsstatus der Tool-Evaluierung",
+      "unknownVersion": "unbekannte Version",
+      "checkingGithub": "GitHub wird geprüft…",
+      "checkUpdates": "Nach Updates suchen",
+      "updateCheckFailed": "Updates konnten nicht geprüft werden",
+      "latest": "Sie haben die neueste Version.",
+      "installedCommit": "Installierter Commit {{commit}}",
+      "latestChange": "letzte Änderung {{date}}",
+      "reinstall": "Neu installieren…",
+      "newerAvailable": "Eine neuere Version ist verfügbar",
+      "latestCommit": "Neuester Commit {{commit}}",
+      "installedIs": "; installiert {{commit}}.",
+      "upgradeRunsOn": " Die Aktualisierung läuft auf {{name}}.",
+      "updateUnknown": "Update-Status konnte nicht ermittelt werden",
+      "upgradeAnyway": "Trotzdem aktualisieren",
+      "noCommit": "Die installierte Version nennt keinen Commit und kann daher nicht mit GitHub verglichen werden.",
+      "stillUpgrade": " Sie können trotzdem aktualisieren.",
+      "workDir": "Wo Ergebnisse liegen: Jeder Lauf behält seine Dateien unter {{path}} auf {{name}}; sparkDash cached abgeschlossene Ergebnisse, damit der Verlauf lesbar bleibt, wenn der Spark aus ist.",
+      "upgradeComplete": "Aktualisierung abgeschlossen",
+      "installationComplete": "Installation abgeschlossen",
+      "dismiss": "Schließen",
+      "upgradedFrom": "tool-eval-bench auf {{name}} wurde von {{from}} auf {{to}} aktualisiert. Sie können jetzt einen Benchmark ausführen.",
+      "reinstalled": "tool-eval-bench auf {{name}} wurde neu installiert und ist jetzt {{version}}. Sie können jetzt einen Benchmark ausführen.",
+      "installedNow": "tool-eval-bench {{version}} ist auf {{name}} installiert. Sie können jetzt einen Benchmark ausführen."
+    },
+    "sbs": {
+      "run": "Lauf {{side}}",
+      "autoModel": "automatisches Modell",
+      "pass": "bestanden",
+      "partial": "teilweise",
+      "fail": "fehlgeschlagen",
+      "other": "Andere",
+      "swap": "Tauschen",
+      "swapTitle": "A und B tauschen",
+      "metrics": "Messwerte",
+      "categories": "Kategorien",
+      "notInA": "nicht in Lauf A",
+      "notInB": "nicht in Lauf B",
+      "scenarios": "Szenarien",
+      "differ": "({{diff}} von {{total}} unterschiedlich)",
+      "onlyDiff": "Nur Unterschiede",
+      "scenario": "Szenario",
+      "runA": "Lauf A",
+      "runB": "Lauf B",
+      "notRun": "nicht gelaufen",
+      "allSame": "Jedes Szenario endete in beiden Läufen mit demselben Status."
+    },
+    "tool": {
+      "finalScore": "Endscore",
+      "starsAria": "{{n}} von {{max}} Sternen",
+      "unrated": "Unbewertet",
+      "ratingCapped": "Die Bewertung ist wegen Sicherheitswarnungen begrenzt. ",
+      "tiers": "Stufen: 90+ Ausgezeichnet, 75+ Gut, 60+ Ausreichend, 40+ Schwach, darunter Mangelhaft.",
+      "deployability": "Einsatzbereitschaft",
+      "responsiveness": "Reaktionsfähigkeit",
+      "completion": "Vollständigkeit",
+      "scenarios": "Szenarien",
+      "pass": "bestanden",
+      "partial": "teilweise",
+      "fail": "fehlgeschlagen",
+      "model": "Modell",
+      "runId": "Lauf",
+      "safetyAria": "Sicherheitswarnungen",
+      "safetyTitle": "Sicherheitswarnungen ({{count}})",
+      "configUsed": "Verwendete Konfiguration",
+      "categoryScores": "Kategorie-Scores",
+      "categoryNameFromDocs": "Kategoriename aus der Dokumentation des Tools",
+      "categoryFallback": "Kategorie",
+      "noScore": "kein Score",
+      "percentAria": "{{value}} Prozent",
+      "scenariosTitle": "Szenarien",
+      "scenariosOf": "{{shown}} von {{total}}",
+      "searchAria": "Szenarien suchen",
+      "searchPlaceholder": "Id, Titel, Begründung suchen…",
+      "filterStatusAria": "Nach Status filtern",
+      "statusAll": "Alle Status",
+      "statusFailed": "Fehlgeschlagen",
+      "statusPartial": "Teilweise",
+      "statusPassed": "Bestanden",
+      "statusOther": "Andere",
+      "filterCategoryAria": "Nach Kategorie filtern",
+      "allCategories": "Alle Kategorien",
+      "sortAria": "Sortieren",
+      "sortOrder": "Ursprüngliche Reihenfolge",
+      "sortWorst": "Schlechteste zuerst",
+      "sortId": "Nach Id",
+      "sortPoints": "Wenigste Punkte",
+      "sortSlowest": "Langsamste",
+      "noMatch": "Kein Szenario passt zu diesen Filtern.",
+      "noTitle": "(kein Titel)",
+      "reasoning": "Begründung",
+      "noDetails": "Für dieses Szenario wurden keine weiteren Details aufgezeichnet.",
+      "showMore": "{{count}} weitere anzeigen"
+    },
+    "age": {
+      "seconds": "{{value}} s",
+      "minutes": "{{value}} Min.",
+      "hours": "{{value}} Std.",
+      "days": "{{value}} T."
+    },
+    "idle": {
+      "label": "Inaktiv",
+      "withSince": "Inaktiv · zuletzt bedient vor {{since}}"
+    },
+    "fleet": {
+      "offline": "Host nicht erreichbar",
+      "throttle": "wird thermisch gedrosselt",
+      "hwSlowdown": "hat eine Hardware-Drosselung",
+      "gpuAt": "GPU bei {{temp}}",
+      "smClock": "SM-Takt {{ghz}} GHz",
+      "smClockOfMax": " ({{pct}} % des Maximums)",
+      "disk": "Speicher ist zu 90 % oder mehr belegt",
+      "llm": "LLM ist nicht verfügbar",
+      "tailnet": "Tailnet ist nicht verfügbar"
+    },
+    "decode": {
+      "typeStructured": "Strukturiert",
+      "typeStructuredHint": "Von 1 bis 200 zählen, nur Zahlen — strukturiertes Laborprotokoll",
+      "typeProse": "Prosa",
+      "typeProseHint": "Erklärung einer Hash-Map — Standard-Bench-Prompt des Labors",
+      "typeCode": "Code",
+      "typeCodeHint": "Unterschiedliche Python-Aufgaben pro Stream — andere Präfixe, keine Kommentare",
+      "typeJson": "JSON",
+      "typeJsonHint": "JSON-Katalog von GPU-Metriken — nur Ausgabetyp, kein Guided JSON"
+    },
+    "quality": {
+      "categories": {
+        "qa": "Fragen und Antworten",
+        "reason": "Schlussfolgern",
+        "arith": "Arithmetische Kette",
+        "track": "Zustandsverfolgung",
+        "gsm8k": "GSM8K",
+        "mmlu": "MMLU",
+        "follow": "Anweisungsbefolgung",
+        "long": "Erinnerung an langen Kontext"
+      },
+      "diffSuite": "Diese Läufe verwendeten unterschiedliche Fragensätze (Suite v{{a}} vs. v{{b}}), daher sind Einträge mit derselben Id nicht dieselbe Frage. Wiederholen Sie einen der Läufe, um zu vergleichen.",
+      "diffScoring": "Diese Läufe wurden nach unterschiedlichen Regeln bewertet (Bewertung v{{a}} vs. v{{b}}), daher bedeutet ein Bestehen im einen nicht Bestehen im anderen. Wiederholen Sie einen der Läufe, um zu vergleichen."
+    }
+  }
+}

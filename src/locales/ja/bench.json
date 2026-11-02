@@ -1,0 +1,804 @@
+{
+  "shell": {
+    "eyebrow": "ベンチマーク",
+    "eyebrowFamily": "ベンチマーク · {{family}}",
+    "titleFallback": "ベンチマーク",
+    "unknown": "不明なベンチマークです。"
+  },
+  "types": {
+    "decode": {
+      "label": "デコード",
+      "blurb": "並行数を上げたときの生成速度（tokens/s）。"
+    },
+    "prefill": {
+      "label": "プリフィル",
+      "blurb": "各コンテキスト長でのプロンプト処理速度と最初のトークンまでの時間。"
+    },
+    "quality": {
+      "label": "品質",
+      "blurb": "モデル・量子化・KV キャッシュ形式を比較するための固定シード品質スイート。"
+    },
+    "toolEval": {
+      "label": "ツール評価",
+      "blurb": "69 個の決定論的シナリオ（選択、パラメータ、多段、安全性）におけるツール呼び出し品質。"
+    }
+  },
+  "runOn": {
+    "label": "実行先",
+    "none": "利用できる Spark がありません",
+    "chipsAria": "ベンチマークする Spark",
+    "workerHint": "{{name}} はワーカーです: ローカル LLM はなく、保存済みの結果のみ",
+    "offlineHint": "{{name}} はオフラインです",
+    "workerTag": "ワーカー"
+  },
+  "layout": {
+    "configAria": "実行設定",
+    "configuration": "設定"
+  },
+  "history": {
+    "date": "日付",
+    "model": "モデル",
+    "result": "結果",
+    "actions": "操作",
+    "open": "開く",
+    "view": "表示",
+    "compare": "比較",
+    "comparing": "比較中"
+  },
+  "historyRows": {
+    "tps": "{{value}} tok/s",
+    "peakAt": "×{{concurrency}} でピーク",
+    "perStreamAt1": "×1 で {{value}}/ストリーム",
+    "startCtx": "開始コンテキスト {{size}}",
+    "bestAt": "最良 {{size}}",
+    "percent": "{{value}}%",
+    "categoryOne": "{{count}} カテゴリ",
+    "categoryMany": "{{count}} カテゴリ"
+  },
+  "live": {
+    "aria": "ライブ生成速度",
+    "label": "ライブ生成",
+    "peak": "ピーク {{value}} tok/s"
+  },
+  "target": {
+    "aria": "ベンチマーク対象",
+    "emptyTitle": "ベンチマークする Spark がありません",
+    "emptyBody": "まずフリートレールから Spark を追加してください。ベンチマークは Spark 上の LLM サーバー、または入力したリモートエンドポイントに対して実行されます。",
+    "enterHost": "ベンチマークする LLM エンドポイントのホストを入力してください。",
+    "remote": "リモート",
+    "remoteTitle": "Spark ではなく別の LLM エンドポイントをベンチマークする",
+    "llmPort": "LLM ポート",
+    "portTag": "ポート {{port}}",
+    "modelTitle": "このポートで現在提供中のモデル",
+    "ctxTag": "コンテキスト {{value}}",
+    "host": "ホスト",
+    "hostPlaceholder": "https://name.tailxxxxx.ts.net/v1/models",
+    "hostAria": "リモートホスト",
+    "port": "ポート",
+    "portAria": "リモートポート",
+    "https": "HTTPS",
+    "remoteHint": "オンデマンドのエンドポイントです。実行するまで何も検査されません。リモートのユニットは LAN の HTTP を使うか、サーバーが 127.0.0.1 のみで待ち受ける場合はループバックへの SSH トンネルを使います。",
+    "offlineTitle": "{{name}} はオフラインです。",
+    "offlineBody": "オンラインに戻して LLM をベンチマークするか、対象をリモートに切り替えて別のエンドポイントを指定してください。保存済みの実行は引き続き閲覧できます。",
+    "workerTitle": "{{name}} はワーカーです",
+    "workerBody": " 自身では LLM を提供しないため、ここでは何も実行できません。保存済みの実行は引き続き閲覧できます。",
+    "noLlmTitle": "ポート {{port}} に到達可能な LLM がありません。",
+    "noLlmBody": "{{error}}この Spark でモデルを起動する（Spark ページのモデルパネル）、設定の LLM ポートを確認する、または対象をリモートに切り替えてください。保存済みの実行は引き続き閲覧できます。"
+  },
+  "te": {
+    "units": {
+      "seconds": "{{value}} 秒",
+      "minutes": "{{minutes}} 分 {{seconds}} 秒",
+      "hours": "{{hours}} 時間 {{minutes}} 分"
+    },
+    "tier": {
+      "excellent": "優秀",
+      "good": "良好",
+      "adequate": "普通",
+      "weak": "弱い",
+      "poor": "不良"
+    },
+    "error": {
+      "tail": "（{{message}}）",
+      "noServer": "モデルサーバーが見つかりません。この Spark でモデルを起動する（または base URL を設定する）してから再試行してください。",
+      "connectionFailed": "ツールがモデルサーバーに接続できませんでした。URL、ポート、サーバーが稼働しているかを確認してください。",
+      "noModels": "サーバーは応答しましたがモデルがありません。先にモデルを読み込むか、モデル名を明示してください。",
+      "authFailed": "サーバーが API キーを拒否しました。正しいキーを入力するか、このポート用のキーを保存してください。",
+      "modelNotFound": "サーバーはそのモデル名を提供していません。モデルを空にして自動検出させてください。",
+      "generic": "ツールがエラーを報告しました。",
+      "genericWithCode": "ツールがエラーを報告しました（{{code}}）。"
+    },
+    "notes": {
+      "toolChoiceOne": "このモデルサーバーは強制ツール呼び出し（tool_choice \"required\"）に対応していないため、それを必要とするシナリオはスコアから除外されました（{{scenarios}}）。実行自体は問題ありませんが、スコアは他のシナリオのみを対象とするため、対応しているサーバーとは直接比較できません。",
+      "toolChoiceMany": "このモデルサーバーは強制ツール呼び出し（tool_choice \"required\"）に対応していないため、それを必要とするシナリオはスコアから除外されました（{{scenarios}}）。実行自体は問題ありませんが、スコアは他のシナリオのみを対象とするため、対応しているサーバーとは直接比較できません。",
+      "excludedOne": "{{scenarios}} はツールによりスコアから除外されました（理由は生の出力を参照してください）。",
+      "excludedMany": "{{scenarios}} はツールによりスコアから除外されました（理由は生の出力を参照してください）。"
+    },
+    "status": {
+      "running": "実行中",
+      "runningUnwatched": "実行中（未監視）",
+      "completed": "完了",
+      "failed": "失敗",
+      "stopped": "停止",
+      "gone": "消失"
+    },
+    "validate": {
+      "number": "{{label}} は数値である必要があります",
+      "wholeNumber": "{{label}} は整数である必要があります",
+      "atLeast": "{{label}} は {{min}} 以上である必要があります",
+      "atMost": "{{label}} は {{max}} 以下である必要があります",
+      "oneOf": "{{label}} は {{choices}} のいずれかである必要があります",
+      "tooLong": "{{label}} が長すぎます",
+      "invalidFormat": "{{label}} の形式が正しくありません",
+      "longerThan": "{{label}} が {{kib}} KiB を超えています",
+      "absolutePath": "{{label}} は絶対パス（または ~/ で始まるパス）である必要があります",
+      "noDotDot": "{{label}} に .. を含めることはできません",
+      "httpPrefix": "{{label}} は http:// または https:// で始まる必要があります",
+      "noCredentials": "{{label}} に認証情報を含めないでください（API キー欄を使用）",
+      "invalidUrl": "{{label}} は有効な URL ではありません",
+      "notJsonObject": "JSON オブジェクトである必要があります",
+      "invalidJson": "有効な JSON ではありません",
+      "jsonPrefix": "{{label}}: {{reason}}",
+      "tooManyItems": "{{label}} の項目が多すぎます",
+      "invalidItem": "{{label}} に無効な項目 \"{{item}}\" があります",
+      "invalidEntry": "{{label}} に無効な項目 \"{{item}}\" があります"
+    },
+    "form": {
+      "systemPromptBoth": "システムプロンプトのテキストとファイルはどちらか一方のみ使用してください",
+      "contextPressureBoth": "単一のコンテキスト圧力とスイープ範囲はどちらか一方のみ使用してください",
+      "shortAndScenarios": "短縮実行とシナリオ指定は併用できません",
+      "noSuite": "実行するスイートを 1 つ以上選択してください",
+      "noPressure": "圧力比またはスイープ範囲を設定してください。未設定の場合は通常のツール呼び出し実行になります",
+      "presets": "プリセット",
+      "presetsAria": "プリセット",
+      "optionOne": "{{count}} 個のオプションを設定済み",
+      "optionMany": "{{count}} 個のオプションを設定済み",
+      "reset": "リセット",
+      "suitesLegend": "実行するスイート",
+      "suiteHint": "チェックした各スイートは個別の --…-only フラグとして送信されます。複数選択すると順番に実行されます。",
+      "suiteNotSelected": "スイート未選択",
+      "nSet": "{{count}} 件設定済み",
+      "llmPortOn": "{{name}} の LLM ポート",
+      "portHint": "base URL が空のときに使用します。保存済み API キーの選択にも影響します。",
+      "liveModelPrefix": "この Spark で現在提供中のモデル:",
+      "liveModelSuffix": "（モデル欄を空にするとこれを使用します）。",
+      "apiKey": "API キー",
+      "apiKeySaved": "このポート用に保存されたキーを使用中",
+      "apiKeyEmpty": "空にすると保存済みのキーを使用します",
+      "apiKeyHintBase": "空の場合、この Spark のポート用に保存されたキーを使用します（保存されている場合）",
+      "apiKeyHintSaved": "、このポート用のキーが保存されています",
+      "apiKeyHintTail": "。入力したキーは base URL と一緒にのみ送信され、環境変数経由で今回の実行だけ Spark に渡され、このブラウザーには保存されません。",
+      "advancedTitle": "詳細 / すべてのオプション",
+      "moreOptionsOne": "他に {{count}} 個のオプション",
+      "moreOptionsMany": "他に {{count}} 個のオプション",
+      "advancedHelp": "tool-eval-bench のその他すべてのオプションです。このページが自動設定する項目は除外されます。",
+      "extraLabel": "追加引数",
+      "extraHint": "独立した引数としてそのまま渡す自由形式のフラグ（シェルは使用しません）。このフォームより新しいオプションに便利です。sparkDash が制御するフラグ（--json、--probe など）は拒否されます。"
+    },
+    "suites": {
+      "gsm8k": "小学校算数",
+      "mmlu": "多領域知識",
+      "ifeval": "指示追従"
+    },
+    "parts": {
+      "copy": "コピー",
+      "copied": "コピーしました",
+      "copyFailed": "コピー失敗",
+      "rawJson": "生の JSON",
+      "show": "表示",
+      "copyJson": "JSON をコピー",
+      "rawOutput": "ツールの生出力",
+      "hiddenLines": "… 以前の {{count}} 行を非表示（コピーにはすべて含まれます）",
+      "waiting": "出力を待っています…",
+      "noOutput": "出力はありません。"
+    },
+    "trials": {
+      "label": "試行回数",
+      "hint": "Pass@k 統計のため、実行全体を N 回繰り返します。",
+      "single": "1 = 1 回のみ実行。",
+      "takesLonger": "約 {{count}} 倍の時間がかかります。",
+      "groupAria": "試行回数",
+      "fewer": "試行回数を減らす",
+      "inputAria": "試行回数（1〜{{max}}）",
+      "more": "試行回数を増やす"
+    },
+    "xspark": {
+      "note": "この Spark の実行を、別の Spark の完了した実行と比較します。下の実行を選択し、比較する Spark と実行を選んでください。",
+      "sparkAria": "比較する Spark",
+      "loadFailed": "その Spark の実行を読み込めませんでした: {{message}}",
+      "empty": "その Spark にはこのベンチマークの完了した実行がありません。",
+      "runAria": "別の Spark の実行",
+      "autoModel": "自動モデル",
+      "clear": "選択を解除"
+    },
+    "simple": {
+      "testing": "テスト対象",
+      "whatToTest": "何をテストするか",
+      "modelOn": "{{name}} 上のモデル",
+      "customUrl": "カスタム URL",
+      "baseUrl": "ベース URL",
+      "baseUrlPlaceholder": "https://host/v1  または  http://192.168.1.50:8000",
+      "baseUrlAria": "カスタムベース URL",
+      "model": "モデル",
+      "autoDetect": "自動検出",
+      "modelAria": "モデル名",
+      "apiKey": "API キー",
+      "apiKeyPlaceholder": "必要な場合",
+      "apiKeyAria": "API キー",
+      "urlHint": "実行は {{name}} 上で行われるため、この URL に到達できる必要があります。キーはこの実行のみ {{name}} に送信され、ここには保存されません。",
+      "urlRequired": "テストする OpenAI 互換サーバーの URL を入力してください。",
+      "localModel": "この DGX Spark 上のモデル",
+      "port": "ポート",
+      "portAria": "テストする LLM ポート",
+      "noModel": "現在このポートで応答しているモデルはありません。まず Spark のモデルパネルから起動するか、カスタム URL に切り替えてください。",
+      "templatesAria": "既製の実行",
+      "customApplied": "カスタム設定が適用されています。",
+      "reviewAdvanced": "詳細で確認する",
+      "orPick": "または上のテンプレートを選んで最初からやり直してください。",
+      "moreControl": "さらに細かく制御しますか（サンプリング、カテゴリ、システムプロンプト、他のエンドポイント、すべてのオプション）？",
+      "openAdvanced": "詳細を開く"
+    },
+    "presets": {
+      "tool-eval": {
+        "quick": {
+          "label": "クイックチェック",
+          "help": "15 個のコアシナリオのみ（約 2 分）。"
+        },
+        "full": {
+          "label": "フル",
+          "help": "ツールの既定値で全標準シナリオ。"
+        },
+        "hard": {
+          "label": "ハードモードのみ",
+          "help": "ハードモードのシナリオのみ（カテゴリ P）。"
+        },
+        "repro": {
+          "label": "再現可能",
+          "help": "温度 0 と固定シードで、繰り返し実行を比較可能にします。"
+        },
+        "thinking": {
+          "label": "思考モデル",
+          "help": "思考出力を無効にし、1 リクエスト 120 秒を許可します（Qwen3 / DeepSeek 系）。"
+        }
+      },
+      "throughput": {
+        "quick": {
+          "label": "クイック",
+          "help": "短いプロンプト、1 つの深さ、各点 1 回の実行。"
+        },
+        "standard": {
+          "label": "標準",
+          "help": "ツールの既定値。"
+        },
+        "deep": {
+          "label": "深いコンテキスト",
+          "help": "最大 32k のコンテキストと 8 並行リクエスト。"
+        }
+      },
+      "spec-decode": {
+        "quick": {
+          "label": "クイック",
+          "help": "1 つのプロンプト種別、各セル 1 回の実行。"
+        },
+        "standard": {
+          "label": "標準",
+          "help": "ツールの既定値。"
+        },
+        "code": {
+          "label": "コードと構造化",
+          "help": "投機的デコードが最も効果的なプロンプト種別。"
+        }
+      },
+      "context-pressure": {
+        "single": {
+          "label": "単一レベル（75%）",
+          "help": "コンテキストを 75% 埋めたコアシナリオ。"
+        },
+        "sweep": {
+          "label": "50〜100% スイープ",
+          "help": "5 つの圧力レベルでのコアシナリオ。"
+        },
+        "fine": {
+          "label": "細かいスイープ",
+          "help": "10〜100% の 10 レベル（長時間）。"
+        }
+      },
+      "accuracy": {
+        "quick": {
+          "label": "クイック",
+          "help": "各スイートの小規模サンプル。"
+        },
+        "standard": {
+          "label": "標準",
+          "help": "ツールの既定の設問上限。"
+        },
+        "full": {
+          "label": "全データセット",
+          "help": "すべての設問（低速）。"
+        },
+        "repro": {
+          "label": "再現可能",
+          "help": "固定シードと GSM8K のシャッフル。"
+        }
+      },
+      "needle": {
+        "quick": {
+          "label": "クイック",
+          "help": "3 つの深さと 2 つの長さ。"
+        },
+        "standard": {
+          "label": "標準",
+          "help": "ツールの既定値（5 つの深さ、4 つの長さ）。"
+        },
+        "thorough": {
+          "label": "網羅的",
+          "help": "10 の深さと 8 の長さ（長時間）。"
+        }
+      },
+      "decision": {
+        "standard": {
+          "label": "既定",
+          "help": "ツールの既定値。"
+        }
+      }
+    },
+    "templates": {
+      "regular": {
+        "label": "通常実行",
+        "help": "標準スイート全体: ツール選択、パラメータ、多段チェーン、エラー復旧、安全性など。",
+        "size": "69 シナリオ",
+        "time": "約 10〜20 分"
+      },
+      "regular-hard": {
+        "label": "通常 + ハードモード",
+        "help": "標準スイート全体にハードモードのシナリオを加えたもの。",
+        "size": "92 シナリオ",
+        "time": "約 15〜30 分"
+      },
+      "short": {
+        "label": "短縮実行",
+        "help": "15 個のコアシナリオのみ。モデルや設定の変更後の迅速な確認。",
+        "size": "15 シナリオ",
+        "time": "約 2 分"
+      },
+      "hard": {
+        "label": "ハードモードのみ",
+        "help": "敵対的なハードモードのシナリオのみ: 状態を持つもの、トランザクション、厄介なもの。通常実行を通過したモデル向け。",
+        "size": "23 シナリオ",
+        "time": "約 5〜10 分"
+      }
+    },
+    "categories": {
+      "A": "ツール選択",
+      "B": "パラメータ精度",
+      "C": "多段チェーン",
+      "D": "抑制と拒否",
+      "E": "エラー復旧",
+      "F": "ローカライズ",
+      "G": "構造化推論",
+      "H": "指示追従",
+      "I": "コンテキストと状態",
+      "J": "コードパターン",
+      "K": "安全性と境界",
+      "L": "ツールセット拡張",
+      "M": "自律計画",
+      "N": "創造的構成",
+      "O": "構造化出力",
+      "P": "ハードモード"
+    },
+    "compare": {
+      "aria": "実行の比較",
+      "title": "比較",
+      "showCard": "比較カードを表示",
+      "cardDialog": "ツール評価の比較カード",
+      "cardAlt": "2 回の実行のツール評価比較カード",
+      "cardTitle": "この比較をコピーまたは保存できる画像として描画します",
+      "notComparable": "これらの実行は直接比較できません",
+      "caveatNote": "このような違いだけでスコアの変化を説明できることがあります。",
+      "fair": "モデル、エンドポイント、オプションが同じ: 公平な比較です。",
+      "fairAmong": "モデル、エンドポイント、オプションが同じ: {{a}} と {{b}} の公平な比較です。",
+      "loadFailed": "結果を読み込めませんでした",
+      "metric": "指標",
+      "change": "変化",
+      "identical": "{{count}} 個の数値が同一です。",
+      "noDiff": "これらの実行間に数値の違いはありません。",
+      "nothing": "まだ比較できるものはありません。",
+      "score": "スコア",
+      "deployability": "導入可能性",
+      "responsiveness": "応答性",
+      "passed": "合格",
+      "partial": "部分合格",
+      "failed": "不合格",
+      "safetyWarnings": "安全警告",
+      "diffType": "実行のベンチマーク種別が異なります。",
+      "diffModel": "モデルが異なります: {{a}} と {{b}}。",
+      "diffEndpoint": "エンドポイントが異なります: {{a}} と {{b}}。",
+      "diffOptions": "オプションが異なります: {{flags}}。",
+      "autoModel": "自動"
+    },
+    "fields": {
+      "min": "最小 {{value}}",
+      "max": "最大 {{value}}",
+      "default": "既定 {{value}}",
+      "defaultWith": "既定（{{value}}）",
+      "defaultOnly": "既定",
+      "jsonIssue": "JSON {{reason}}",
+      "jsonOk": "有効な JSON オブジェクト",
+      "spaceSeparated": "スペース区切り",
+      "itemCount": "{{count}} 項目",
+      "categoriesAria": "カテゴリ",
+      "all": "すべて",
+      "none": "なし",
+      "rowAria": "{{label}} {{n}}",
+      "remove": "削除",
+      "removeAria": "{{label}} {{n}} を削除",
+      "addRow": "行を追加",
+      "showValues": "値を表示",
+      "hideValues": "値を隠す"
+    },
+    "generic": {
+      "yes": "はい",
+      "no": "いいえ",
+      "empty": "空",
+      "more": "… 他 {{count}} 件",
+      "showingRows": "{{rows}} 行中 300 行を表示しています。",
+      "keyNumbers": "主要な数値",
+      "nothing": "この結果に認識できる数値はありません。完全なデータは以下にあります。",
+      "configReported": "ツールが報告した設定",
+      "allValues": "すべての値"
+    },
+    "card": {
+      "show": "カードを表示",
+      "rendering": "描画中…",
+      "failed": "描画できませんでした — 再試行",
+      "hintClipboard": "クリップボードにコピーするか PNG として保存できます。カードはダッシュボードの現在のテーマに従います。",
+      "hintBefore": "右クリック →",
+      "copyImage": "画像をコピー",
+      "hintAfter": "、またはカードを投稿にドラッグしてください。ブラウザーは HTTPS または localhost でのみ画像のコピーを許可するため、カードはここに表示されています。",
+      "copied": "コピーしました！",
+      "copyFailed": "コピー失敗"
+    },
+    "run": {
+      "aria": "コマンドと開始",
+      "command": "コマンド",
+      "updating": "更新中…",
+      "valid": "有効",
+      "needsAttention": "要修正",
+      "runsOn": "{{name}} 上で実行:",
+      "commandLine": "コマンドライン",
+      "fixToSee": "（エラーを修正するとコマンドが表示されます）",
+      "previewUnavailable": "（プレビュー利用不可）",
+      "usesSavedKey": "この Spark のポート用に保存された API キーを使用します（環境変数で渡されます）。 ",
+      "keyNote": "API キーとヘッダー値はここには表示されません。結果ファイルのパスは実行開始時に追加されます。",
+      "previewFailed": "プレビュー失敗",
+      "startFailed": "開始できませんでした",
+      "starting": "開始中…",
+      "startEvaluation": "評価を開始",
+      "startBenchmark": "ベンチマークを開始",
+      "checking": "確認中…",
+      "checkConnection": "接続を確認",
+      "loading": "読み込み中…",
+      "previewScenarios": "シナリオをプレビュー",
+      "reachable": "到達可能",
+      "notReachable": "到達不可",
+      "scenariosTitle": "実行されるシナリオ",
+      "noOutput": "出力はありません。",
+      "exitCode": "終了コード {{code}}",
+      "installFirst": "先にこの Spark に Tool Eval Bench をインストールしてください。",
+      "fixOptions": "先に強調表示されたオプションを修正してください。"
+    },
+    "result": {
+      "took": "所要 {{duration}}",
+      "command": "コマンド",
+      "optionsUsed": "使用したオプション（{{count}}）",
+      "cardDialog": "ツール評価の共有カード",
+      "cardAlt": "ツール評価の結果カード: スコア {{score}}",
+      "cardTitle": "この結果をコピーまたは保存できる画像として描画します",
+      "failed": "実行に失敗しました",
+      "failedCode": "実行に失敗しました（終了コード {{code}}）",
+      "stopped": "実行は停止されました",
+      "gone": "実行は消失しました",
+      "goneBody": "この実行のファイルは Spark 上にもうありません。",
+      "incomplete": "ツールは完全な結果を書き出す前に停止しました。",
+      "goodToKnow": "補足",
+      "output": "実行の出力",
+      "notFinished": "この実行はまだ終了していません。終了すると結果がここに表示されます。",
+      "noResult": "結果は保存されていません",
+      "loadFailed": "結果を読み込めませんでした",
+      "retry": "再試行"
+    },
+    "live": {
+      "aria": "実行の進行状況",
+      "lastRun": "前回の実行",
+      "runInProgress": "実行中",
+      "model": "モデル",
+      "progressAria": "進行状況",
+      "starting": "開始中…",
+      "startingTool": "Spark 上でツールを起動しています…",
+      "connected": "{{target}}{{backend}} に接続しました…",
+      "theServer": "サーバー",
+      "runningScenarios": "シナリオを実行中",
+      "measuring": "測定中",
+      "finished": "完了",
+      "error": "エラー",
+      "scenariosOf": "{{total}} 個中 {{done}} 個のシナリオ",
+      "scenarios": "シナリオ",
+      "elapsed": "経過 {{duration}}",
+      "left": " · 残り約 {{duration}}",
+      "pass": "合格",
+      "partial": "部分",
+      "fail": "不合格",
+      "other": "その他",
+      "points": "{{count}} ポイント",
+      "now": "現在:",
+      "goodToKnow": "補足",
+      "toolError": "ツールがエラーを報告しました",
+      "runFailed": "実行に失敗しました",
+      "runFailedCode": "実行に失敗しました（終了コード {{code}}）",
+      "openRawOutput": "詳細は下の生出力を確認してください。",
+      "stoppedTitle": "実行は停止されました",
+      "stoppedBody": "完了前に停止したため、結果がない可能性があります。",
+      "lostViewTitle": "ライブ表示を失いました",
+      "reattach": "再接続",
+      "checkStatus": "状態を確認",
+      "mayStillRun": "実行はまだ Spark 上で続いている可能性があります。",
+      "notWatchingTitle": "この実行を監視していません",
+      "detachedTitle": "実行は切り離されました",
+      "watchAgain": "再び監視",
+      "notWatchingBody": "実行は Spark 上で続行されています。もう一度監視して進行状況を確認するか、終了したかを確認してください。",
+      "pollLost": "sparkDash への接続が切れました。再試行中…",
+      "collapseList": "リストを折りたたむ",
+      "expandList": "リストを展開",
+      "scenariosSoFar": "現在までのシナリオ",
+      "recentActivity": "最近のアクティビティ",
+      "stopConfirm": "Spark 上でこの実行を停止しますか？ 部分的な結果は失われます。",
+      "stopping": "停止中…",
+      "yesStop": "はい、停止します",
+      "keepRunning": "続行",
+      "stopRun": "実行を停止",
+      "stopWatching": "監視を停止",
+      "stopWatchingTitle": "実行は Spark 上で続きます。履歴から再び監視できます。",
+      "viewResult": "結果を表示",
+      "dismiss": "閉じる",
+      "hideRaw": "生出力を隠す",
+      "rawOutput": "生出力（{{count}}）",
+      "stopWatchingHint": "監視を停止しても実行は Spark 上で続きます。履歴に表示され、再接続できます。",
+      "termNote": "stderr 行は淡色表示です。サーバーが未対応の機能に関するメッセージ（HTTP 400、「rejected」）はツールによる確認であり、失敗ではありません。",
+      "copyOutput": "出力をコピー"
+    },
+    "history": {
+      "loadFailed": "履歴を読み込めませんでした",
+      "retry": "再試行",
+      "emptyTitle": "実行はまだありません",
+      "emptyBody": "{{name}} でのこのベンチマークの実行と結果がここに表示され、開く・再実行・比較ができます。",
+      "note": "2 つの実行を選択して比較し、「比較カードを表示」で結果の画像を取得できます。結果が比較できるのはモデル、エンドポイント、オプションがほぼ一致する場合のみです。比較時に差異が一覧表示されます。",
+      "compareOwn": "代わりにこの Spark の実行を比較",
+      "compareOther": "別の Spark と比較…",
+      "pickTitle": "比較対象として選択",
+      "pickAria": "{{date}} の実行を比較",
+      "autoModel": "自動モデル",
+      "inProgress": "進行中",
+      "counts": "{{pass}}/{{partial}}/{{fail}} 合格/部分/不合格",
+      "safetyWarnings": "安全警告 {{count}} 件",
+      "finalScore": "最終スコア",
+      "noHeadline": "主要な数値なし",
+      "deleteConfirm": "この実行を削除しますか？",
+      "delete": "削除",
+      "cancel": "キャンセル",
+      "open": "開く",
+      "rerunTitle": "これらのオプションをフォームに読み込む",
+      "rerun": "再実行…",
+      "watch": "監視",
+      "refreshTitle": "Spark にこの実行が終了したかを問い合わせる",
+      "checking": "確認中…",
+      "refreshStatus": "状態を更新",
+      "stopFirst": "先に実行を停止してください",
+      "chooseOther": "比較する別の Spark の実行を選択してください。",
+      "tickOwn": "比較する {{name}} の実行を選択してください。",
+      "selectMore": "比較する実行をもう 1 つ選択してください。"
+    },
+    "page": {
+      "addSpark": "Tool Eval Bench を実行するには Spark を追加してください。",
+      "offlineTitle": "{{name}} はオフラインです",
+      "offlineBody": "ツールは Spark 上で動作するため、実行と確認にはオンラインである必要があります。設定と履歴の確認は引き続き可能です。",
+      "elsewhereTitle": "この Spark では別のツール評価が実行中です",
+      "elsewhereOwn": "{{page}} ページの実行のため、ここには表示されません。",
+      "otherPage": "その他",
+      "openThatPage": "そのページを開く",
+      "sectionsAria": "ツール評価のセクション",
+      "tabRun": "設定して実行",
+      "tabResults": "結果",
+      "tabHistory": "履歴",
+      "stripAria": "実行中。進行状況を表示",
+      "runInProgress": "実行中",
+      "listError": "この Spark の実行を読み込めませんでした",
+      "specError": "オプション一覧を読み込めませんでした",
+      "retry": "再試行",
+      "configAria": "設定",
+      "viewAria": "設定ビュー",
+      "simple": "シンプル",
+      "advanced": "詳細",
+      "pickReady": "既製の実行を選んでください。",
+      "everyOption": "ツールが提供するすべてのオプション。",
+      "busyAlready": "この Spark では既に実行が進行中です。",
+      "busyOther": "この Spark では別のツール評価ジョブが実行中です。",
+      "noResultTitle": "表示できる結果はまだありません",
+      "noResultBody": "実行を完了するか、履歴から開いてください。",
+      "configureRun": "実行を設定",
+      "creditPowered": "提供:",
+      "creditBy": "by SeraphimSerapis。sparkDash はインターフェースを提供するのみで、ベンチマーク自体はツールのものです。"
+    },
+    "setup": {
+      "checkFailedTitle": "Tool Eval Bench のインストール状況を確認できませんでした",
+      "retry": "再試行",
+      "noAnswer": "サーバーから応答がありません。",
+      "commandOn": "{{name}} で実行するコマンド",
+      "upgradeNote": "これは uv tool upgrade を {{name}} 上で実行します: GitHub（SeraphimSerapis/tool-eval-bench）から最新の tool-eval-bench を取得し、インストール済みのコピーを置き換えます。uv でインストールしたものでない場合は GitHub から再インストールします。最初から入れ直すには「強制再インストール」をチェックしてください。",
+      "installNote": "これは GitHub（SeraphimSerapis/tool-eval-bench）から uv tool install を {{name}} 上で、sparkDash が接続するユーザーとして実行します。",
+      "needsInternet": "Python パッケージをダウンロードするため、その Spark にインターネット接続が必要です。sparkDash を実行しているマシンには何もインストールされません。",
+      "uvMissingTitle": "この Spark に uv がインストールされていません",
+      "uvMissingBody": "インストールには uv を使用します。先に Spark でインストール（curl -LsSf https://astral.sh/uv/install.sh | sh）してから再確認してください。",
+      "installing": "インストール中…",
+      "installed": "インストール済み",
+      "installFailed": "インストール失敗",
+      "copyOutput": "出力をコピー",
+      "doneChecking": "完了。インストールを確認しています…",
+      "installDidNotFinish": "インストールが完了しませんでした",
+      "uvNotFound": "Spark 上に uv が見つかりません。先に uv をインストールしてから再試行してください。",
+      "installFailedHint": "理由は上の出力を確認してください（インターネットなし、Python 不在、ディスク満杯など）。",
+      "upgradeNow": "今すぐアップグレード",
+      "installOn": "{{name}} にインストール…",
+      "confirmRun": "上のコマンドを {{name}} で実行しますか？",
+      "yesUpgrade": "はい、アップグレード",
+      "yesInstall": "はい、インストール",
+      "cancel": "キャンセル",
+      "jobRunning": "この Spark では別のツール評価ジョブが実行中です。",
+      "forceReinstall": "強制再インストール",
+      "checking": "確認中…",
+      "checkAgain": "再確認",
+      "setup": "セットアップ",
+      "notInstalledTitle": "{{name}} に Tool Eval Bench がインストールされていません",
+      "notInstalledTag": "未インストール",
+      "lead": "このページは外部の tool-eval-bench CLI を操作し、CLI は Spark 上で動作します。一度インストールすれば、すべてのツール評価ページが利用可能になります。その間も実行の設定とプレビューは可能ですが、インストールするまで開始は無効です。",
+      "unreachable": "Spark に到達できませんでした",
+      "statusAria": "ツール評価のインストール状況",
+      "unknownVersion": "不明なバージョン",
+      "checkingGithub": "GitHub を確認中…",
+      "checkUpdates": "更新を確認",
+      "updateCheckFailed": "更新を確認できませんでした",
+      "latest": "最新バージョンです。",
+      "installedCommit": "インストール済みコミット {{commit}}",
+      "latestChange": "最新の変更 {{date}}",
+      "reinstall": "再インストール…",
+      "newerAvailable": "新しいバージョンがあります",
+      "latestCommit": "最新コミット {{commit}}",
+      "installedIs": "、インストール済み {{commit}}。",
+      "upgradeRunsOn": " アップグレードは {{name}} 上で実行されます。",
+      "updateUnknown": "更新があるか判断できませんでした",
+      "upgradeAnyway": "それでもアップグレード",
+      "noCommit": "インストール済みバージョンにコミット情報がないため、GitHub と比較できません。",
+      "stillUpgrade": " それでもアップグレードできます。",
+      "workDir": "結果の保存先: 各実行のファイルは {{name}} 上の {{path}} に保存されます。sparkDash は完了した結果もキャッシュするため、Spark がオフでも履歴を閲覧できます。",
+      "upgradeComplete": "アップグレード完了",
+      "installationComplete": "インストール完了",
+      "dismiss": "閉じる",
+      "upgradedFrom": "{{name}} の tool-eval-bench を {{from}} から {{to}} にアップグレードしました。ベンチマークを実行できます。",
+      "reinstalled": "{{name}} の tool-eval-bench を再インストールし、{{version}} になりました。ベンチマークを実行できます。",
+      "installedNow": "tool-eval-bench {{version}} を {{name}} にインストールしました。ベンチマークを実行できます。"
+    },
+    "sbs": {
+      "run": "実行 {{side}}",
+      "autoModel": "自動モデル",
+      "pass": "合格",
+      "partial": "部分",
+      "fail": "不合格",
+      "other": "その他",
+      "swap": "入れ替え",
+      "swapTitle": "A と B を入れ替える",
+      "metrics": "指標",
+      "categories": "カテゴリ",
+      "notInA": "実行 A にはなし",
+      "notInB": "実行 B にはなし",
+      "scenarios": "シナリオ",
+      "differ": "（{{total}} 個中 {{diff}} 個が異なる）",
+      "onlyDiff": "差異のみ",
+      "scenario": "シナリオ",
+      "runA": "実行 A",
+      "runB": "実行 B",
+      "notRun": "未実行",
+      "allSame": "両方の実行で全シナリオの最終状態が同じでした。"
+    },
+    "tool": {
+      "finalScore": "最終スコア",
+      "starsAria": "{{max}} 個中 {{n}} 個の星",
+      "unrated": "評価なし",
+      "ratingCapped": "安全警告のため評価が上限されています。 ",
+      "tiers": "段階: 90+ 優秀、75+ 良好、60+ 普通、40+ 弱い、それ未満は不良。",
+      "deployability": "導入可能性",
+      "responsiveness": "応答性",
+      "completion": "完了度",
+      "scenarios": "シナリオ",
+      "pass": "合格",
+      "partial": "部分",
+      "fail": "不合格",
+      "model": "モデル",
+      "runId": "実行",
+      "safetyAria": "安全警告",
+      "safetyTitle": "安全警告（{{count}}）",
+      "configUsed": "使用した設定",
+      "categoryScores": "カテゴリスコア",
+      "categoryNameFromDocs": "ツールのドキュメントによるカテゴリ名",
+      "categoryFallback": "カテゴリ",
+      "noScore": "スコアなし",
+      "percentAria": "{{value}} パーセント",
+      "scenariosTitle": "シナリオ",
+      "scenariosOf": "{{total}} 個中 {{shown}} 個",
+      "searchAria": "シナリオを検索",
+      "searchPlaceholder": "id、タイトル、推論を検索…",
+      "filterStatusAria": "状態で絞り込み",
+      "statusAll": "すべての状態",
+      "statusFailed": "不合格",
+      "statusPartial": "部分",
+      "statusPassed": "合格",
+      "statusOther": "その他",
+      "filterCategoryAria": "カテゴリで絞り込み",
+      "allCategories": "すべてのカテゴリ",
+      "sortAria": "並べ替え",
+      "sortOrder": "元の順序",
+      "sortWorst": "悪い順",
+      "sortId": "id 順",
+      "sortPoints": "得点が少ない順",
+      "sortSlowest": "遅い順",
+      "noMatch": "この条件に一致するシナリオはありません。",
+      "noTitle": "（タイトルなし）",
+      "reasoning": "推論",
+      "noDetails": "このシナリオには詳細が記録されていません。",
+      "showMore": "さらに {{count}} 件表示"
+    },
+    "age": {
+      "seconds": "{{value}} 秒",
+      "minutes": "{{value}} 分",
+      "hours": "{{value}} 時間",
+      "days": "{{value}} 日"
+    },
+    "idle": {
+      "label": "アイドル",
+      "withSince": "アイドル · 最終応答 {{since}}前"
+    },
+    "fleet": {
+      "offline": "ホストに到達できません",
+      "throttle": "サーマル制限中",
+      "hwSlowdown": "ハードウェア低下あり",
+      "gpuAt": "GPU {{temp}}",
+      "smClock": "SM クロック {{ghz}} GHz",
+      "smClockOfMax": "（最大の {{pct}}%）",
+      "disk": "ストレージが 90% 以上です",
+      "llm": "LLM が利用できません",
+      "tailnet": "tailnet が利用できません"
+    },
+    "decode": {
+      "typeStructured": "構造化",
+      "typeStructuredHint": "1 から 200 まで数値のみ出力 — ラボの構造化プロトコル",
+      "typeProse": "散文",
+      "typeProseHint": "ハッシュマップの説明 — ラボ既定のベンチプロンプト",
+      "typeCode": "コード",
+      "typeCodeHint": "ストリームごとに異なる Python タスク — 接頭辞が異なり、コメントなし",
+      "typeJson": "JSON",
+      "typeJsonHint": "JSON の GPU 指標カタログ — 出力種別のみで、guided JSON ではありません"
+    },
+    "quality": {
+      "categories": {
+        "qa": "QA",
+        "reason": "推論",
+        "arith": "算術チェーン",
+        "track": "状態追跡",
+        "gsm8k": "GSM8K",
+        "mmlu": "MMLU",
+        "follow": "指示追従",
+        "long": "長文コンテキスト想起"
+      },
+      "diffSuite": "これらの実行は異なる問題セット（スイート v{{a}} と v{{b}}）を使用しているため、同じ id でも同じ問題ではありません。比較するにはどちらかを再実行してください。",
+      "diffScoring": "これらの実行は異なる採点規則（採点 v{{a}} と v{{b}}）で評価されているため、一方の合格が他方の合格を意味しません。比較するにはどちらかを再実行してください。"
+    }
+  }
+}

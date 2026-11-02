@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { ToolEvalArgSpec } from "../../../api/types";
 import { byteLength, jsonObjectError, splitList, type FieldValue } from "./options";
-import { fmtBytes } from "./format";
-import { CATEGORY_NAMES } from "./normalize";
+import { fmtBytes, type Translate } from "./format";
+import { categoryNames } from "./normalize";
 
 interface FieldProps {
   arg: ToolEvalArgSpec;
@@ -13,17 +14,19 @@ interface FieldProps {
 
 const idOf = (name: string) => `te-f-${name}`;
 
-function rangeHint(a: ToolEvalArgSpec): string {
+function rangeHint(a: ToolEvalArgSpec, t: Translate): string {
   const parts: string[] = [];
   if (a.min != null && a.max != null) parts.push(`${a.min}–${a.max}`);
-  else if (a.min != null) parts.push(`min ${a.min}`);
-  else if (a.max != null) parts.push(`max ${a.max}`);
-  if (a.default !== undefined && a.default !== "") parts.push(`default ${a.default}`);
+  else if (a.min != null) parts.push(t("te.fields.min", { value: a.min }));
+  else if (a.max != null) parts.push(t("te.fields.max", { value: a.max }));
+  if (a.default !== undefined && a.default !== "") parts.push(t("te.fields.default", { value: a.default }));
   return parts.join(" · ");
 }
 
 /** One generated form control, chosen by the option's kind. */
 export function Field({ arg, value, error, onChange }: FieldProps) {
+  const { t: translate } = useTranslation("bench");
+  const t = translate as unknown as Translate;
   const id = idOf(arg.name);
   const set = (v: FieldValue) => onChange(arg.name, v);
   const err = error ? (
@@ -77,7 +80,7 @@ export function Field({ arg, value, error, onChange }: FieldProps) {
     case "choice":
       control = (
         <select id={id} value={typeof value === "string" ? value : ""} onChange={(e) => set(e.target.value)} aria-describedby={describedBy}>
-          <option value="">{arg.default !== undefined ? `Default (${arg.default})` : "Default"}</option>
+          <option value="">{arg.default !== undefined ? t("te.fields.defaultWith", { value: arg.default }) : t("te.fields.defaultOnly")}</option>
           {(arg.choices ?? []).map((c) => (
             <option key={c} value={c}>
               {c}
@@ -102,11 +105,13 @@ export function Field({ arg, value, error, onChange }: FieldProps) {
     }
     case "json": {
       const text = typeof value === "string" ? value : "";
-      const bad = text.trim() ? jsonObjectError(text) : null;
+      const bad = text.trim() ? jsonObjectError(text, t) : null;
       control = (
         <>
           <textarea id={id} rows={3} className="te-mono-input" value={text} placeholder='{"chat_template_kwargs": {"enable_thinking": false}}' onChange={(e) => set(e.target.value)} aria-invalid={Boolean(error)} aria-describedby={describedBy} spellCheck={false} />
-          {text.trim() ? <p className={`te-counter ${bad ? "is-over" : "is-ok"}`}>{bad ? `JSON ${bad}` : "Valid JSON object"}</p> : null}
+          {text.trim() ? (
+            <p className={`te-counter ${bad ? "is-over" : "is-ok"}`}>{bad ? t("te.fields.jsonIssue", { reason: bad }) : t("te.fields.jsonOk")}</p>
+          ) : null}
         </>
       );
       break;
@@ -116,8 +121,10 @@ export function Field({ arg, value, error, onChange }: FieldProps) {
         <CategoryPicker id={id} value={Array.isArray(value) ? value : []} choices={arg.choices} onChange={set} />
       ) : (
         <>
-          <input id={id} type="text" value={typeof value === "string" ? value : ""} placeholder={arg.name === "scenarios" ? "TC-01 TC-07 TC-12" : "space separated"} onChange={(e) => set(e.target.value)} aria-invalid={Boolean(error)} aria-describedby={describedBy} autoComplete="off" spellCheck={false} />
-          {typeof value === "string" && value.trim() ? <p className="te-counter">{splitList(value).length} item(s)</p> : null}
+          <input id={id} type="text" value={typeof value === "string" ? value : ""} placeholder={arg.name === "scenarios" ? "TC-01 TC-07 TC-12" : t("te.fields.spaceSeparated")} onChange={(e) => set(e.target.value)} aria-invalid={Boolean(error)} aria-describedby={describedBy} autoComplete="off" spellCheck={false} />
+          {typeof value === "string" && value.trim() ? (
+            <p className="te-counter">{t("te.fields.itemCount", { count: splitList(value).length })}</p>
+          ) : null}
         </>
       );
       break;
@@ -140,7 +147,7 @@ export function Field({ arg, value, error, onChange }: FieldProps) {
         />
       );
   }
-  const hint = rangeHint(arg);
+  const hint = rangeHint(arg, t);
   return (
     <div className={`te-field ${error ? "has-error" : ""} ${arg.kind === "text" || arg.kind === "json" || arg.kind === "repeat" || arg.kind === "list" ? "te-field--wide" : ""}`}>
       <label className="field-label" htmlFor={arg.kind === "list" && arg.choices ? undefined : id}>
@@ -154,22 +161,25 @@ export function Field({ arg, value, error, onChange }: FieldProps) {
 }
 
 function CategoryPicker({ id, value, choices, onChange }: { id: string; value: string[]; choices: string[]; onChange: (v: string[]) => void }) {
+  const { t: translate } = useTranslation("bench");
+  const t = translate as unknown as Translate;
+  const categories = categoryNames(t);
   const on = new Set(value.map((v) => v.toUpperCase()));
   const toggle = (c: string) => onChange(choices.filter((x) => (x === c ? !on.has(x) : on.has(x))));
   return (
-    <div className="te-cats" role="group" aria-label="Categories" id={id}>
+    <div className="te-cats" role="group" aria-label={t("te.fields.categoriesAria")} id={id}>
       {choices.map((c) => (
-        <button key={c} type="button" className={`te-chip ${on.has(c) ? "is-on" : ""}`} aria-pressed={on.has(c)} onClick={() => toggle(c)} title={CATEGORY_NAMES[c] ? `${c}: ${CATEGORY_NAMES[c]}` : c}>
+        <button key={c} type="button" className={`te-chip ${on.has(c) ? "is-on" : ""}`} aria-pressed={on.has(c)} onClick={() => toggle(c)} title={categories[c] ? `${c}: ${categories[c]}` : c}>
           <b>{c}</b>
-          <span>{CATEGORY_NAMES[c] ?? ""}</span>
+          <span>{categories[c] ?? ""}</span>
         </button>
       ))}
       <span className="te-cats__tools">
         <button type="button" className="btn btn--sm btn--ghost" onClick={() => onChange([...choices])}>
-          All
+          {t("te.fields.all")}
         </button>
         <button type="button" className="btn btn--sm btn--ghost" onClick={() => onChange([])} disabled={on.size === 0}>
-          None
+          {t("te.fields.none")}
         </button>
       </span>
     </div>
@@ -177,6 +187,7 @@ function CategoryPicker({ id, value, choices, onChange }: { id: string; value: s
 }
 
 function RepeatRows({ id, arg, rows, onChange }: { id: string; arg: ToolEvalArgSpec; rows: string[]; onChange: (v: string[]) => void }) {
+  const { t } = useTranslation("bench");
   const [reveal, setReveal] = useState(false);
   const list = rows.length ? rows : [""];
   const max = arg.maxItems ?? 20;
@@ -190,23 +201,29 @@ function RepeatRows({ id, arg, rows, onChange }: { id: string; arg: ToolEvalArgS
             className="te-mono-input"
             value={row}
             placeholder={placeholder}
-            aria-label={`${arg.label} ${i + 1}`}
+            aria-label={t("te.fields.rowAria", { label: arg.label, n: i + 1 })}
             autoComplete="off"
             spellCheck={false}
             onChange={(e) => onChange(list.map((r, j) => (j === i ? e.target.value : r)))}
           />
-          <button type="button" className="btn btn--sm btn--ghost" aria-label={`Remove ${arg.label} ${i + 1}`} onClick={() => onChange(list.filter((_, j) => j !== i))} disabled={list.length === 1 && !row}>
-            Remove
+          <button
+            type="button"
+            className="btn btn--sm btn--ghost"
+            aria-label={t("te.fields.removeAria", { label: arg.label, n: i + 1 })}
+            onClick={() => onChange(list.filter((_, j) => j !== i))}
+            disabled={list.length === 1 && !row}
+          >
+            {t("te.fields.remove")}
           </button>
         </div>
       ))}
       <div className="te-rows__tools">
         <button type="button" className="btn btn--sm" onClick={() => onChange([...list, ""])} disabled={list.length >= max}>
-          Add row
+          {t("te.fields.addRow")}
         </button>
         {arg.secret ? (
           <button type="button" className="btn btn--sm btn--ghost" onClick={() => setReveal((r) => !r)}>
-            {reveal ? "Hide values" : "Show values"}
+            {reveal ? t("te.fields.hideValues") : t("te.fields.showValues")}
           </button>
         ) : null}
       </div>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { fetchTokenHistory } from "../../api/client";
 import { fetchLlmTokenTotals } from "../../api/llmTokenClient";
 import { fetchModelPrices } from "../../api/costClient";
@@ -18,6 +19,7 @@ import {
   type Entry,
   type RangeKey,
   type Tally,
+  type Translate,
 } from "../TokensPage/tokenStats";
 import { blendedPerMillion, costBuckets, costOf, filterModels, fmtMoney, priceLabel } from "./costStats";
 import "../../styles/tokens.css";
@@ -26,6 +28,26 @@ import "../../styles/cost.css";
 const POLL_MS = 30_000;
 const fmt = formatTokensCompact;
 const MODEL_KEY = "sparkdash.cost.model";
+
+/** Catalog copy for a range tab: its tab label and the phrase sentences use. */
+interface RangeCopy {
+  label: string;
+  phrase: string;
+}
+
+/** One static catalog key per range, so every tab is translated without dynamic keys. */
+function rangeCopies(t: Translate): Record<RangeKey, RangeCopy> {
+  return {
+    today: { label: t("range.today.label"), phrase: t("range.today.phrase") },
+    week: { label: t("range.week.label"), phrase: t("range.week.phrase") },
+    month: { label: t("range.month.label"), phrase: t("range.month.phrase") },
+    "24h": { label: t("range.24h.label"), phrase: t("range.24h.phrase") },
+    "7d": { label: t("range.7d.label"), phrase: t("range.7d.phrase") },
+    "14d": { label: t("range.14d.label"), phrase: t("range.14d.phrase") },
+    "30d": { label: t("range.30d.label"), phrase: t("range.30d.phrase") },
+    all: { label: t("range.all.label"), phrase: t("range.all.phrase") },
+  };
+}
 
 interface Usage {
   history: TokenHistory;
@@ -40,6 +62,8 @@ interface Prices {
 }
 
 export function CostPage() {
+  const { t: translate } = useTranslation("cost");
+  const t = translate as unknown as Translate;
   const [range, setRange] = useState<RangeKey>("7d");
   const [usage, setUsage] = useState<Usage | null>(null);
   const [prices, setPrices] = useState<Prices | null>(null);
@@ -71,7 +95,7 @@ export function CostPage() {
           setError(null);
         })
         .catch((e: unknown) => {
-          if (!cancelled) setError(e instanceof Error ? e.message : "Could not load usage history");
+          if (!cancelled) setError(e instanceof Error ? e.message : t("loadFailedShort"));
         });
     };
     run();
@@ -87,7 +111,7 @@ export function CostPage() {
       clearInterval(id);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [tick]);
+  }, [tick, t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -98,12 +122,12 @@ export function CostPage() {
         setPricesError(null);
       })
       .catch((e: unknown) => {
-        if (!cancelled) setPricesError(e instanceof Error ? e.message : "Could not load the price catalog");
+        if (!cancelled) setPricesError(e instanceof Error ? e.message : t("priceLoadFailed"));
       });
     return () => {
       cancelled = true;
     };
-  }, [tick]);
+  }, [tick, t]);
 
   const selectModel = useCallback((id: string) => {
     setModelId(id);
@@ -140,16 +164,22 @@ export function CostPage() {
   }, [usage, range, price]);
 
   const spec = RANGES.find((r) => r.key === range) ?? RANGES[1];
-  const unitWord = spec.unit === "hour" ? "hour" : "day";
+  const copy = rangeCopies(t)[spec.key];
+  const unitWord = spec.unit === "hour" ? t("units.hour") : t("units.day");
+  const locale = document.documentElement.lang || undefined;
 
   const series: BarSeries[] = [
-    { id: "input", label: "Input (prompt)", color: "var(--color-accent)" },
-    { id: "output", label: "Output (generated)", color: "var(--color-violet)" },
+    { id: "input", label: t("chart.seriesInput"), color: "var(--color-accent)" },
+    { id: "output", label: t("chart.seriesOutput"), color: "var(--color-violet)" },
   ];
   const chartBuckets: BarBucket[] = (view?.buckets ?? []).map((b) => ({
     key: b.key,
-    label: bucketLabel(b.key, spec.unit),
-    title: bucketTitle(b.key, spec.unit),
+    label: bucketLabel(b.key, spec.unit, undefined, { locale }),
+    title: bucketTitle(b.key, spec.unit, undefined, false, {
+      locale,
+      utc: t("chart.utc"),
+      local: t("chart.local"),
+    }),
     values: { input: b.input, output: b.output },
   }));
 
@@ -157,23 +187,16 @@ export function CostPage() {
     <div className="tk cp">
       <header className="page-head">
         <div>
-          <h1>Cost compare</h1>
-          <p className="page-head__sub">
-            What your fleet&rsquo;s token usage would have cost on a hosted API, priced from the
-            community price list.
-          </p>
+          <h1>{t("title")}</h1>
+          <p className="page-head__sub">{t("subtitle")}</p>
         </div>
       </header>
 
       {error ? (
         <div className="panel tk-note tk-note--err" role="alert">
-          <span>
-            {usage
-              ? `Showing the last loaded data. Refresh failed: ${error}`
-              : `Could not load usage history: ${error}`}
-          </span>
-          <button type="button" className="btn btn--sm" onClick={() => setTick((t) => t + 1)}>
-            Retry
+          <span>{usage ? t("refreshFailed", { message: error }) : t("loadFailed", { message: error })}</span>
+          <button type="button" className="btn btn--sm" onClick={() => setTick((value) => value + 1)}>
+            {t("retry")}
           </button>
         </div>
       ) : null}
@@ -182,9 +205,9 @@ export function CostPage() {
         <div className="tk-card__head">
           <div>
             <h2 id="cp-pick-title" className="tk-card__title">
-              Priced as
+              {t("pricedAs")}
             </h2>
-            {price ? <PriceLine price={price} /> : <p className="tk-card__sub">Choose a hosted model to price your usage against.</p>}
+            {price ? <PriceLine price={price} /> : <p className="tk-card__sub">{t("pricedAsSub")}</p>}
           </div>
           <ModelPicker models={prices?.models ?? []} selectedId={price?.id ?? null} onSelect={selectModel} />
         </div>
@@ -198,15 +221,15 @@ export function CostPage() {
             <div className="tk-card__head">
               <div>
                 <h2 id="cp-chart-title" className="tk-card__title">
-                  Cost per {unitWord}
+                  {t("chart.title", { unit: unitWord })}
                 </h2>
                 <p className="tk-card__sub">
-                  {spec.phrase} at {price.id} list prices
-                  {view.useLifetime ? "; the chart shows the retained daily buckets" : ""}
+                  {t("chart.sub", { period: copy.phrase, model: price.id })}
+                  {view.useLifetime ? t("chart.subLifetime") : ""}
                 </p>
               </div>
               <div className="tk-card__tools">
-                <div className="seg" role="group" aria-label="Time range">
+                <div className="seg" role="group" aria-label={t("rangeGroup")}>
                   {RANGES.map((r) => (
                     <button
                       key={r.key}
@@ -215,7 +238,7 @@ export function CostPage() {
                       aria-pressed={r.key === range}
                       onClick={() => setRange(r.key)}
                     >
-                      {r.label}
+                      {rangeCopies(t)[r.key].label}
                     </button>
                   ))}
                 </div>
@@ -226,9 +249,9 @@ export function CostPage() {
               series={series}
               height={240}
               format={fmtMoney}
-              unit="spent"
-              empty="No token traffic in this range yet, so there is nothing to price."
-              ariaLabel={`Stacked bar chart of the cost of tokens per ${unitWord} as ${price.id}`}
+              unit={t("chart.unit")}
+              empty={t("chart.empty")}
+              ariaLabel={t("chart.aria", { unit: unitWord, model: price.id })}
             />
             <ul className="legend tk-legend">
               {series.map((s) => (
@@ -242,58 +265,65 @@ export function CostPage() {
 
           <section className="panel tk-card tk-about" aria-labelledby="cp-about-title">
             <h2 id="cp-about-title" className="tk-card__title">
-              How this is priced
+              {t("pricing.title")}
             </h2>
             <ul>
               <li>
-                Computed prefill is charged the input rate ({fmtMoney(price.inputCostPerToken * 1_000_000)} / 1M); generated
-                tokens the output rate ({fmtMoney(price.outputCostPerToken * 1_000_000)} / 1M).
+                {t("pricing.inputRate", {
+                  inputRate: fmtMoney(price.inputCostPerToken * 1_000_000),
+                  outputRate: fmtMoney(price.outputCostPerToken * 1_000_000),
+                })}
               </li>
               <li>
                 {price.cacheReadCostPerToken != null
-                  ? `Cached prefill is charged the provider's cache-read rate (${fmtMoney(price.cacheReadCostPerToken * 1_000_000)} / 1M) — your prefix cache saves ${fmtMoney(view.cost.cacheSavings)} in ${spec.phrase}.`
-                  : "The provider publishes no cache-read rate, so cached prefill is charged the full input rate."}
+                  ? t("pricing.cachedRate", {
+                      rate: fmtMoney(price.cacheReadCostPerToken * 1_000_000),
+                      savings: fmtMoney(view.cost.cacheSavings),
+                      period: copy.phrase,
+                    })
+                  : t("pricing.noCacheRate")}
               </li>
               <li>
-                Prices come from the community-maintained{" "}
+                {t("pricing.sourceBefore")}{" "}
                 <a
                   href="https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json"
                   target="_blank"
                   rel="noreferrer"
                 >
-                  litellm catalog
+                  {t("pricing.sourceLink")}
                 </a>
-                , refreshed daily
-                {prices?.at ? ` (last fetched ${new Date(prices.at).toLocaleString()})` : ""}
-                {prices?.stale ? " — the refresh failed, so these may be out of date" : ""}.
+                {t("pricing.sourceAfter", {
+                  fetched: prices?.at ? t("pricing.fetched", { when: new Date(prices.at).toLocaleString(locale) }) : "",
+                  stale: prices?.stale ? t("pricing.stale") : "",
+                })}
               </li>
-              <li>Tokens are the same counters as the Token totals page: fleet-wide, every port and model.</li>
+              <li>{t("pricing.counters")}</li>
             </ul>
           </section>
         </>
       ) : usage ? (
         pricesError ? (
           <div className="panel tk-note tk-note--err" role="status">
-            <b>The price catalog could not be loaded.</b> {pricesError}
-            <button type="button" className="btn btn--sm" onClick={() => setTick((t) => t + 1)}>
-              Retry
+            <b>{t("priceCatalogFailed")}</b> {pricesError}
+            <button type="button" className="btn btn--sm" onClick={() => setTick((value) => value + 1)}>
+              {t("retry")}
             </button>
           </div>
         ) : prices && prices.models.length === 0 ? (
           <div className="panel tk-note" role="status">
-            <b>No price data yet.</b> Enable MODEL_PRICES_FETCH or supply a catalog at MODEL_PRICES_JSON_PATH, then retry.
-            <button type="button" className="btn btn--sm" onClick={() => setTick((t) => t + 1)}>Retry</button>
+            <b>{t("pricesEmpty")}</b> {t("pricesEmptyHint")}
+            <button type="button" className="btn btn--sm" onClick={() => setTick((value) => value + 1)}>{t("retry")}</button>
           </div>
         ) : prices ? (
-          <div className="panel tk-note" role="status">Choose a hosted model to compare costs.</div>
+          <div className="panel tk-note" role="status">{t("chooseModelCompare")}</div>
         ) : (
           <div className="panel tk-note" role="status">
-            Loading prices…
+            {t("loadingPrices")}
           </div>
         )
       ) : (
         <div className="panel tk-note" role="status">
-          Loading…
+          {t("loading")}
         </div>
       )}
     </div>
@@ -301,13 +331,17 @@ export function CostPage() {
 }
 
 function PriceLine({ price }: { price: ModelPrice }) {
-  const ctx = [price.provider, price.maxInputTokens ? `${Math.round(price.maxInputTokens / 1000).toLocaleString("en-US")}k context` : null].filter(
-    Boolean
-  );
+  const { t } = useTranslation("cost");
+  const ctx = [
+    price.provider,
+    price.maxInputTokens
+      ? t("contextK", { count: Math.round(price.maxInputTokens / 1000).toLocaleString("en-US") })
+      : null,
+  ].filter(Boolean);
   return (
     <p className="tk-card__sub">
       <span className="mono">{price.id}</span>
-      {ctx.length ? ` · ${ctx.join(" · ")}` : ""} · {priceLabel(price)}
+      {ctx.length ? ` · ${ctx.join(" · ")}` : ""} · {priceLabel(price, t as unknown as Translate)}
     </p>
   );
 }
@@ -324,40 +358,52 @@ function CostTiles({
   /** Buckets the per-day average is spread over (All time: every tracked day). */
   days: number;
 }) {
-  const per = range.unit === "hour" ? "hour" : "day";
+  const { t: translate } = useTranslation("cost");
+  const t = translate as unknown as Translate;
+  const copy = rangeCopies(t)[range.key];
+  const unit = range.unit === "hour" ? t("units.hour") : t("units.day");
   const blended = blendedPerMillion(cost.totalCost, tally.total);
   const outputShare = cost.totalCost > 0 ? cost.outputCost / cost.totalCost : 0;
   return (
-    <section className="tk-tiles" aria-label={`Cost summary for ${range.phrase}`}>
-      <Tile label="Total cost" value={fmtMoney(cost.totalCost)} sub={`for ${range.phrase}`} title={cost.totalCost.toFixed(6)} />
+    <section className="tk-tiles" aria-label={t("tiles.summaryAria", { period: copy.phrase })}>
       <Tile
-        label="Input (prompt)"
+        label={t("tiles.total")}
+        value={fmtMoney(cost.totalCost)}
+        sub={t("tiles.totalSub", { period: copy.phrase })}
+        title={cost.totalCost.toFixed(6)}
+      />
+      <Tile
+        label={t("tiles.input")}
         value={fmtMoney(cost.inputCost)}
-        sub={`${fmt(tally.prompt)} prompt tokens, ${fmt(tally.cached)} of them cached`}
+        sub={t("tiles.inputSub", { prompt: fmt(tally.prompt), cached: fmt(tally.cached) })}
         title={cost.inputCost.toFixed(6)}
       />
       <Tile
-        label="Output (generated)"
+        label={t("tiles.output")}
         value={fmtMoney(cost.outputCost)}
-        sub={`${fmt(tally.generated)} tokens · ${(outputShare * 100).toFixed(0)}% of the bill`}
+        sub={t("tiles.outputSub", { tokens: fmt(tally.generated), share: (outputShare * 100).toFixed(0) })}
         title={cost.outputCost.toFixed(6)}
       />
       <Tile
-        label="Cache savings"
+        label={t("tiles.cacheSavings")}
         value={cost.cacheSavings > 0 ? fmtMoney(cost.cacheSavings) : "—"}
-        sub={cost.cacheSavings > 0 ? "vs the full input price for cached prefill" : "no cache discount published"}
+        sub={cost.cacheSavings > 0 ? t("tiles.cacheSavingsSub") : t("tiles.cacheSavingsNone")}
       />
       <Tile
-        label={`Average per ${per}`}
+        label={t("tiles.average", { unit })}
         value={fmtMoney(cost.totalCost / Math.max(1, days))}
-        unit={`/ ${per}`}
-        sub={`Across ${days} ${per}${days === 1 ? "" : "s"}${range.count == null ? " tracked" : ""}`}
+        unit={t("tiles.averageUnit", { unit })}
+        sub={t("tiles.averageSub", {
+          count: days,
+          unit: days === 1 ? unit : range.unit === "hour" ? t("units.hours") : t("units.days"),
+          tracked: range.count == null ? t("tiles.tracked") : "",
+        })}
       />
       <Tile
-        label="Blended rate"
+        label={t("tiles.blended")}
         value={blended == null ? "—" : `$${blended.toFixed(2)}`}
-        unit="/ 1M tok"
-        sub={`${fmt(tally.total)} tokens priced`}
+        unit={t("tiles.blendedUnit")}
+        sub={t("tiles.blendedSub", { tokens: fmt(tally.total) })}
       />
     </section>
   );
@@ -386,6 +432,7 @@ function ModelPicker({
   selectedId: string | null;
   onSelect: (id: string) => void;
 }) {
+  const { t } = useTranslation("cost");
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
@@ -416,11 +463,11 @@ function ModelPicker({
   return (
     <div className="cp-picker" ref={rootRef}>
       <button type="button" className="cp-toggle" onClick={() => setOpen((v) => !v)} aria-haspopup="listbox" aria-expanded={open}>
-        <span className="cp-toggle__id">{selected ? selected.id : "Choose a hosted model…"}</span>
-        {selected ? <span className="cp-toggle__price">{priceLabel(selected)}</span> : null}
+        <span className="cp-toggle__id">{selected ? selected.id : t("chooseModel")}</span>
+        {selected ? <span className="cp-toggle__price">{priceLabel(selected, t as unknown as Translate)}</span> : null}
       </button>
       {open ? (
-        <div className="cp-pop" role="listbox" aria-label="Model price catalog">
+        <div className="cp-pop" role="listbox" aria-label={t("catalogAria")}>
           <div className="cp-search">
             <input
               ref={inputRef}
@@ -439,8 +486,8 @@ function ModelPicker({
                   e.preventDefault();
                 }
               }}
-              placeholder={`Search ${models.length} models…`}
-              aria-label="Search models"
+              placeholder={t("searchPlaceholder", { count: models.length })}
+              aria-label={t("searchAria")}
             />
           </div>
           <ul className="cp-list">
@@ -455,11 +502,11 @@ function ModelPicker({
                   onClick={() => pick(m)}
                 >
                   <span className="cp-item__id">{m.id}</span>
-                  <span className="cp-item__meta">{priceLabel(m)}</span>
+                  <span className="cp-item__meta">{priceLabel(m, t as unknown as Translate)}</span>
                 </button>
               </li>
             ))}
-            {results.length === 0 ? <li className="cp-empty">No models match &ldquo;{query}&rdquo;.</li> : null}
+            {results.length === 0 ? <li className="cp-empty">{t("noMatch", { query })}</li> : null}
           </ul>
         </div>
       ) : null}

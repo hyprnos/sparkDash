@@ -1,0 +1,133 @@
+{
+  "title": "提示詞展示",
+  "brandHome": "sparkDash 首頁",
+  "loading": "正在載入…",
+  "controls": {
+    "show": "顯示控制列",
+    "showTitle": "顯示控制列",
+    "hide": "隱藏",
+    "hideTitle": "隱藏控制列"
+  },
+  "actions": {
+    "run": "執行",
+    "starting": "正在啟動…",
+    "stop": "停止",
+    "copyAll": "全部複製",
+    "copied": "已複製！",
+    "copyAllTitle": "將所有終端複製為純文字",
+    "history": "歷史",
+    "historyTitle": "過往展示執行"
+  },
+  "confirm": {
+    "stopAll": "停止所有展示串流？",
+    "clearHistory": "清除此 Spark 儲存的全部展示歷史？"
+  },
+  "errors": {
+    "notFound": "找不到 Spark",
+    "loadFailed": "載入 Spark 失敗",
+    "copy": "無法複製到剪貼簿",
+    "promptRange": "請使用 {{min}} 到 {{max}} 條非空提示詞",
+    "monitoringOff": "LLM 監控已關閉，或此 Spark 是工作節點 — 展示無法使用。"
+  },
+  "fields": {
+    "port": "連接埠",
+    "terminals": "終端數",
+    "promptType": "提示詞類型",
+    "maxTokens": "最大 tokens",
+    "temp": "溫度",
+    "tempTitle": "取樣溫度（0–2）",
+    "thinking": "思考",
+    "thinkingTitle": "啟用模型思考/推理 tokens",
+    "showPrompts": "顯示提示詞",
+    "model": "模型"
+  },
+  "promptType": {
+    "text": "文字",
+    "textHint": "散文/敘事 — 不含程式碼或結構化格式",
+    "structural": "結構化",
+    "structuralHint": "JSON、HTML、YAML、SQL、schema、表格、日誌",
+    "mixed": "混合",
+    "mixedHint": "一半結構化、一半文字 — 交替送出",
+    "tok": "{{tokens}} tok"
+  },
+  "promptLabel": "提示詞 {{n}}",
+  "history": {
+    "title": "過往執行",
+    "refresh": "重新整理",
+    "clear": "清除",
+    "empty": "還沒有儲存的執行。完成的展示會自動出現在這裡。",
+    "viewTitle": "檢視此執行",
+    "terms": "{{count}} 個終端",
+    "promptType": "{{type}}提示詞",
+    "avg": "平均 {{value}} tok/s",
+    "reuse": "沿用",
+    "reuseTitle": "將提示詞與設定載入表單（不會重新執行）"
+  },
+  "metrics": {
+    "aggregate": "合計",
+    "aggregateHero": "所有終端的即時解碼 tok/s 總和",
+    "aggregateTitle": "所有終端的合計每秒 tokens",
+    "avg": "平均",
+    "avgTitle": "本次工作階段每個終端的平均解碼 tok/s",
+    "perStream": "每串流",
+    "tokens": "Tokens",
+    "server": "伺服端",
+    "streams": "串流",
+    "peak": "峰值 {{value}}"
+  },
+  "plain": {
+    "status": "狀態：{{status}}",
+    "tps": "tok/s：{{value}}",
+    "thinking": "### 思考",
+    "answer": "### 回答",
+    "error": "[錯誤] {{message}}",
+    "head": "{{name}} | 提示詞展示",
+    "port": "連接埠 {{port}}",
+    "avgPerStream": "平均 {{value}} tok/s/串流",
+    "server": "伺服端 {{value}} tok/s"
+  },
+  "status": {
+    "pending": "等待中",
+    "running": "執行中",
+    "completed": "已完成",
+    "failed": "失敗",
+    "cancelled": "已取消",
+    "error": "錯誤"
+  },
+  "footer": {
+    "historyRun": "歷史 · {{status}}",
+    "sessionRun": "工作階段 {{status}}",
+    "readOnly": " · 唯讀"
+  },
+  "terminal": {
+    "title": "終端",
+    "tokensOne": "{{count}} 個 token",
+    "tokensMany": "{{count}} 個 tokens",
+    "tpsTitle": "即時 {{live}} tok/s · 峰值 {{peak}} tok/s",
+    "peak": "峰值 {{value}}",
+    "copyTitle": "複製此終端",
+    "copied": "已複製",
+    "copy": "複製",
+    "waiting": "等待中…",
+    "reasoning": "推理",
+    "chars": "{{count}} 個字元"
+  },
+  "view": {
+    "workspace": "工作區",
+    "heading": "展示",
+    "subtitle": "同時在多個終端上執行提示詞，觀看模型串流輸出。",
+    "openWindow": "在新視窗開啟 ↗",
+    "openWindowTitle": "在獨立的全螢幕視窗中開啟展示",
+    "runOn": "執行於",
+    "noSparks": "沒有可用的 Spark",
+    "sparkPickerAria": "要執行基準測試的 Spark",
+    "offlineTitle": "{{name}} 離線",
+    "offlineBody": "請將其重新上線，或在另一台 Spark 上執行展示。",
+    "workerTitle": "{{name}} 是工作節點",
+    "workerBody": "工作節點共用主節點提供的模型，因此這台機器沒有可串流的模型。請在主節點上執行展示。",
+    "offTitle": "此 Spark 的展示已關閉",
+    "offBody": "{{name}} 的 LLM 監控已關閉，因此沒有可對話的模型。",
+    "runOnName": "在 {{name}} 上執行",
+    "noReachable": "目前沒有上線且模型可達的 Spark。"
+  }
+}

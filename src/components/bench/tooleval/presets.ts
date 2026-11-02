@@ -1,4 +1,5 @@
 import type { FieldValue } from "./options";
+import type { Translate } from "./format";
 
 export interface Preset {
   id: string;
@@ -59,9 +60,9 @@ export interface SimpleTemplate extends Preset {
  * The Simple view's templates. Tool Eval gets four basics, all with a fixed seed (42) so repeat runs stay comparable; (regular, regular + hard mode, short, hard mode only);
  * the other pages offer their ready presets as templates.
  */
-export function simpleTemplates(type: string): SimpleTemplate[] {
+export function simpleTemplates(type: string, t?: Translate): SimpleTemplate[] {
   if (type === "tool-eval") {
-    return [
+    const templates: SimpleTemplate[] = [
       {
         id: "regular",
         label: "Regular run",
@@ -95,8 +96,27 @@ export function simpleTemplates(type: string): SimpleTemplate[] {
         time: "about 5–10 min",
       },
     ];
+    if (!t) return templates;
+    return templates.map((template) => ({
+      ...template,
+      label: t(`te.templates.${template.id}.label`),
+      help: t(`te.templates.${template.id}.help`),
+      size: t(`te.templates.${template.id}.size`),
+      time: t(`te.templates.${template.id}.time`),
+    }));
   }
-  return (PRESETS[type] ?? []).map((p) => ({ ...p }));
+  return presetsFor(type, t);
+}
+
+/** One-click presets with their catalog copy; English when no translator is passed. */
+export function presetsFor(type: string, t?: Translate): Preset[] {
+  const list = PRESETS[type] ?? [];
+  if (!t) return list;
+  return list.map((preset) => ({
+    ...preset,
+    label: t(`te.presets.${type}.${preset.id}.label`),
+    help: t(`te.presets.${type}.${preset.id}.help`),
+  }));
 }
 
 /** Where the run points, not how it runs: a custom URL or model never makes a template "custom". */

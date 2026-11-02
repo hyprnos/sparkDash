@@ -85,5 +85,7 @@
     "resultFailed": "{{count}} falharam",
     "resultSkipped": "{{count}} ignorados",
     "batchFailed": "Falha no desligamento em lote"
-  }
+  },
+  "actions": {"cancel": "Cancelar", "save": "Salvar", "close": "Fechar", "dismiss": "Dispensar", "delete": "Excluir", "remove": "Remover", "back": "Voltar", "next": "Próximo", "retry": "Tentar de novo", "edit": "Editar", "add": "Adicionar", "test": "Testar", "enable": "Ativar", "disable": "Desativar", "apply": "Aplicar", "copy": "Copiar", "copied": "Copiado"},
+  "state": {"loading": "Carregando…", "saving": "Salvando…", "testing": "Testando…", "checking": "Verificando…", "working": "Processando…", "sending": "Enviando…", "applying": "Aplicando…", "restarting": "Reiniciando…", "removing": "Removendo…"}
 }

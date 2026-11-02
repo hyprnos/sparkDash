@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { EnergyHistoryRow } from "../../api/types";
+import type { Translate } from "./energyStats";
+import enEnergy from "../../locales/en/energy.json";
 import {
   HOUR_MS,
   buildBuckets,
@@ -17,6 +19,14 @@ import {
   whPer1kTokens,
   type TzOffsetFn,
 } from "./energyStats";
+
+/** Renders catalog templates with their {{vars}}; the English copy is the source of truth. */
+const t: Translate = (key, vars) => {
+  let value: unknown = enEnergy;
+  for (const part of key.split(".")) value = (value as Record<string, unknown> | undefined)?.[part];
+  if (typeof value !== "string") throw new Error(`missing en/energy key: ${key}`);
+  return value.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, name: string) => String(vars?.[name] ?? ""));
+};
 
 const NOW = Date.UTC(2026, 9, 7, 12, 30); // Wed 7 Oct 2026 12:30 UTC
 const NODES = ["a", "b"];
@@ -208,7 +218,7 @@ describe("summarize", () => {
     expect(s.whPer1kTokens).toBeNull();
     expect(buildInsights({
       summary: s, buckets: [], rows: [], mode: "hour", tz: fixedTz(0), price: 0.2, currency: "$", nodeName: (id) => id,
-    })).toEqual([]);
+    }, t)).toEqual([]);
   });
 
   it("does not count barely-covered hours as the peak", () => {
@@ -312,7 +322,7 @@ describe("insights", () => {
       price,
       currency: "€",
       nodeName: (id) => `Spark ${id}`,
-    });
+    }, t);
   };
   const rowsFor = (rows: EnergyHistoryRow[], w: ReturnType<typeof rangeWindow>) => rows.filter((r) => r.t >= w.startMs);
 

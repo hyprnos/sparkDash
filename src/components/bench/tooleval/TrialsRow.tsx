@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { FormState } from "./options";
 
 export const MAX_TRIALS = 50;
@@ -22,6 +23,7 @@ export function withTrials(state: FormState, n: number): FormState {
 
 /** `--trials N`: repeat the whole run N times for Pass@k statistics. Shared by the Simple and Advanced views. */
 export function TrialsRow({ state, onChange, disabled }: { state: FormState; onChange: (next: FormState) => void; disabled?: boolean }) {
+  const { t } = useTranslation("bench");
   const trials = trialsOf(state);
   // While typing the input keeps its own text, so it can be emptied before the next number goes in.
   const [draft, setDraft] = useState<string | null>(null);
@@ -36,13 +38,13 @@ export function TrialsRow({ state, onChange, disabled }: { state: FormState; onC
   return (
     <div className="te-simple__trials">
       <div className="te-simple__trials-text">
-        <span className="eyebrow">Trials</span>
+        <span className="eyebrow">{t("te.trials.label")}</span>
         <span className="te-simple__hint">
-          Repeat the whole run N times for Pass@k statistics. {trials > 1 ? `Takes about ${trials}× as long.` : "1 = a single run."}
+          {t("te.trials.hint")} {trials > 1 ? t("te.trials.takesLonger", { count: trials }) : t("te.trials.single")}
         </span>
       </div>
-      <div className="te-stepper" role="group" aria-label="Number of trials">
-        <button type="button" onClick={() => !atMin && step(trials - 1)} aria-disabled={atMin} aria-label="Fewer trials">
+      <div className="te-stepper" role="group" aria-label={t("te.trials.groupAria")}>
+        <button type="button" onClick={() => !atMin && step(trials - 1)} aria-disabled={atMin} aria-label={t("te.trials.fewer")}>
           −
         </button>
         <input
@@ -62,9 +64,9 @@ export function TrialsRow({ state, onChange, disabled }: { state: FormState; onC
             commit(Number(draft));
             setDraft(null);
           }}
-          aria-label={`Trials (1 to ${MAX_TRIALS})`}
+          aria-label={t("te.trials.inputAria", { max: MAX_TRIALS })}
         />
-        <button type="button" onClick={() => !atMax && step(trials + 1)} aria-disabled={atMax} aria-label="More trials">
+        <button type="button" onClick={() => !atMax && step(trials + 1)} aria-disabled={atMax} aria-label={t("te.trials.more")}>
           +
         </button>
       </div>

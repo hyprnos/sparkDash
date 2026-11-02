@@ -1,0 +1,23 @@
+{
+  "title": "溫度",
+  "subtitle": "近{{range}}全機群的 GPU 溫度。伺服器保留一週的分鐘級歷史，所以重新整理後圖表仍在。",
+  "rangeGroup": "時間範圍",
+  "range": {
+    "24h": { "label": "近 24 小時", "long": "24 小時" },
+    "7d": { "label": "近 7 天", "long": "7 天" }
+  },
+  "loadFailedTitle": "無法載入 GPU 歷史",
+  "retry": "重試",
+  "loading": "正在載入溫度歷史…",
+  "warmingTitle": "預熱中",
+  "warmingBody": "此範圍內尚未記錄到 GPU 溫度。隨著 Spark 上報遙測，圖表會出現並逐步往前補齊。",
+  "nowTemp": "目前 {{temp}}°C",
+  "offline": "離線",
+  "noSamples": "此範圍內沒有溫度取樣。",
+  "chartAria": "GPU 溫度歷史",
+  "axisHours": "−{{hours}} 小時",
+  "axisDays": "−{{days}} 天",
+  "axisNow": "現在",
+  "gpuTemperature": "GPU 溫度",
+  "gpuIndex": "GPU {{index}}"
+}

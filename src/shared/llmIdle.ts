@@ -1,4 +1,4 @@
-import { formatSince } from "./formatSince";
+import { formatSince, type Translate } from "./formatSince";
 
 interface LlmRates {
   generationTps: number;
@@ -22,9 +22,11 @@ export function isLlmIdle(llm: LlmRates): boolean {
 
 /**
  * "Idle · last served 12m ago", or plain "Idle" when the server has not seen
- * the endpoint serve since it started (lastActiveAt is in-memory only).
+ * the endpoint serve since it started (lastActiveAt is in-memory only). Pass the
+ * page's translator to read the wording from the `bench` catalog.
  */
-export function idleLabel(lastActiveAt: number | null | undefined, now: number = Date.now()): string {
-  const since = formatSince(lastActiveAt, now);
-  return since ? `Idle · last served ${since} ago` : "Idle";
+export function idleLabel(lastActiveAt: number | null | undefined, now: number = Date.now(), t?: Translate): string {
+  const since = formatSince(lastActiveAt, now, t);
+  if (!since) return t ? t("te.idle.label") : "Idle";
+  return t ? t("te.idle.withSince", { since }) : `Idle · last served ${since} ago`;
 }

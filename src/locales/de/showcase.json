@@ -1,0 +1,133 @@
+{
+  "title": "Prompt-Showcase",
+  "brandHome": "sparkDash-Startseite",
+  "loading": "Wird geladen…",
+  "controls": {
+    "show": "Steuerung einblenden",
+    "showTitle": "Steuerung einblenden",
+    "hide": "Ausblenden",
+    "hideTitle": "Steuerung ausblenden"
+  },
+  "actions": {
+    "run": "Starten",
+    "starting": "Wird gestartet…",
+    "stop": "Stoppen",
+    "copyAll": "Alles kopieren",
+    "copied": "Kopiert!",
+    "copyAllTitle": "Alle Terminals als reinen Text kopieren",
+    "history": "Verlauf",
+    "historyTitle": "Frühere Showcase-Läufe"
+  },
+  "confirm": {
+    "stopAll": "Alle Showcase-Streams stoppen?",
+    "clearHistory": "Den gesamten gespeicherten Showcase-Verlauf für diesen Spark löschen?"
+  },
+  "errors": {
+    "notFound": "Spark nicht gefunden",
+    "loadFailed": "Spark konnte nicht geladen werden",
+    "copy": "Kopieren in die Zwischenablage fehlgeschlagen",
+    "promptRange": "Verwenden Sie zwischen {{min}} und {{max}} nicht leere Prompts",
+    "monitoringOff": "LLM-Überwachung ist aus oder dieser Spark ist ein Worker — Showcase nicht verfügbar."
+  },
+  "fields": {
+    "port": "Port",
+    "terminals": "Terminals",
+    "promptType": "Prompt-Typ",
+    "maxTokens": "Max. Tokens",
+    "temp": "Temp.",
+    "tempTitle": "Sampling-Temperatur (0–2)",
+    "thinking": "Denken",
+    "thinkingTitle": "Denk-/Reasoning-Tokens des Modells aktivieren",
+    "showPrompts": "Prompts anzeigen",
+    "model": "Modell"
+  },
+  "promptType": {
+    "text": "Text",
+    "textHint": "Prosa/Erzählung — kein Code, keine strukturierten Formate",
+    "structural": "Strukturiert",
+    "structuralHint": "JSON, HTML, YAML, SQL, Schemata, Tabellen, Logs",
+    "mixed": "Gemischt",
+    "mixedHint": "Halb strukturiert, halb Text — abwechselnd",
+    "tok": "{{tokens}} tok"
+  },
+  "promptLabel": "Prompt {{n}}",
+  "history": {
+    "title": "Frühere Läufe",
+    "refresh": "Aktualisieren",
+    "clear": "Löschen",
+    "empty": "Noch keine gespeicherten Läufe. Abgeschlossene Showcases erscheinen hier automatisch.",
+    "viewTitle": "Diesen Lauf ansehen",
+    "terms": "{{count}} Terminal(s)",
+    "promptType": "{{type}}prompt",
+    "avg": "Ø {{value}} tok/s",
+    "reuse": "Wiederverwenden",
+    "reuseTitle": "Prompts und Einstellungen ins Formular laden (startet nicht neu)"
+  },
+  "metrics": {
+    "aggregate": "Gesamt",
+    "aggregateHero": "Summe der Live-Decode-tok/s aller Terminals",
+    "aggregateTitle": "Aggregierte Tokens pro Sekunde aller Terminals",
+    "avg": "Ø",
+    "avgTitle": "Durchschnittliche Decode-tok/s pro Terminal in dieser Sitzung",
+    "perStream": "pro Stream",
+    "tokens": "Tokens",
+    "server": "Server",
+    "streams": "Streams",
+    "peak": "Spitze {{value}}"
+  },
+  "plain": {
+    "status": "Status: {{status}}",
+    "tps": "tok/s: {{value}}",
+    "thinking": "### Denken",
+    "answer": "### Antwort",
+    "error": "[Fehler] {{message}}",
+    "head": "{{name}} | Prompt-Showcase",
+    "port": "Port {{port}}",
+    "avgPerStream": "Ø {{value}} tok/s/Stream",
+    "server": "Server {{value}} tok/s"
+  },
+  "status": {
+    "pending": "ausstehend",
+    "running": "läuft",
+    "completed": "abgeschlossen",
+    "failed": "fehlgeschlagen",
+    "cancelled": "abgebrochen",
+    "error": "Fehler"
+  },
+  "footer": {
+    "historyRun": "Verlauf · {{status}}",
+    "sessionRun": "Sitzung {{status}}",
+    "readOnly": " · schreibgeschützt"
+  },
+  "terminal": {
+    "title": "Terminal",
+    "tokensOne": "{{count}} Token",
+    "tokensMany": "{{count}} Tokens",
+    "tpsTitle": "Live {{live}} tok/s · Spitze {{peak}} tok/s",
+    "peak": "Spitze {{value}}",
+    "copyTitle": "Dieses Terminal kopieren",
+    "copied": "Kopiert",
+    "copy": "Kopieren",
+    "waiting": "Warten…",
+    "reasoning": "Reasoning",
+    "chars": "{{count}} Zeichen"
+  },
+  "view": {
+    "workspace": "Arbeitsbereich",
+    "heading": "Showcase",
+    "subtitle": "Prompts gleichzeitig auf mehreren Terminals ausführen und dem Modell beim Streamen zusehen.",
+    "openWindow": "In neuem Fenster öffnen ↗",
+    "openWindowTitle": "Den Showcase in einem eigenen Vollbildfenster öffnen",
+    "runOn": "Ausführen auf",
+    "noSparks": "Keine Sparks verfügbar",
+    "sparkPickerAria": "Spark für den Benchmark",
+    "offlineTitle": "{{name}} ist offline",
+    "offlineBody": "Bringen Sie es wieder online oder führen Sie den Showcase auf einem anderen Spark aus.",
+    "workerTitle": "{{name}} ist ein Worker",
+    "workerBody": "Worker teilen ein Modell, das der Head-Spark bereitstellt, daher gibt es hier nichts zu streamen. Führen Sie den Showcase stattdessen auf dem Head aus.",
+    "offTitle": "Showcase ist für diesen Spark aus",
+    "offBody": "Die LLM-Überwachung ist für {{name}} ausgeschaltet, es gibt also kein Modell zum Ansprechen.",
+    "runOnName": "Auf {{name}} ausführen",
+    "noReachable": "Derzeit ist kein Spark mit erreichbarem Modell online."
+  }
+}

@@ -1,0 +1,177 @@
+{
+  "title": "활동",
+  "subtitle": "플리트 전반의 모든 일: 재시작, 스로틀링, 업데이트, 벤치마크, 전원 및 LLM 실행. 서버는 최근 2,000개 이벤트를 보관합니다.",
+  "refresh": "새로 고침",
+  "live": {
+    "connecting": "연결 중",
+    "justNow": "방금",
+    "secondsAgo": "{{count}}초 전",
+    "minutesAgo": "{{count}}분 전",
+    "failed": "업데이트 실패, 재시도 중",
+    "paused": "일시 중지됨(탭 숨김)",
+    "live": "실시간 · {{when}}"
+  },
+  "copy": {
+    "asText": "텍스트로 복사",
+    "doneOne": "이벤트 {{count}}개를 복사했습니다",
+    "doneMany": "이벤트 {{count}}개를 복사했습니다",
+    "failed": "복사할 수 없습니다(클립보드 차단)"
+  },
+  "clear": {
+    "menu": "기록 지우기…",
+    "note": "이 작업은 되돌릴 수 없습니다.",
+    "older7d": "7일보다 오래된 항목",
+    "ask7d": "7일보다 오래된 이벤트를 삭제할까요?",
+    "older24h": "24시간보다 오래된 항목",
+    "ask24h": "24시간보다 오래된 이벤트를 삭제할까요?",
+    "everything": "전체",
+    "askAll": "활동 기록 전체를 삭제할까요?"
+  },
+  "common": {
+    "retry": "재시도",
+    "loading": "불러오는 중…"
+  },
+  "tiles": {
+    "summaryAria": "요약, 클릭하여 필터",
+    "events24h": "이벤트(24시간)",
+    "errors24h": "오류(24시간)",
+    "warnings24h": "경고(24시간)",
+    "problemSparks": "문제가 있는 Spark",
+    "mostActive": "가장 활동적인 Spark",
+    "none": "없음",
+    "noEvents": "아직 이벤트 없음",
+    "in7d": "7일 동안 {{count}}건",
+    "eventsOne": "이벤트 {{count}}개",
+    "eventsMany": "이벤트 {{count}}개"
+  },
+  "chart": {
+    "title": "일별 이벤트",
+    "unit": "이벤트",
+    "empty": "최근 14일간 이벤트가 없습니다.",
+    "ariaLabel": "최근 14일 일별 이벤트, 총 {{count}}건"
+  },
+  "filters": {
+    "aria": "필터",
+    "severity": "심각도",
+    "severityTitle": "{{severity}} 이벤트",
+    "timeRange": "기간",
+    "all": "전체",
+    "searchPlaceholder": "메시지, Spark 또는 유형 검색",
+    "searchAria": "이벤트 검색",
+    "category": "카테고리",
+    "allCategories": "모든 카테고리",
+    "spark": "Spark",
+    "allSparks": "모든 Spark",
+    "fleetWide": "플리트 전체({{count}})",
+    "reset": "필터 초기화"
+  },
+  "range": {
+    "24h": "24시간",
+    "7d": "7일",
+    "all": "전체"
+  },
+  "count": {
+    "showing": "불러온 이벤트 {{total}}건 중 {{visible}}건 표시",
+    "showingFiltered": "불러온 이벤트 {{total}}건 중 {{visible}}건 표시(필터 적용)"
+  },
+  "newBar": {
+    "one": "새 이벤트 {{count}}건, 맨 위로 이동",
+    "many": "새 이벤트 {{count}}건, 맨 위로 이동"
+  },
+  "more": {
+    "reachedOldest": "서버가 보관한 가장 오래된 이벤트에 도달했습니다.",
+    "loadOlder": "더 오래된 항목 불러오기",
+    "filtersHint": "필터는 지금까지 불러온 이벤트에만 적용됩니다.",
+    "loadFailed": "더 오래된 이벤트를 불러올 수 없습니다: {{message}}"
+  },
+  "timeline": {
+    "loadingAria": "활동 불러오는 중",
+    "loadFailedTitle": "활동을 불러올 수 없습니다",
+    "emptyTitle": "아직 기록이 없습니다",
+    "emptyBody": "서버는 플리트 이벤트를 발생하는 즉시 기록합니다: Spark 온라인/오프라인, GPU 열 스로틀링, Hermes 업데이트, 벤치마크 실행, 종료와 깨우기, LLM 시작과 중지, Spark 추가와 제거 등.",
+    "filteredTitle": "필터와 일치하는 이벤트가 없습니다",
+    "filteredBody": "더 넓은 기간을 선택하거나 필터를 해제하세요."
+  },
+  "day": {
+    "today": "오늘",
+    "yesterday": "어제"
+  },
+  "ago": {
+    "justNow": "방금",
+    "minutes": "{{count}}분 전",
+    "hours": "{{count}}시간 전",
+    "days": "{{count}}일 전"
+  },
+  "row": {
+    "openSpark": "{{name}} 열기",
+    "hideDetails": "세부 정보 숨기기: {{label}}",
+    "showDetails": "세부 정보 표시: {{label}}",
+    "message": "메시지",
+    "time": "시간",
+    "severity": "심각도",
+    "type": "유형",
+    "eventId": "이벤트 ID",
+    "spark": "Spark",
+    "category": "카테고리",
+    "data": "데이터",
+    "copied": "복사됨",
+    "copy": "복사"
+  },
+  "severity": {
+    "error": "오류",
+    "warn": "경고",
+    "success": "성공",
+    "info": "정보",
+    "errors": "오류",
+    "warnings": "경고",
+    "successMany": "성공",
+    "infoMany": "정보"
+  },
+  "categories": {
+    "status": "상태(온라인/오프라인)",
+    "thermal": "열",
+    "health": "상태 점검",
+    "alerts": "알림 알림",
+    "hermes": "Hermes",
+    "bench": "벤치마크",
+    "power": "전원",
+    "llm": "LLM 모델",
+    "fleet": "플리트 변경",
+    "other": "기타"
+  },
+  "type": {
+    "sparkOnline": "온라인",
+    "sparkOffline": "오프라인",
+    "sparkAdded": "Spark 추가됨",
+    "sparkRemoved": "Spark 제거됨",
+    "thermalThrottle": "열 스로틀링",
+    "throttleCleared": "스로틀 해제",
+    "hermesUpdateAvailable": "Hermes 업데이트 있음",
+    "hermesUpdated": "Hermes 업데이트됨",
+    "hermesUpdateFailed": "Hermes 업데이트 실패",
+    "xidError": "Xid 오류",
+    "outOfMemoryKill": "메모리 부족으로 종료",
+    "runningHot": "과열",
+    "lowPowerState": "저전력 상태",
+    "lowMemory": "메모리 부족",
+    "manyModelsLoaded": "모델 다수 로드됨",
+    "slowLink": "링크 느림",
+    "roceLinkDown": "RoCE 링크 다운",
+    "rocePacketLoss": "RoCE 패킷 손실",
+    "healthOk": "상태 정상",
+    "notificationSent": "알림 전송됨",
+    "notificationFailed": "알림 실패",
+    "shutdown": "종료",
+    "wake": "깨우기",
+    "decodeBench": "디코드 벤치",
+    "prefillBench": "프리필 벤치",
+    "qualityBench": "품질 벤치",
+    "stageFinished": "{{name}}",
+    "stageFailed": "{{name}} 실패",
+    "stageCancelled": "{{name}} 취소됨",
+    "llmStart": "LLM 시작",
+    "llmStop": "LLM 중지",
+    "llmAttach": "LLM 연결",
+    "llmNamed": "{{action}} {{target}}"
+  }
+}

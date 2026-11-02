@@ -85,5 +85,7 @@
     "resultFailed": "{{count}} fehlgeschlagen",
     "resultSkipped": "{{count}} übersprungen",
     "batchFailed": "Sammel-Herunterfahren fehlgeschlagen"
-  }
+  },
+  "actions": {"cancel": "Abbrechen", "save": "Speichern", "close": "Schließen", "dismiss": "Verwerfen", "delete": "Löschen", "remove": "Entfernen", "back": "Zurück", "next": "Weiter", "retry": "Erneut versuchen", "edit": "Bearbeiten", "add": "Hinzufügen", "test": "Testen", "enable": "Aktivieren", "disable": "Deaktivieren", "apply": "Anwenden", "copy": "Kopieren", "copied": "Kopiert"},
+  "state": {"loading": "Wird geladen…", "saving": "Wird gespeichert…", "testing": "Wird getestet…", "checking": "Wird geprüft…", "working": "Wird ausgeführt…", "sending": "Wird gesendet…", "applying": "Wird angewendet…", "restarting": "Wird neu gestartet…", "removing": "Wird entfernt…"}
 }

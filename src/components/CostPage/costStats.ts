@@ -7,7 +7,7 @@
  * price. All prices are USD per token.
  */
 import type { ModelPrice } from "../../api/costTypes";
-import type { Entry } from "../TokensPage/tokenStats";
+import type { Entry, Translate } from "../TokensPage/tokenStats";
 
 /** Counters are never negative or non-finite; anything else is treated as zero. */
 function nn(v: unknown): number {
@@ -86,10 +86,13 @@ export function fmtMoney(v: number): string {
   return `$${n.toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
 }
 
-/** Human price line for pickers: "$3.00 / 1M in · $15.00 / 1M out". */
-export function priceLabel(p: Pick<ModelPrice, "inputCostPerToken" | "outputCostPerToken">): string {
+/** Human price line for pickers: "$3.00 / 1M in · $15.00 / 1M out" (wording from the `cost` catalog). */
+export function priceLabel(
+  p: Pick<ModelPrice, "inputCostPerToken" | "outputCostPerToken">,
+  t: Translate
+): string {
   const perM = (v: number) => `$${(v * 1_000_000).toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
-  return `${perM(p.inputCostPerToken)} / 1M in · ${perM(p.outputCostPerToken)} / 1M out`;
+  return t("priceLine", { input: perM(p.inputCostPerToken), output: perM(p.outputCostPerToken) });
 }
 
 // ─── Model picker ────────────────────────────────────────

@@ -1,0 +1,23 @@
+{
+  "title": "温度",
+  "subtitle": "近{{range}}全舰队的 GPU 温度。服务器保留一周的分钟级历史，所以刷新页面后图表仍在。",
+  "rangeGroup": "时间范围",
+  "range": {
+    "24h": { "label": "近 24 小时", "long": "24 小时" },
+    "7d": { "label": "近 7 天", "long": "7 天" }
+  },
+  "loadFailedTitle": "无法加载 GPU 历史",
+  "retry": "重试",
+  "loading": "正在加载温度历史…",
+  "warmingTitle": "预热中",
+  "warmingBody": "此范围内还没有记录到 GPU 温度。随着 Spark 上报遥测，图表会出现并逐步向前补齐。",
+  "nowTemp": "当前 {{temp}}°C",
+  "offline": "离线",
+  "noSamples": "此范围内没有温度采样。",
+  "chartAria": "GPU 温度历史",
+  "axisHours": "−{{hours}} 小时",
+  "axisDays": "−{{days}} 天",
+  "axisNow": "现在",
+  "gpuTemperature": "GPU 温度",
+  "gpuIndex": "GPU {{index}}"
+}

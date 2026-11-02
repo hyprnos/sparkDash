@@ -1,0 +1,133 @@
+{
+  "title": "Escaparate de prompts",
+  "brandHome": "Inicio de sparkDash",
+  "loading": "Cargando…",
+  "controls": {
+    "show": "Mostrar controles",
+    "showTitle": "Mostrar controles",
+    "hide": "Ocultar",
+    "hideTitle": "Ocultar controles"
+  },
+  "actions": {
+    "run": "Ejecutar",
+    "starting": "Iniciando…",
+    "stop": "Detener",
+    "copyAll": "Copiar todo",
+    "copied": "¡Copiado!",
+    "copyAllTitle": "Copiar todos los terminales como texto plano",
+    "history": "Historial",
+    "historyTitle": "Ejecuciones anteriores del escaparate"
+  },
+  "confirm": {
+    "stopAll": "¿Detener todos los flujos del escaparate?",
+    "clearHistory": "¿Borrar todo el historial de escaparates guardado para este Spark?"
+  },
+  "errors": {
+    "notFound": "Spark no encontrado",
+    "loadFailed": "No se pudo cargar el Spark",
+    "copy": "No se pudo copiar al portapapeles",
+    "promptRange": "Usa entre {{min}} y {{max}} prompts no vacíos",
+    "monitoringOff": "La monitorización de LLM está desactivada o este Spark es un nodo trabajador: el escaparate no está disponible."
+  },
+  "fields": {
+    "port": "Puerto",
+    "terminals": "Terminales",
+    "promptType": "Tipo de prompt",
+    "maxTokens": "Tokens máximos",
+    "temp": "Temp.",
+    "tempTitle": "Temperatura de muestreo (0–2)",
+    "thinking": "Razonamiento",
+    "thinkingTitle": "Activar tokens de pensamiento/razonamiento del modelo",
+    "showPrompts": "Mostrar prompts",
+    "model": "Modelo"
+  },
+  "promptType": {
+    "text": "Texto",
+    "textHint": "Prosa o narrativa, sin código ni formatos estructurados",
+    "structural": "Estructurado",
+    "structuralHint": "JSON, HTML, YAML, SQL, esquemas, tablas, registros",
+    "mixed": "Mixto",
+    "mixedHint": "Mitad estructurado, mitad texto, intercalado",
+    "tok": "{{tokens}} tok"
+  },
+  "promptLabel": "Prompt {{n}}",
+  "history": {
+    "title": "Ejecuciones anteriores",
+    "refresh": "Actualizar",
+    "clear": "Borrar",
+    "empty": "Aún no hay ejecuciones guardadas. Los escaparates terminados aparecen aquí automáticamente.",
+    "viewTitle": "Ver esta ejecución",
+    "terms": "{{count}} terminal",
+    "promptType": "prompt {{type}}",
+    "avg": "media {{value}} tok/s",
+    "reuse": "Reutilizar",
+    "reuseTitle": "Cargar prompts y ajustes en el formulario (no vuelve a ejecutar)"
+  },
+  "metrics": {
+    "aggregate": "Agregado",
+    "aggregateHero": "Suma de tok/s de decodificación en directo de todos los terminales",
+    "aggregateTitle": "Tokens por segundo agregados de todos los terminales",
+    "avg": "Media",
+    "avgTitle": "Tok/s de decodificación medios por terminal en esta sesión",
+    "perStream": "por flujo",
+    "tokens": "Tokens",
+    "server": "Servidor",
+    "streams": "Flujos",
+    "peak": "máx. {{value}}"
+  },
+  "plain": {
+    "status": "estado: {{status}}",
+    "tps": "tok/s: {{value}}",
+    "thinking": "### Razonamiento",
+    "answer": "### Respuesta",
+    "error": "[error] {{message}}",
+    "head": "{{name}} | escaparate de prompts",
+    "port": "puerto {{port}}",
+    "avgPerStream": "media {{value}} tok/s/flujo",
+    "server": "servidor {{value}} tok/s"
+  },
+  "status": {
+    "pending": "pendiente",
+    "running": "en ejecución",
+    "completed": "completado",
+    "failed": "fallido",
+    "cancelled": "cancelado",
+    "error": "error"
+  },
+  "footer": {
+    "historyRun": "Historial · {{status}}",
+    "sessionRun": "Sesión {{status}}",
+    "readOnly": " · solo lectura"
+  },
+  "terminal": {
+    "title": "Terminal",
+    "tokensOne": "{{count}} token",
+    "tokensMany": "{{count}} tokens",
+    "tpsTitle": "En directo {{live}} tok/s · máx. {{peak}} tok/s",
+    "peak": "máx. {{value}}",
+    "copyTitle": "Copiar este terminal",
+    "copied": "Copiado",
+    "copy": "Copiar",
+    "waiting": "Esperando…",
+    "reasoning": "Razonamiento",
+    "chars": "{{count}} caracteres"
+  },
+  "view": {
+    "workspace": "Espacio de trabajo",
+    "heading": "Escaparate",
+    "subtitle": "Ejecuta prompts en varios terminales a la vez y observa cómo transmite tu modelo.",
+    "openWindow": "Abrir en una ventana nueva ↗",
+    "openWindowTitle": "Abrir el escaparate en su propia ventana a pantalla completa",
+    "runOn": "Ejecutar en",
+    "noSparks": "No hay Sparks disponibles",
+    "sparkPickerAria": "Spark para la prueba",
+    "offlineTitle": "{{name}} está desconectado",
+    "offlineBody": "Vuelve a conectarlo o ejecuta el escaparate en otro Spark.",
+    "workerTitle": "{{name}} es un nodo trabajador",
+    "workerBody": "Los trabajadores comparten un modelo que sirve el Spark principal, así que no hay nada que transmitir desde este. Ejecuta el escaparate en el principal.",
+    "offTitle": "El escaparate está desactivado para este Spark",
+    "offBody": "La monitorización de LLM está desactivada para {{name}}, así que no hay ningún modelo con el que hablar.",
+    "runOnName": "Ejecutar en {{name}}",
+    "noReachable": "Ahora mismo no hay ningún Spark en línea con un modelo accesible."
+  }
+}

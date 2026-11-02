@@ -1,0 +1,804 @@
+{
+  "shell": {
+    "eyebrow": "Benchmark",
+    "eyebrowFamily": "Benchmark · {{family}}",
+    "titleFallback": "Benchmark",
+    "unknown": "Benchmark sconosciuto."
+  },
+  "types": {
+    "decode": {
+      "label": "Decodifica",
+      "blurb": "Velocità di generazione (token/s) all'aumentare della concorrenza."
+    },
+    "prefill": {
+      "label": "Prefill",
+      "blurb": "Velocità di elaborazione del prompt e tempo al primo token nelle varie dimensioni di contesto."
+    },
+    "quality": {
+      "label": "Qualità",
+      "blurb": "Una suite di qualità fissa e con seed per confrontare modelli, quantizzazioni e formati di cache KV."
+    },
+    "toolEval": {
+      "label": "Valutazione strumenti",
+      "blurb": "Qualità delle chiamate agli strumenti in 69 scenari deterministici (selezione, parametri, più passaggi, sicurezza)."
+    }
+  },
+  "runOn": {
+    "label": "Esegui su",
+    "none": "Nessuno Spark disponibile",
+    "chipsAria": "Spark da valutare",
+    "workerHint": "{{name}} è un worker: nessun LLM locale, solo risultati salvati",
+    "offlineHint": "{{name}} è offline",
+    "workerTag": "worker"
+  },
+  "layout": {
+    "configAria": "Configurazione dell'esecuzione",
+    "configuration": "Configurazione"
+  },
+  "history": {
+    "date": "Data",
+    "model": "Modello",
+    "result": "Risultato",
+    "actions": "Azioni",
+    "open": "Apri",
+    "view": "Vedi",
+    "compare": "Confronta",
+    "comparing": "Confronto"
+  },
+  "historyRows": {
+    "tps": "{{value}} tok/s",
+    "peakAt": "picco a ×{{concurrency}}",
+    "perStreamAt1": "{{value}}/flusso a ×1",
+    "startCtx": "contesto iniziale {{size}}",
+    "bestAt": "migliore a {{size}}",
+    "percent": "{{value}}%",
+    "categoryOne": "{{count}} categoria",
+    "categoryMany": "{{count}} categorie"
+  },
+  "live": {
+    "aria": "Velocità di generazione live",
+    "label": "Generazione live",
+    "peak": "picco {{value}} tok/s"
+  },
+  "target": {
+    "aria": "Obiettivo del benchmark",
+    "emptyTitle": "Nessuno Spark da valutare",
+    "emptyBody": "Aggiungi prima uno Spark dalla barra della flotta. I benchmark vengono eseguiti sul server LLM di uno Spark o su un endpoint remoto che inserisci.",
+    "enterHost": "Inserisci l'host dell'endpoint LLM da valutare.",
+    "remote": "Remoto",
+    "remoteTitle": "Valuta un altro endpoint LLM invece di quello di uno Spark",
+    "llmPort": "Porta LLM",
+    "portTag": "Porta {{port}}",
+    "modelTitle": "Modello attualmente servito su questa porta",
+    "ctxTag": "ctx {{value}}",
+    "host": "Host",
+    "hostPlaceholder": "https://name.tailxxxxx.ts.net/v1/models",
+    "hostAria": "Host remoto",
+    "port": "Porta",
+    "portAria": "Porta remota",
+    "https": "HTTPS",
+    "remoteHint": "Endpoint su richiesta: nulla viene sondato finché non esegui. Le unità remote usano HTTP in LAN o un tunnel SSH verso il loopback se il server ascolta solo su 127.0.0.1.",
+    "offlineTitle": "{{name}} è offline.",
+    "offlineBody": " Riportalo online per valutarne l'LLM, oppure passa l'obiettivo a Remoto e punta a un altro endpoint. Le esecuzioni salvate restano leggibili.",
+    "workerTitle": "{{name}} è un worker",
+    "workerBody": " e non serve alcun LLM proprio, quindi qui non può girare nulla. Le esecuzioni salvate restano leggibili.",
+    "noLlmTitle": "Nessun LLM raggiungibile sulla porta {{port}}.",
+    "noLlmBody": "{{error}}Avvia un modello su questo Spark (pannello Modelli della sua pagina), controlla la porta LLM nelle sue impostazioni o passa l'obiettivo a Remoto. Le esecuzioni salvate restano leggibili."
+  },
+  "te": {
+    "units": {
+      "seconds": "{{value}} s",
+      "minutes": "{{minutes}} min {{seconds}} s",
+      "hours": "{{hours}} h {{minutes}} min"
+    },
+    "tier": {
+      "excellent": "Eccellente",
+      "good": "Buono",
+      "adequate": "Adeguato",
+      "weak": "Debole",
+      "poor": "Scarso"
+    },
+    "error": {
+      "tail": " ({{message}})",
+      "noServer": "Nessun server di modelli trovato. Avvia il modello su questo Spark (o imposta un base URL) e riprova.",
+      "connectionFailed": "Lo strumento non è riuscito a raggiungere il server dei modelli. Controlla l'URL, la porta e che il server sia attivo.",
+      "noModels": "Il server ha risposto ma non elenca modelli. Carica prima un modello oppure indica il nome del modello.",
+      "authFailed": "Il server ha rifiutato la chiave API. Inserisci quella giusta o salva una chiave per questa porta.",
+      "modelNotFound": "Il server non serve quel nome di modello. Lascia vuoto il modello per rilevarlo automaticamente.",
+      "generic": "Lo strumento ha segnalato un errore.",
+      "genericWithCode": "Lo strumento ha segnalato un errore ({{code}})."
+    },
+    "notes": {
+      "toolChoiceOne": "Questo server di modelli non supporta le chiamate forzate agli strumenti (tool_choice \"required\"), quindi lo scenario che le richiede è stato escluso dal punteggio ({{scenarios}}). L'esecuzione è valida; il punteggio copre gli altri scenari e non è quindi confrontabile direttamente con un server che le supporta.",
+      "toolChoiceMany": "Questo server di modelli non supporta le chiamate forzate agli strumenti (tool_choice \"required\"), quindi gli scenari che le richiedono sono stati esclusi dal punteggio ({{scenarios}}). L'esecuzione è valida; il punteggio copre gli altri scenari e non è quindi confrontabile direttamente con un server che le supporta.",
+      "excludedOne": "{{scenarios}} è stato escluso dal punteggio dallo strumento (motivo nell'output grezzo).",
+      "excludedMany": "{{scenarios}} sono stati esclusi dal punteggio dallo strumento (motivo nell'output grezzo)."
+    },
+    "status": {
+      "running": "In esecuzione",
+      "runningUnwatched": "In esecuzione (non osservata)",
+      "completed": "Completata",
+      "failed": "Non riuscita",
+      "stopped": "Interrotta",
+      "gone": "Sparita"
+    },
+    "validate": {
+      "number": "{{label}} deve essere un numero",
+      "wholeNumber": "{{label}} deve essere un numero intero",
+      "atLeast": "{{label}} deve essere almeno {{min}}",
+      "atMost": "{{label}} deve essere al massimo {{max}}",
+      "oneOf": "{{label}} deve essere uno di {{choices}}",
+      "tooLong": "{{label}} è troppo lungo",
+      "invalidFormat": "{{label}} ha un formato non valido",
+      "longerThan": "{{label}} supera {{kib}} KiB",
+      "absolutePath": "{{label}} deve essere un percorso assoluto (o iniziare con ~/)",
+      "noDotDot": "{{label}} non può contenere ..",
+      "httpPrefix": "{{label}} deve iniziare con http:// o https://",
+      "noCredentials": "{{label}} non può contenere credenziali (usa il campo chiave API)",
+      "invalidUrl": "{{label}} non è un URL valido",
+      "notJsonObject": "deve essere un oggetto JSON",
+      "invalidJson": "non è JSON valido",
+      "jsonPrefix": "{{label}}: {{reason}}",
+      "tooManyItems": "{{label}} ha troppi elementi",
+      "invalidItem": "{{label}} contiene un elemento non valido \"{{item}}\"",
+      "invalidEntry": "{{label}} contiene una voce non valida \"{{item}}\""
+    },
+    "form": {
+      "systemPromptBoth": "Usa il testo del system prompt o il file, non entrambi",
+      "contextPressureBoth": "Usa una sola pressione di contesto o una scansione, non entrambe",
+      "shortAndScenarios": "Un'esecuzione breve e un elenco specifico di scenari non possono essere combinati",
+      "noSuite": "Seleziona almeno una suite da eseguire",
+      "noPressure": "Imposta un rapporto di pressione o un intervallo di scansione, altrimenti è una normale esecuzione di chiamate a strumenti",
+      "presets": "Preset",
+      "presetsAria": "Preset",
+      "optionOne": "{{count}} opzione impostata",
+      "optionMany": "{{count}} opzioni impostate",
+      "reset": "Reimposta",
+      "suitesLegend": "Suite da eseguire",
+      "suiteHint": "Ogni suite selezionata viene inviata con il proprio flag --…-only; selezionarne più di una le esegue in sequenza.",
+      "suiteNotSelected": "suite non selezionata",
+      "nSet": "{{count}} impostata(e)",
+      "llmPortOn": "Porta LLM su {{name}}",
+      "portHint": "Usata quando il base URL è vuoto; decide anche quale chiave API salvata viene usata.",
+      "liveModelPrefix": "Modello attualmente servito su questo Spark:",
+      "liveModelSuffix": "(lascia vuoto il campo modello per usarlo).",
+      "apiKey": "Chiave API",
+      "apiKeySaved": "Uso della chiave salvata per questa porta",
+      "apiKeyEmpty": "Lascia vuoto per usare la chiave salvata",
+      "apiKeyHintBase": "Vuoto usa la chiave salvata per la porta di questo Spark (se presente)",
+      "apiKeyHintSaved": ", e una è salvata per questa porta",
+      "apiKeyHintTail": ". Una chiave digitata viene inviata solo insieme a un base URL, poi passa allo Spark tramite l'ambiente solo per questa esecuzione e non viene mai salvata in questo browser.",
+      "advancedTitle": "Avanzate / tutte le opzioni",
+      "moreOptionsOne": "{{count}} altra opzione",
+      "moreOptionsMany": "{{count}} altre opzioni",
+      "advancedHelp": "Tutte le altre opzioni di tool-eval-bench, così nulla resta fuori portata. Le opzioni impostate da questa pagina sono escluse.",
+      "extraLabel": "Argomenti aggiuntivi",
+      "extraHint": "Flag liberi passati come argomenti separati (senza shell). Utile per opzioni più recenti di questo modulo. I flag controllati da sparkDash (--json, --probe, …) vengono rifiutati."
+    },
+    "suites": {
+      "gsm8k": "Matematica elementare",
+      "mmlu": "Conoscenza multidisciplinare",
+      "ifeval": "Rispetto delle istruzioni"
+    },
+    "parts": {
+      "copy": "Copia",
+      "copied": "Copiato",
+      "copyFailed": "Copia non riuscita",
+      "rawJson": "JSON grezzo",
+      "show": "mostra",
+      "copyJson": "Copia JSON",
+      "rawOutput": "Output grezzo dello strumento",
+      "hiddenLines": "… {{count}} righe precedenti nascoste (la copia include tutto)",
+      "waiting": "In attesa di output…",
+      "noOutput": "Nessun output."
+    },
+    "trials": {
+      "label": "Ripetizioni",
+      "hint": "Ripete l'intera esecuzione N volte per le statistiche Pass@k.",
+      "single": "1 = esecuzione singola.",
+      "takesLonger": "Richiede circa {{count}}× più tempo.",
+      "groupAria": "Numero di ripetizioni",
+      "fewer": "Meno ripetizioni",
+      "inputAria": "Ripetizioni (da 1 a {{max}})",
+      "more": "Più ripetizioni"
+    },
+    "xspark": {
+      "note": "Confronta un'esecuzione su questo Spark con un'esecuzione completata di un altro Spark. Seleziona un'esecuzione sotto, poi scegli lo Spark e l'esecuzione con cui confrontarla.",
+      "sparkAria": "Spark con cui confrontare",
+      "loadFailed": "Impossibile caricare le esecuzioni di quello Spark: {{message}}",
+      "empty": "Nessuna esecuzione completata di questo benchmark su quello Spark.",
+      "runAria": "Esecuzione dell'altro Spark",
+      "autoModel": "modello automatico",
+      "clear": "Annulla selezione"
+    },
+    "simple": {
+      "testing": "Test di",
+      "whatToTest": "Cosa testare",
+      "modelOn": "Modello su {{name}}",
+      "customUrl": "URL personalizzato",
+      "baseUrl": "Base URL",
+      "baseUrlPlaceholder": "https://host/v1  oppure  http://192.168.1.50:8000",
+      "baseUrlAria": "Base URL personalizzato",
+      "model": "Modello",
+      "autoDetect": "rilevamento automatico",
+      "modelAria": "Nome del modello",
+      "apiKey": "Chiave API",
+      "apiKeyPlaceholder": "se necessaria",
+      "apiKeyAria": "Chiave API",
+      "urlHint": "L'esecuzione avviene su {{name}}, che deve quindi poter raggiungere questo URL. La chiave viene inviata a {{name}} solo per questa esecuzione e non viene salvata qui.",
+      "urlRequired": "Inserisci l'URL del server compatibile OpenAI da testare.",
+      "localModel": "Il modello su questo DGX Spark",
+      "port": "Porta",
+      "portAria": "Porta LLM da testare",
+      "noModel": "Al momento nessun modello risponde su questa porta. Avviane uno dal pannello Modelli dello Spark o passa a un URL personalizzato.",
+      "templatesAria": "Esecuzioni pronte",
+      "customApplied": "Sono applicate impostazioni personalizzate.",
+      "reviewAdvanced": "Rivedile in Avanzate",
+      "orPick": "oppure scegli un modello sopra per ricominciare.",
+      "moreControl": "Serve più controllo (campionamento, categorie, un system prompt, altri endpoint, tutte le opzioni)?",
+      "openAdvanced": "Apri Avanzate"
+    },
+    "presets": {
+      "tool-eval": {
+        "quick": {
+          "label": "Verifica rapida",
+          "help": "Solo i 15 scenari principali (circa 2 minuti)."
+        },
+        "full": {
+          "label": "Completa",
+          "help": "Tutti gli scenari standard con i valori predefiniti dello strumento."
+        },
+        "hard": {
+          "label": "Solo modalità difficile",
+          "help": "Solo gli scenari in modalità difficile (categoria P)."
+        },
+        "repro": {
+          "label": "Riproducibile",
+          "help": "Temperatura 0 e seed fisso per rendere confrontabili le ripetizioni."
+        },
+        "thinking": {
+          "label": "Modello di ragionamento",
+          "help": "Disattiva l'output di ragionamento e consente 120 s per richiesta (stile Qwen3 / DeepSeek)."
+        }
+      },
+      "throughput": {
+        "quick": {
+          "label": "Rapida",
+          "help": "Prompt brevi, una profondità, una esecuzione per punto."
+        },
+        "standard": {
+          "label": "Standard",
+          "help": "I valori predefiniti dello strumento."
+        },
+        "deep": {
+          "label": "Contesto profondo",
+          "help": "Fino a 32k di contesto e 8 richieste concorrenti."
+        }
+      },
+      "spec-decode": {
+        "quick": {
+          "label": "Rapida",
+          "help": "Un tipo di prompt, una esecuzione per cella."
+        },
+        "standard": {
+          "label": "Standard",
+          "help": "I valori predefiniti dello strumento."
+        },
+        "code": {
+          "label": "Codice e strutturato",
+          "help": "I tipi di prompt in cui la speculazione aiuta di più."
+        }
+      },
+      "context-pressure": {
+        "single": {
+          "label": "Livello singolo (75%)",
+          "help": "Scenari principali con il contesto pieno al 75%."
+        },
+        "sweep": {
+          "label": "Scansione 50–100%",
+          "help": "Scenari principali su cinque livelli di pressione."
+        },
+        "fine": {
+          "label": "Scansione fine",
+          "help": "Dieci livelli dal 10% al 100% (lunga)."
+        }
+      },
+      "accuracy": {
+        "quick": {
+          "label": "Rapida",
+          "help": "Un piccolo campione di ogni suite."
+        },
+        "standard": {
+          "label": "Standard",
+          "help": "I limiti di domande predefiniti dello strumento."
+        },
+        "full": {
+          "label": "Dataset completi",
+          "help": "Tutte le domande (lento)."
+        },
+        "repro": {
+          "label": "Riproducibile",
+          "help": "Seed fisso e GSM8K mescolato."
+        }
+      },
+      "needle": {
+        "quick": {
+          "label": "Rapida",
+          "help": "Tre profondità e due lunghezze."
+        },
+        "standard": {
+          "label": "Standard",
+          "help": "I valori predefiniti (5 profondità, 4 lunghezze)."
+        },
+        "thorough": {
+          "label": "Approfondita",
+          "help": "Dieci profondità e otto lunghezze (lunga)."
+        }
+      },
+      "decision": {
+        "standard": {
+          "label": "Predefinita",
+          "help": "I valori predefiniti dello strumento."
+        }
+      }
+    },
+    "templates": {
+      "regular": {
+        "label": "Esecuzione normale",
+        "help": "La suite standard completa: selezione degli strumenti, parametri, catene multi-passo, recupero errori, sicurezza e altro.",
+        "size": "69 scenari",
+        "time": "circa 10–20 min"
+      },
+      "regular-hard": {
+        "label": "Normale + modalità difficile",
+        "help": "La suite completa più gli scenari in modalità difficile.",
+        "size": "92 scenari",
+        "time": "circa 15–30 min"
+      },
+      "short": {
+        "label": "Esecuzione breve",
+        "help": "Solo i 15 scenari principali. Una verifica rapida dopo aver cambiato modello o impostazione.",
+        "size": "15 scenari",
+        "time": "circa 2 min"
+      },
+      "hard": {
+        "label": "Solo modalità difficile",
+        "help": "Solo gli scenari avversariali della modalità difficile: con stato, transazionali e complessi. Per modelli che superano l'esecuzione normale.",
+        "size": "23 scenari",
+        "time": "circa 5–10 min"
+      }
+    },
+    "categories": {
+      "A": "Selezione degli strumenti",
+      "B": "Precisione dei parametri",
+      "C": "Catene multi-passo",
+      "D": "Ritenuta e rifiuto",
+      "E": "Recupero dagli errori",
+      "F": "Localizzazione",
+      "G": "Ragionamento strutturato",
+      "H": "Rispetto delle istruzioni",
+      "I": "Contesto e stato",
+      "J": "Schemi di codice",
+      "K": "Sicurezza e limiti",
+      "L": "Scalabilità del set di strumenti",
+      "M": "Pianificazione autonoma",
+      "N": "Composizione creativa",
+      "O": "Output strutturato",
+      "P": "Modalità difficile"
+    },
+    "compare": {
+      "aria": "Confronto esecuzioni",
+      "title": "Confronta",
+      "showCard": "Mostra scheda di confronto",
+      "cardDialog": "Scheda di confronto della valutazione strumenti",
+      "cardAlt": "Scheda di confronto di due esecuzioni della valutazione strumenti",
+      "cardTitle": "Rendi questo confronto un'immagine da copiare o salvare",
+      "notComparable": "Queste esecuzioni non sono confrontabili direttamente",
+      "caveatNote": "Differenze come queste possono da sole spiegare un cambio di punteggio.",
+      "fair": "Stesso modello, endpoint e opzioni: confronto equo.",
+      "fairAmong": "Stesso modello, endpoint e opzioni: confronto equo tra {{a}} e {{b}}.",
+      "loadFailed": "Impossibile caricare un risultato",
+      "metric": "Metrica",
+      "change": "Variazione",
+      "identical": "{{count}} numeri sono identici.",
+      "noDiff": "Nessun numero differisce tra queste esecuzioni.",
+      "nothing": "Ancora nulla da confrontare.",
+      "score": "Punteggio",
+      "deployability": "Distribuibilità",
+      "responsiveness": "Reattività",
+      "passed": "Superati",
+      "partial": "Parziali",
+      "failed": "Falliti",
+      "safetyWarnings": "Avvisi di sicurezza",
+      "diffType": "Le esecuzioni sono di tipi di benchmark diversi.",
+      "diffModel": "Modelli diversi: {{a}} rispetto a {{b}}.",
+      "diffEndpoint": "Endpoint diversi: {{a}} rispetto a {{b}}.",
+      "diffOptions": "Opzioni diverse: {{flags}}.",
+      "autoModel": "auto"
+    },
+    "fields": {
+      "min": "min {{value}}",
+      "max": "max {{value}}",
+      "default": "predefinito {{value}}",
+      "defaultWith": "Predefinito ({{value}})",
+      "defaultOnly": "Predefinito",
+      "jsonIssue": "JSON {{reason}}",
+      "jsonOk": "Oggetto JSON valido",
+      "spaceSeparated": "separati da spazi",
+      "itemCount": "{{count}} elemento/i",
+      "categoriesAria": "Categorie",
+      "all": "Tutte",
+      "none": "Nessuna",
+      "rowAria": "{{label}} {{n}}",
+      "remove": "Rimuovi",
+      "removeAria": "Rimuovi {{label}} {{n}}",
+      "addRow": "Aggiungi riga",
+      "showValues": "Mostra valori",
+      "hideValues": "Nascondi valori"
+    },
+    "generic": {
+      "yes": "sì",
+      "no": "no",
+      "empty": "vuoto",
+      "more": "… altri {{count}}",
+      "showingRows": "Visualizzazione di 300 righe su {{rows}}.",
+      "keyNumbers": "Numeri chiave",
+      "nothing": "Nessun numero riconoscibile in questo risultato. I dati completi sono sotto.",
+      "configReported": "Configurazione riportata dallo strumento",
+      "allValues": "Tutti i valori"
+    },
+    "card": {
+      "show": "Mostra scheda",
+      "rendering": "Rendering…",
+      "failed": "Impossibile generare — riprova",
+      "hintClipboard": "Copiala negli appunti o salvala come PNG. La scheda segue il tema attuale della dashboard.",
+      "hintBefore": "Clic destro →",
+      "copyImage": "Copia immagine",
+      "hintAfter": ", oppure trascina la scheda nel tuo post. I browser consentono la copia delle immagini solo via HTTPS o localhost, quindi la scheda è mostrata qui per la copia.",
+      "copied": "Copiato!",
+      "copyFailed": "Copia non riuscita"
+    },
+    "run": {
+      "aria": "Comando e avvio",
+      "command": "Comando",
+      "updating": "aggiornamento…",
+      "valid": "valido",
+      "needsAttention": "da correggere",
+      "runsOn": "Esegue su {{name}} contro",
+      "commandLine": "Riga di comando",
+      "fixToSee": "(correggi gli errori per vedere il comando)",
+      "previewUnavailable": "(anteprima non disponibile)",
+      "usesSavedKey": "Usa la chiave API salvata per la porta di questo Spark (passata tramite ambiente). ",
+      "keyNote": "La chiave API e i valori degli header non compaiono mai qui. Il percorso del file dei risultati viene aggiunto all'avvio.",
+      "previewFailed": "Anteprima non riuscita",
+      "startFailed": "Impossibile avviare",
+      "starting": "Avvio…",
+      "startEvaluation": "Avvia valutazione",
+      "startBenchmark": "Avvia benchmark",
+      "checking": "Verifica…",
+      "checkConnection": "Verifica connessione",
+      "loading": "Caricamento…",
+      "previewScenarios": "Anteprima scenari",
+      "reachable": "Raggiungibile",
+      "notReachable": "Non raggiungibile",
+      "scenariosTitle": "Scenari che verrebbero eseguiti",
+      "noOutput": "Nessun output.",
+      "exitCode": "Uscito con codice {{code}}",
+      "installFirst": "Installa prima Tool Eval Bench su questo Spark.",
+      "fixOptions": "Correggi prima le opzioni evidenziate."
+    },
+    "result": {
+      "took": "durata {{duration}}",
+      "command": "Comando",
+      "optionsUsed": "Opzioni usate ({{count}})",
+      "cardDialog": "Scheda condivisibile della valutazione strumenti",
+      "cardAlt": "Scheda dei risultati della valutazione strumenti: punteggio {{score}}",
+      "cardTitle": "Rendi questi risultati un'immagine da copiare o salvare",
+      "failed": "L'esecuzione non è riuscita",
+      "failedCode": "L'esecuzione non è riuscita (codice di uscita {{code}})",
+      "stopped": "L'esecuzione è stata interrotta",
+      "gone": "L'esecuzione è sparita",
+      "goneBody": "I file di questa esecuzione non esistono più sullo Spark.",
+      "incomplete": "Lo strumento si è fermato prima di scrivere un risultato completo.",
+      "goodToKnow": "Da sapere",
+      "output": "Output dell'esecuzione",
+      "notFinished": "Questa esecuzione non è ancora terminata. Il risultato apparirà qui quando lo sarà.",
+      "noResult": "Nessun risultato salvato",
+      "loadFailed": "Impossibile caricare il risultato",
+      "retry": "Riprova"
+    },
+    "live": {
+      "aria": "Avanzamento esecuzione",
+      "lastRun": "Ultima esecuzione",
+      "runInProgress": "Esecuzione in corso",
+      "model": "Modello",
+      "progressAria": "Avanzamento",
+      "starting": "Avvio…",
+      "startingTool": "Avvio dello strumento sullo Spark…",
+      "connected": "Connesso a {{target}}{{backend}}…",
+      "theServer": "il server",
+      "runningScenarios": "Esecuzione scenari",
+      "measuring": "Misurazione",
+      "finished": "Terminata",
+      "error": "Errore",
+      "scenariosOf": "{{done}} di {{total}} scenari",
+      "scenarios": "scenari",
+      "elapsed": "{{duration}} trascorsi",
+      "left": " · circa {{duration}} rimanenti",
+      "pass": "superati",
+      "partial": "parziali",
+      "fail": "falliti",
+      "other": "altri",
+      "points": "{{count}} punti",
+      "now": "Ora:",
+      "goodToKnow": "Da sapere",
+      "toolError": "Lo strumento ha segnalato un errore",
+      "runFailed": "L'esecuzione non è riuscita",
+      "runFailedCode": "L'esecuzione non è riuscita (codice di uscita {{code}})",
+      "openRawOutput": "Apri l'output grezzo qui sotto per i dettagli.",
+      "stoppedTitle": "L'esecuzione è stata interrotta",
+      "stoppedBody": "Si è fermata prima di concludersi, quindi potrebbe non esserci alcun risultato.",
+      "lostViewTitle": "Vista live persa",
+      "reattach": "Riconnetti",
+      "checkStatus": "Controlla stato",
+      "mayStillRun": "L'esecuzione potrebbe essere ancora in corso sullo Spark.",
+      "notWatchingTitle": "Non stai osservando questa esecuzione",
+      "detachedTitle": "Esecuzione scollegata",
+      "watchAgain": "Osserva di nuovo",
+      "notWatchingBody": "L'esecuzione continua sullo Spark. Osservala di nuovo per vedere l'avanzamento o controlla se è terminata.",
+      "pollLost": "Connessione a sparkDash persa, nuovo tentativo…",
+      "collapseList": "Comprimi elenco",
+      "expandList": "Espandi elenco",
+      "scenariosSoFar": "Scenari finora",
+      "recentActivity": "Attività recente",
+      "stopConfirm": "Interrompere questa esecuzione sullo Spark? I risultati parziali andranno persi.",
+      "stopping": "Interruzione…",
+      "yesStop": "Sì, interrompi",
+      "keepRunning": "Continua",
+      "stopRun": "Interrompi esecuzione",
+      "stopWatching": "Smetti di osservare",
+      "stopWatchingTitle": "L'esecuzione continua sullo Spark; puoi osservarla di nuovo dalla cronologia.",
+      "viewResult": "Vedi risultato",
+      "dismiss": "Chiudi",
+      "hideRaw": "Nascondi output grezzo",
+      "rawOutput": "Output grezzo ({{count}})",
+      "stopWatchingHint": "Smettere di osservare lascia l'esecuzione attiva sullo Spark; comparirà nella cronologia e potrà essere ricollegata.",
+      "termNote": "Le righe stderr sono attenuate. I messaggi su funzionalità assenti sul server (HTTP 400, «rejected») sono lo strumento che lo sonda, non un errore.",
+      "copyOutput": "Copia output"
+    },
+    "history": {
+      "loadFailed": "Impossibile caricare la cronologia",
+      "retry": "Riprova",
+      "emptyTitle": "Ancora nessuna esecuzione",
+      "emptyBody": "Le esecuzioni di questo benchmark su {{name}} compaiono qui con i risultati, così puoi aprirle, ripeterle e confrontarle.",
+      "note": "Seleziona due esecuzioni per confrontarle, poi usa Mostra scheda di confronto per ottenere un'immagine del risultato. I risultati sono confrontabili solo se modello, endpoint e opzioni coincidono; le differenze vengono elencate durante il confronto.",
+      "compareOwn": "Confronta invece esecuzioni di questo Spark",
+      "compareOther": "Confronta con un altro Spark…",
+      "pickTitle": "Seleziona per il confronto",
+      "pickAria": "Confronta esecuzione del {{date}}",
+      "autoModel": "modello automatico",
+      "inProgress": "in corso",
+      "counts": "{{pass}}/{{partial}}/{{fail}} superati/parziali/falliti",
+      "safetyWarnings": "{{count}} avviso/i di sicurezza",
+      "finalScore": "Punteggio finale",
+      "noHeadline": "Nessun dato principale",
+      "deleteConfirm": "Eliminare questa esecuzione?",
+      "delete": "Elimina",
+      "cancel": "Annulla",
+      "open": "Apri",
+      "rerunTitle": "Carica queste opzioni nel modulo",
+      "rerun": "Ripeti…",
+      "watch": "Osserva",
+      "refreshTitle": "Chiedi allo Spark se questa esecuzione è terminata",
+      "checking": "Verifica…",
+      "refreshStatus": "Aggiorna stato",
+      "stopFirst": "Interrompi prima l'esecuzione",
+      "chooseOther": "Scegli un'esecuzione dell'altro Spark con cui confrontarla.",
+      "tickOwn": "Seleziona l'esecuzione su {{name}} con cui confrontare.",
+      "selectMore": "Seleziona un'altra esecuzione da confrontare."
+    },
+    "page": {
+      "addSpark": "Aggiungi uno Spark per eseguire la valutazione strumenti.",
+      "offlineTitle": "{{name}} è offline",
+      "offlineBody": "Lo strumento viene eseguito sullo Spark, quindi esecuzioni e verifiche richiedono che sia online. Puoi comunque configurare e consultare la cronologia.",
+      "elsewhereTitle": "Un'altra valutazione strumenti è in corso su questo Spark",
+      "elsewhereOwn": "Appartiene alla pagina {{page}}, quindi non è mostrata qui.",
+      "otherPage": "altra",
+      "openThatPage": "Apri quella pagina",
+      "sectionsAria": "Sezioni della valutazione strumenti",
+      "tabRun": "Configura ed esegui",
+      "tabResults": "Risultati",
+      "tabHistory": "Cronologia",
+      "stripAria": "Esecuzione in corso, mostra avanzamento",
+      "runInProgress": "Esecuzione in corso",
+      "listError": "Impossibile leggere le esecuzioni di questo Spark",
+      "specError": "Impossibile caricare l'elenco delle opzioni",
+      "retry": "Riprova",
+      "configAria": "Configurazione",
+      "viewAria": "Vista configurazione",
+      "simple": "Semplice",
+      "advanced": "Avanzata",
+      "pickReady": "Scegli un'esecuzione pronta.",
+      "everyOption": "Tutte le opzioni offerte dallo strumento.",
+      "busyAlready": "Su questo Spark è già in corso un'esecuzione.",
+      "busyOther": "Su questo Spark è in corso un'altra attività di valutazione strumenti.",
+      "noResultTitle": "Ancora nessun risultato",
+      "noResultBody": "Completa un'esecuzione o aprine una dalla cronologia.",
+      "configureRun": "Configura un'esecuzione",
+      "creditPowered": "Realizzato con",
+      "creditBy": "da SeraphimSerapis. sparkDash fornisce l'interfaccia; i benchmark sono dello strumento."
+    },
+    "setup": {
+      "checkFailedTitle": "Impossibile verificare l'installazione di Tool Eval Bench",
+      "retry": "Riprova",
+      "noAnswer": "Nessuna risposta dal server.",
+      "commandOn": "Comando eseguito su {{name}}",
+      "upgradeNote": "Questo esegue uv tool upgrade su {{name}}: scarica la versione più recente di tool-eval-bench da GitHub (SeraphimSerapis/tool-eval-bench) e sostituisce la copia installata. Se uv non ha installato la copia attuale, reinstalla da GitHub. Seleziona forza reinstallazione per reinstallare da zero.",
+      "installNote": "Questo esegue uv tool install da GitHub (SeraphimSerapis/tool-eval-bench) su {{name}}, come l'utente con cui sparkDash si connette.",
+      "needsInternet": "Scarica pacchetti Python e richiede accesso a internet su quello Spark. Nulla viene installato sulla macchina che esegue sparkDash.",
+      "uvMissingTitle": "uv non è installato su questo Spark",
+      "uvMissingBody": "L'installazione usa uv. Installalo prima (curl -LsSf https://astral.sh/uv/install.sh | sh sullo Spark), poi verifica di nuovo.",
+      "installing": "Installazione…",
+      "installed": "Installato",
+      "installFailed": "Installazione non riuscita",
+      "copyOutput": "Copia output",
+      "doneChecking": "Fatto. Verifica dell'installazione…",
+      "installDidNotFinish": "L'installazione non è terminata",
+      "uvNotFound": "uv non è stato trovato sullo Spark. Installa uv e riprova.",
+      "installFailedHint": "Il motivo è nell'output sopra (nessuna rete, Python mancante, disco pieno…).",
+      "upgradeNow": "Aggiorna ora",
+      "installOn": "Installa su {{name}}…",
+      "confirmRun": "Eseguire il comando sopra su {{name}}?",
+      "yesUpgrade": "Sì, aggiorna",
+      "yesInstall": "Sì, installa",
+      "cancel": "Annulla",
+      "jobRunning": "Su questo Spark è in corso un'altra attività di valutazione strumenti.",
+      "forceReinstall": "forza reinstallazione",
+      "checking": "Verifica…",
+      "checkAgain": "Verifica di nuovo",
+      "setup": "Installazione",
+      "notInstalledTitle": "Tool Eval Bench non è installato su {{name}}",
+      "notInstalledTag": "Non installato",
+      "lead": "Questa pagina pilota la CLI esterna tool-eval-bench, che gira sullo Spark stesso. Installala una volta e tutte le pagine di valutazione strumenti diventano disponibili. Nel frattempo puoi configurare e visualizzare l'anteprima di un'esecuzione; Avvia resta disattivato finché non è installata.",
+      "unreachable": "Impossibile raggiungere lo Spark",
+      "statusAria": "Stato dell'installazione della valutazione strumenti",
+      "unknownVersion": "versione sconosciuta",
+      "checkingGithub": "Verifica di GitHub…",
+      "checkUpdates": "Verifica aggiornamenti",
+      "updateCheckFailed": "Impossibile verificare gli aggiornamenti",
+      "latest": "Hai la versione più recente.",
+      "installedCommit": "Commit installato {{commit}}",
+      "latestChange": "ultima modifica {{date}}",
+      "reinstall": "Reinstalla…",
+      "newerAvailable": "È disponibile una versione più recente",
+      "latestCommit": "Commit più recente {{commit}}",
+      "installedIs": "; installato {{commit}}.",
+      "upgradeRunsOn": " L'aggiornamento viene eseguito su {{name}}.",
+      "updateUnknown": "Impossibile capire se c'è un aggiornamento",
+      "upgradeAnyway": "Aggiorna comunque",
+      "noCommit": "La versione installata non indica un commit, quindi non può essere confrontata con GitHub.",
+      "stillUpgrade": " Puoi comunque aggiornare.",
+      "workDir": "Dove vivono i risultati: ogni esecuzione conserva i file sotto {{path}} su {{name}}; sparkDash memorizza anche i risultati completati così la cronologia resta leggibile quando lo Spark è spento.",
+      "upgradeComplete": "Aggiornamento completato",
+      "installationComplete": "Installazione completata",
+      "dismiss": "Chiudi",
+      "upgradedFrom": "tool-eval-bench su {{name}} è passato da {{from}} a {{to}}. Ora puoi eseguire un benchmark.",
+      "reinstalled": "tool-eval-bench su {{name}} è stato reinstallato ed è ora {{version}}. Ora puoi eseguire un benchmark.",
+      "installedNow": "tool-eval-bench {{version}} è installato su {{name}}. Ora puoi eseguire un benchmark."
+    },
+    "sbs": {
+      "run": "Esecuzione {{side}}",
+      "autoModel": "modello automatico",
+      "pass": "superati",
+      "partial": "parziali",
+      "fail": "falliti",
+      "other": "Altri",
+      "swap": "Inverti",
+      "swapTitle": "Inverti A e B",
+      "metrics": "Metriche",
+      "categories": "Categorie",
+      "notInA": "non nell'esecuzione A",
+      "notInB": "non nell'esecuzione B",
+      "scenarios": "Scenari",
+      "differ": "({{diff}} diversi su {{total}})",
+      "onlyDiff": "Solo differenze",
+      "scenario": "Scenario",
+      "runA": "Esecuzione A",
+      "runB": "Esecuzione B",
+      "notRun": "non eseguito",
+      "allSame": "Ogni scenario è terminato con lo stesso stato in entrambe le esecuzioni."
+    },
+    "tool": {
+      "finalScore": "Punteggio finale",
+      "starsAria": "{{n}} stelle su {{max}}",
+      "unrated": "Senza valutazione",
+      "ratingCapped": "La valutazione è limitata a causa di avvisi di sicurezza. ",
+      "tiers": "Livelli: 90+ Eccellente, 75+ Buono, 60+ Adeguato, 40+ Debole, sotto Scarso.",
+      "deployability": "Distribuibilità",
+      "responsiveness": "Reattività",
+      "completion": "Completamento",
+      "scenarios": "scenari",
+      "pass": "superati",
+      "partial": "parziali",
+      "fail": "falliti",
+      "model": "Modello",
+      "runId": "esecuzione",
+      "safetyAria": "Avvisi di sicurezza",
+      "safetyTitle": "Avvisi di sicurezza ({{count}})",
+      "configUsed": "Configurazione usata",
+      "categoryScores": "Punteggi per categoria",
+      "categoryNameFromDocs": "Nome della categoria dalla documentazione dello strumento",
+      "categoryFallback": "Categoria",
+      "noScore": "nessun punteggio",
+      "percentAria": "{{value}} per cento",
+      "scenariosTitle": "Scenari",
+      "scenariosOf": "{{shown}} di {{total}}",
+      "searchAria": "Cerca scenari",
+      "searchPlaceholder": "Cerca id, titolo, ragionamento…",
+      "filterStatusAria": "Filtra per stato",
+      "statusAll": "Tutti gli stati",
+      "statusFailed": "Falliti",
+      "statusPartial": "Parziali",
+      "statusPassed": "Superati",
+      "statusOther": "Altri",
+      "filterCategoryAria": "Filtra per categoria",
+      "allCategories": "Tutte le categorie",
+      "sortAria": "Ordina",
+      "sortOrder": "Ordine originale",
+      "sortWorst": "Peggiori prima",
+      "sortId": "Per id",
+      "sortPoints": "Meno punti",
+      "sortSlowest": "Più lenti",
+      "noMatch": "Nessuno scenario corrisponde a questi filtri.",
+      "noTitle": "(senza titolo)",
+      "reasoning": "Ragionamento",
+      "noDetails": "Non sono stati registrati altri dettagli per questo scenario.",
+      "showMore": "Mostra altri {{count}}"
+    },
+    "age": {
+      "seconds": "{{value}} s",
+      "minutes": "{{value}} min",
+      "hours": "{{value}} h",
+      "days": "{{value}} g"
+    },
+    "idle": {
+      "label": "Inattivo",
+      "withSince": "Inattivo · ultimo servizio {{since}} fa"
+    },
+    "fleet": {
+      "offline": "Host irraggiungibile",
+      "throttle": "sta limitando per temperatura",
+      "hwSlowdown": "ha un rallentamento hardware",
+      "gpuAt": "GPU a {{temp}}",
+      "smClock": "Clock SM {{ghz}} GHz",
+      "smClockOfMax": " ({{pct}}% del massimo)",
+      "disk": "lo spazio è al 90% o più",
+      "llm": "l'LLM non è disponibile",
+      "tailnet": "la tailnet non è disponibile"
+    },
+    "decode": {
+      "typeStructured": "Strutturato",
+      "typeStructuredHint": "Conta da 1 a 200, solo numeri — protocollo strutturato di laboratorio",
+      "typeProse": "Prosa",
+      "typeProseHint": "Spiegazione di una hash map — prompt di benchmark predefinito del laboratorio",
+      "typeCode": "Codice",
+      "typeCodeHint": "Attività Python distinte per flusso — prefissi diversi, senza commenti",
+      "typeJson": "JSON",
+      "typeJsonHint": "Catalogo JSON di metriche GPU — solo tipo di output, non JSON guidato"
+    },
+    "quality": {
+      "categories": {
+        "qa": "Domande e risposte",
+        "reason": "Ragionamento",
+        "arith": "Catena aritmetica",
+        "track": "Tracciamento dello stato",
+        "gsm8k": "GSM8K",
+        "mmlu": "MMLU",
+        "follow": "Rispetto delle istruzioni",
+        "long": "Richiamo di contesto lungo"
+      },
+      "diffSuite": "Queste esecuzioni hanno usato set di domande diversi (suite v{{a}} rispetto a v{{b}}), quindi elementi con lo stesso id non sono la stessa domanda. Ripeti una delle due per confrontare.",
+      "diffScoring": "Queste esecuzioni sono state valutate con regole diverse (punteggio v{{a}} rispetto a v{{b}}), quindi superare una non equivale a superare l'altra. Ripeti una delle due per confrontare."
+    }
+  }
+}

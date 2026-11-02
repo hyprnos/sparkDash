@@ -1,0 +1,133 @@
+{
+  "title": "Prompt Showcase",
+  "brandHome": "sparkDash home",
+  "loading": "Loading…",
+  "controls": {
+    "show": "Show controls",
+    "showTitle": "Show controls",
+    "hide": "Hide",
+    "hideTitle": "Hide controls"
+  },
+  "actions": {
+    "run": "Run",
+    "starting": "Starting…",
+    "stop": "Stop",
+    "copyAll": "Copy all",
+    "copied": "Copied!",
+    "copyAllTitle": "Copy all terminals as plain text",
+    "history": "History",
+    "historyTitle": "Past showcase runs"
+  },
+  "confirm": {
+    "stopAll": "Stop all showcase streams?",
+    "clearHistory": "Clear all saved showcase history for this Spark?"
+  },
+  "errors": {
+    "notFound": "Spark not found",
+    "loadFailed": "Failed to load Spark",
+    "copy": "Could not copy to clipboard",
+    "promptRange": "Use between {{min}} and {{max}} non-empty prompts",
+    "monitoringOff": "LLM monitoring is off or this Spark is a worker — showcase unavailable."
+  },
+  "fields": {
+    "port": "Port",
+    "terminals": "Terminals",
+    "promptType": "Prompt type",
+    "maxTokens": "Max tokens",
+    "temp": "Temp",
+    "tempTitle": "Sampling temperature (0–2)",
+    "thinking": "Thinking",
+    "thinkingTitle": "Enable model thinking / reasoning tokens",
+    "showPrompts": "Show prompts",
+    "model": "Model"
+  },
+  "promptType": {
+    "text": "Text",
+    "textHint": "Prose / narrative — no code or structured formats",
+    "structural": "Structural",
+    "structuralHint": "JSON, HTML, YAML, SQL, schemas, tables, logs",
+    "mixed": "Mixed",
+    "mixedHint": "Half structural, half text — interleaved",
+    "tok": "{{tokens}} tok"
+  },
+  "promptLabel": "Prompt {{n}}",
+  "history": {
+    "title": "Past runs",
+    "refresh": "Refresh",
+    "clear": "Clear",
+    "empty": "No saved runs yet. Finished showcases appear here automatically.",
+    "viewTitle": "View this run",
+    "terms": "{{count}} term",
+    "promptType": "{{type}} prompt",
+    "avg": "avg {{value}} tok/s",
+    "reuse": "Reuse",
+    "reuseTitle": "Load prompts & settings into the form (does not re-run)"
+  },
+  "metrics": {
+    "aggregate": "Aggregate",
+    "aggregateHero": "Sum of live decode tok/s across all terminals",
+    "aggregateTitle": "Aggregate tokens per second across all terminals",
+    "avg": "Avg",
+    "avgTitle": "Average decode tok/s per terminal for this session",
+    "perStream": "per stream",
+    "tokens": "Tokens",
+    "server": "Server",
+    "streams": "Streams",
+    "peak": "peak {{value}}"
+  },
+  "plain": {
+    "status": "status: {{status}}",
+    "tps": "tok/s: {{value}}",
+    "thinking": "### Thinking",
+    "answer": "### Answer",
+    "error": "[error] {{message}}",
+    "head": "{{name}} | prompt showcase",
+    "port": "port {{port}}",
+    "avgPerStream": "avg {{value}} tok/s/stream",
+    "server": "server {{value}} tok/s"
+  },
+  "status": {
+    "pending": "pending",
+    "running": "running",
+    "completed": "completed",
+    "failed": "failed",
+    "cancelled": "cancelled",
+    "error": "error"
+  },
+  "footer": {
+    "historyRun": "History · {{status}}",
+    "sessionRun": "Session {{status}}",
+    "readOnly": " · read-only"
+  },
+  "terminal": {
+    "title": "Terminal",
+    "tokensOne": "{{count}} token",
+    "tokensMany": "{{count}} tokens",
+    "tpsTitle": "Live {{live}} tok/s · peak {{peak}} tok/s",
+    "peak": "peak {{value}}",
+    "copyTitle": "Copy this terminal",
+    "copied": "Copied",
+    "copy": "Copy",
+    "waiting": "Waiting…",
+    "reasoning": "Reasoning",
+    "chars": "{{count}} chars"
+  },
+  "view": {
+    "workspace": "Workspace",
+    "heading": "Showcase",
+    "subtitle": "Run prompts on several terminals at once and watch your model stream.",
+    "openWindow": "Open in new window ↗",
+    "openWindowTitle": "Open the showcase in its own full-screen window",
+    "runOn": "Run on",
+    "noSparks": "No Sparks available",
+    "sparkPickerAria": "Spark to benchmark",
+    "offlineTitle": "{{name}} is offline",
+    "offlineBody": "Bring it back online, or run the showcase on another Spark.",
+    "workerTitle": "{{name}} is a worker",
+    "workerBody": "Workers share a model that the head Spark serves, so there is nothing to stream from this one. Run the showcase on the head instead.",
+    "offTitle": "Showcase is off for this Spark",
+    "offBody": "LLM monitoring is turned off for {{name}}, so there is no model to talk to.",
+    "runOnName": "Run on {{name}}",
+    "noReachable": "No Spark with a reachable model is online right now."
+  }
+}

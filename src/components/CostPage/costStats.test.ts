@@ -9,6 +9,16 @@ import {
 } from "./costStats";
 import type { ModelPrice } from "../../api/costTypes";
 import type { TokenHistoryRow } from "../../api/types";
+import type { Translate } from "../TokensPage/tokenStats";
+import enCost from "../../locales/en/cost.json";
+
+/** Renders catalog templates with their {{vars}}; the English copy is the source of truth. */
+const t: Translate = (key, vars) => {
+  let value: unknown = enCost;
+  for (const part of key.split(".")) value = (value as Record<string, unknown> | undefined)?.[part];
+  if (typeof value !== "string") throw new Error(`missing en/cost key: ${key}`);
+  return value.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, name: string) => String(vars?.[name] ?? ""));
+};
 
 const price = (over: Partial<ModelPrice> = {}): ModelPrice => ({
   id: "test-model",
@@ -87,7 +97,7 @@ describe("formatting", () => {
   });
 
   it("labels per-million prices", () => {
-    expect(priceLabel(price())).toBe("$2 / 1M in · $10 / 1M out");
+    expect(priceLabel(price(), t)).toBe("$2 / 1M in · $10 / 1M out");
   });
 
   it("blends cost over tokens", () => {

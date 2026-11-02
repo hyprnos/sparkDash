@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import "../../../styles/benchpages.css";
 import type { HistoryRow } from "./historyRows";
 
@@ -15,10 +16,11 @@ export function PageLayout({
   stacked?: boolean;
   children: ReactNode;
 }) {
+  const { t } = useTranslation("bench");
   return (
     <div className={`bp-grid${stacked ? " bp-grid--stacked" : ""}`}>
-      <section className="panel bp-config" aria-label="Run configuration">
-        <div className="eyebrow">Configuration</div>
+      <section className="panel bp-config" aria-label={t("layout.configAria")}>
+        <div className="eyebrow">{t("layout.configuration")}</div>
         {config}
         {runBar ? <div className="bp-runbar">{runBar}</div> : null}
       </section>
@@ -93,16 +95,17 @@ export function HistoryTable({
   /** A run is in flight, so opening another would replace its live view. */
   busy: boolean;
 }) {
+  const { t } = useTranslation("bench");
   return (
     <div className="bp-table-wrap">
       <table className="bp-table">
         <thead>
           <tr>
-            <th>Date</th>
+            <th>{t("history.date")}</th>
             <th>{labelHeader}</th>
-            <th className="bp-model">Model</th>
-            <th className="bp-num">Result</th>
-            <th aria-label="Actions" />
+            <th className="bp-model">{t("history.model")}</th>
+            <th className="bp-num">{t("history.result")}</th>
+            <th aria-label={t("history.actions")} />
           </tr>
         </thead>
         <tbody>
@@ -130,7 +133,7 @@ export function HistoryTable({
                   disabled={busy || r.id === activeId}
                   onClick={() => onView(r.id)}
                 >
-                  {r.id === activeId ? "Open" : "View"}
+                  {r.id === activeId ? t("history.open") : t("history.view")}
                 </button>
                 {onCompare && r.id !== activeId ? (
                   <button
@@ -139,7 +142,7 @@ export function HistoryTable({
                     disabled={busy || r.id === compareId}
                     onClick={() => onCompare(r.id)}
                   >
-                    {r.id === compareId ? "Comparing" : "Compare"}
+                    {r.id === compareId ? t("history.comparing") : t("history.compare")}
                   </button>
                 ) : null}
               </td>

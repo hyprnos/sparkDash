@@ -1,0 +1,133 @@
+{
+  "title": "プロンプトショーケース",
+  "brandHome": "sparkDash ホーム",
+  "loading": "読み込み中…",
+  "controls": {
+    "show": "コントロールを表示",
+    "showTitle": "コントロールを表示",
+    "hide": "隠す",
+    "hideTitle": "コントロールを隠す"
+  },
+  "actions": {
+    "run": "実行",
+    "starting": "開始中…",
+    "stop": "停止",
+    "copyAll": "すべてコピー",
+    "copied": "コピーしました",
+    "copyAllTitle": "すべてのターミナルをプレーンテキストでコピー",
+    "history": "履歴",
+    "historyTitle": "過去のショーケース実行"
+  },
+  "confirm": {
+    "stopAll": "すべてのショーケースストリームを停止しますか？",
+    "clearHistory": "この Spark の保存済みショーケース履歴をすべて消去しますか？"
+  },
+  "errors": {
+    "notFound": "Spark が見つかりません",
+    "loadFailed": "Spark を読み込めませんでした",
+    "copy": "クリップボードにコピーできませんでした",
+    "promptRange": "空でないプロンプトを {{min}}〜{{max}} 件使用してください",
+    "monitoringOff": "LLM モニタリングがオフか、この Spark はワーカーです — ショーケースは利用できません。"
+  },
+  "fields": {
+    "port": "ポート",
+    "terminals": "ターミナル数",
+    "promptType": "プロンプト種別",
+    "maxTokens": "最大トークン",
+    "temp": "温度",
+    "tempTitle": "サンプリング温度（0〜2）",
+    "thinking": "思考",
+    "thinkingTitle": "モデルの思考/推論トークンを有効にする",
+    "showPrompts": "プロンプトを表示",
+    "model": "モデル"
+  },
+  "promptType": {
+    "text": "テキスト",
+    "textHint": "散文／物語 — コードや構造化形式なし",
+    "structural": "構造化",
+    "structuralHint": "JSON、HTML、YAML、SQL、スキーマ、表、ログ",
+    "mixed": "混合",
+    "mixedHint": "構造化とテキストを半分ずつ交互に",
+    "tok": "{{tokens}} tok"
+  },
+  "promptLabel": "プロンプト {{n}}",
+  "history": {
+    "title": "過去の実行",
+    "refresh": "更新",
+    "clear": "消去",
+    "empty": "保存された実行はまだありません。完了したショーケースは自動的にここに表示されます。",
+    "viewTitle": "この実行を表示",
+    "terms": "{{count}} 端末",
+    "promptType": "{{type}}プロンプト",
+    "avg": "平均 {{value}} tok/s",
+    "reuse": "再利用",
+    "reuseTitle": "プロンプトと設定をフォームに読み込む（再実行はしません）"
+  },
+  "metrics": {
+    "aggregate": "合計",
+    "aggregateHero": "すべてのターミナルのライブデコード tok/s の合計",
+    "aggregateTitle": "すべてのターミナルの合計毎秒トークン",
+    "avg": "平均",
+    "avgTitle": "このセッションのターミナルあたりの平均デコード tok/s",
+    "perStream": "ストリームあたり",
+    "tokens": "トークン",
+    "server": "サーバー",
+    "streams": "ストリーム",
+    "peak": "ピーク {{value}}"
+  },
+  "plain": {
+    "status": "状態: {{status}}",
+    "tps": "tok/s: {{value}}",
+    "thinking": "### 思考",
+    "answer": "### 回答",
+    "error": "[エラー] {{message}}",
+    "head": "{{name}} | プロンプトショーケース",
+    "port": "ポート {{port}}",
+    "avgPerStream": "平均 {{value}} tok/s/ストリーム",
+    "server": "サーバー {{value}} tok/s"
+  },
+  "status": {
+    "pending": "待機中",
+    "running": "実行中",
+    "completed": "完了",
+    "failed": "失敗",
+    "cancelled": "中止",
+    "error": "エラー"
+  },
+  "footer": {
+    "historyRun": "履歴 · {{status}}",
+    "sessionRun": "セッション {{status}}",
+    "readOnly": " · 読み取り専用"
+  },
+  "terminal": {
+    "title": "ターミナル",
+    "tokensOne": "{{count}} トークン",
+    "tokensMany": "{{count}} トークン",
+    "tpsTitle": "ライブ {{live}} tok/s · ピーク {{peak}} tok/s",
+    "peak": "ピーク {{value}}",
+    "copyTitle": "このターミナルをコピー",
+    "copied": "コピーしました",
+    "copy": "コピー",
+    "waiting": "待機中…",
+    "reasoning": "推論",
+    "chars": "{{count}} 文字"
+  },
+  "view": {
+    "workspace": "ワークスペース",
+    "heading": "ショーケース",
+    "subtitle": "複数のターミナルで同時にプロンプトを実行し、モデルのストリーミングを確認します。",
+    "openWindow": "新しいウィンドウで開く ↗",
+    "openWindowTitle": "ショーケースを独立した全画面ウィンドウで開く",
+    "runOn": "実行先",
+    "noSparks": "利用できる Spark がありません",
+    "sparkPickerAria": "ベンチマークする Spark",
+    "offlineTitle": "{{name}} はオフラインです",
+    "offlineBody": "オンラインに戻すか、別の Spark でショーケースを実行してください。",
+    "workerTitle": "{{name}} はワーカーです",
+    "workerBody": "ワーカーはヘッド Spark が提供するモデルを共有するため、このマシンからストリーミングするものはありません。代わりにヘッドで実行してください。",
+    "offTitle": "この Spark ではショーケースが無効です",
+    "offBody": "{{name}} の LLM モニタリングがオフのため、対話できるモデルがありません。",
+    "runOnName": "{{name}} で実行",
+    "noReachable": "現在、モデルに到達できるオンラインの Spark がありません。"
+  }
+}

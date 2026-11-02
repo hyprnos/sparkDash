@@ -85,5 +85,7 @@
     "resultFailed": "{{count}} fallidos",
     "resultSkipped": "{{count}} omitidos",
     "batchFailed": "Falló el apagado por lotes"
-  }
+  },
+  "actions": {"cancel": "Cancelar", "save": "Guardar", "close": "Cerrar", "dismiss": "Descartar", "delete": "Eliminar", "remove": "Quitar", "back": "Atrás", "next": "Siguiente", "retry": "Reintentar", "edit": "Editar", "add": "Añadir", "test": "Probar", "enable": "Activar", "disable": "Desactivar", "apply": "Aplicar", "copy": "Copiar", "copied": "Copiado"},
+  "state": {"loading": "Cargando…", "saving": "Guardando…", "testing": "Probando…", "checking": "Comprobando…", "working": "Procesando…", "sending": "Enviando…", "applying": "Aplicando…", "restarting": "Reiniciando…", "removing": "Quitando…"}
 }
