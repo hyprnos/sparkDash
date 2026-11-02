@@ -55,5 +55,35 @@
     "loadSettings": "無法載入設定：{{message}}。請重新整理後再試。",
     "refreshSparks": "無法重新整理 Sparks：{{message}}。目前仍顯示先前的資料。",
     "saveOrder": "無法儲存 Spark 順序：{{message}}。已還原先前的順序。"
+  },
+  "connection": {
+    "connecting": "正在連線即時遙測…",
+    "stale": "遙測資料已過期。最後一次有效更新是 {{age}} 前。",
+    "disconnectedShowing": "即時遙測已中斷。目前顯示 {{age}} 前的資料。",
+    "waiting": "即時遙測已中斷。正在等待第一次有效更新…",
+    "announcedError": "遙測資料錯誤。",
+    "announcedStale": "遙測資料已過期。",
+    "announcedDisconnected": "即時遙測已中斷。"
+  },
+  "errorBanner": {
+    "dismiss": "略過",
+    "dismissAria": "關閉錯誤"
+  },
+  "openAccess": {
+    "label": "開放存取",
+    "explanation": "此儀表板不需權杖即可從你的網路存取，因此網路中的任何人都可以變更設定。請在伺服器上設定 SPARKDASH_TOKEN 以要求權杖。",
+    "dontShowAgain": "不再顯示"
+  },
+  "shutdownAll": {
+    "label": "全部關機",
+    "title": "關閉所有線上 Spark",
+    "confirmTitle": "全部關機",
+    "confirmOne": "要正常關閉全部 1 台線上 Spark 嗎？離線節點會被略過。",
+    "confirmMany": "要正常關閉全部 {{count}} 台線上 Spark 嗎？離線節點會被略過。",
+    "confirmLabel": "全部關機",
+    "resultShutDown": "{{count}} 台已關機",
+    "resultFailed": "{{count}} 台失敗",
+    "resultSkipped": "{{count}} 台已略過",
+    "batchFailed": "批次關機失敗"
   }
 }

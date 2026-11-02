@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 type ConnectionBannerProps = {
   connected: boolean;
   lastValidSnapshotAt: number | null;
@@ -20,24 +22,25 @@ export function ConnectionBanner({
   now,
   stale,
 }: ConnectionBannerProps) {
+  const { t } = useTranslation("common");
   if (connected && !snapshotError && !stale) return null;
 
-  let message = "Connecting to live telemetry…";
+  let message = t("connection.connecting");
   if (snapshotError) message = snapshotError;
   else if (lastValidSnapshotAt != null) {
     const age = formatAge(now - lastValidSnapshotAt);
     message = connected
-      ? `Telemetry is stale. Last valid update was ${age} ago.`
-      : `Live telemetry disconnected. Showing data from ${age} ago.`;
+      ? t("connection.stale", { age })
+      : t("connection.disconnectedShowing", { age });
   } else if (!connected) {
-    message = "Live telemetry is disconnected. Waiting for the first valid update…";
+    message = t("connection.waiting");
   }
 
   const announced = snapshotError
-    ? "Telemetry data error."
+    ? t("connection.announcedError")
     : connected
-      ? "Telemetry is stale."
-      : "Live telemetry is disconnected.";
+      ? t("connection.announcedStale")
+      : t("connection.announcedDisconnected");
 
   return (
     <div className="connection-banner">

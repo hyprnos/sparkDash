@@ -55,5 +55,35 @@
     "loadSettings": "无法加载设置：{{message}}。请刷新重试。",
     "refreshSparks": "无法刷新 Sparks：{{message}}。仍显示之前的数据。",
     "saveOrder": "无法保存 Spark 顺序：{{message}}。已恢复原顺序。"
+  },
+  "connection": {
+    "connecting": "正在连接实时遥测…",
+    "stale": "遥测数据已过期。最后一次有效更新是 {{age}} 前。",
+    "disconnectedShowing": "实时遥测已断开。正在显示 {{age}} 前的数据。",
+    "waiting": "实时遥测已断开。正在等待第一次有效更新…",
+    "announcedError": "遥测数据错误。",
+    "announcedStale": "遥测数据已过期。",
+    "announcedDisconnected": "实时遥测已断开。"
+  },
+  "errorBanner": {
+    "dismiss": "忽略",
+    "dismissAria": "关闭错误"
+  },
+  "openAccess": {
+    "label": "开放访问",
+    "explanation": "此仪表盘无需令牌即可从你的网络访问，因此网络中的任何人都可以更改设置。请在服务器上设置 SPARKDASH_TOKEN 以要求令牌。",
+    "dontShowAgain": "不再显示"
+  },
+  "shutdownAll": {
+    "label": "全部关机",
+    "title": "关闭所有在线 Spark",
+    "confirmTitle": "全部关机",
+    "confirmOne": "要优雅关闭全部 1 台在线 Spark 吗？离线节点会被跳过。",
+    "confirmMany": "要优雅关闭全部 {{count}} 台在线 Spark 吗？离线节点会被跳过。",
+    "confirmLabel": "全部关机",
+    "resultShutDown": "{{count}} 台已关机",
+    "resultFailed": "{{count}} 台失败",
+    "resultSkipped": "{{count}} 台已跳过",
+    "batchFailed": "批量关机失败"
   }
 }

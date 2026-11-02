@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { createPortal } from "react-dom";
 import type { LauncherAction, LauncherJob, LauncherRunState, LlmLauncher, SparkSnapshot } from "../../api/types";
 import { removeLauncher, runLauncher } from "../../api/client";
@@ -11,6 +12,8 @@ import { Panel } from "../ui/Panel";
 import { Tag, type TagTone } from "../ui/Tag";
 import { BotIcon, EditIcon, ExpandIcon, PlusIcon, XIcon } from "../ui/icons";
 import { LlmLauncherDialog } from "./LlmLauncherDialog";
+
+type Translate = (key: string, vars?: Record<string, string | number>) => string;
 
 const AUTOSHOW_KEY = "sparkdash.llm.autoShowOutput";
 const STATUS_REFRESH_MS = 20_000;
@@ -32,18 +35,37 @@ export function formatElapsed(ms: number): string {
   return `${s}s`;
 }
 
-export function jobHeadline(job: LauncherJob): string {
+export function jobHeadline(job: LauncherJob, tr?: Translate): string {
+  const text = (key: string, vars?: Record<string, string | number>, fallback?: string) =>
+    tr ? tr(key, vars) : (fallback ?? key);
   // A start job follows a script that may keep running for days, so it is not "starting" forever.
   if (job.status === "running") {
-    if (job.action === "stop") return `Stopping ${job.launcherName}`;
-    return job.action === "start" ? `${job.launcherName}: start script running` : `Output of ${job.launcherName}`;
+    if (job.action === "stop") return text("models.headlineStopping", { name: job.launcherName }, `Stopping ${job.launcherName}`);
+    return job.action === "start"
+      ? text("models.headlineStarting", { name: job.launcherName }, `${job.launcherName}: start script running`)
+      : text("models.headlineOutput", { name: job.launcherName }, `Output of ${job.launcherName}`);
   }
-  if (job.action === "attach") return `Output of ${job.launcherName}`;
-  const noun = job.action === "start" ? "start script" : "stop script";
-  if (job.status === "completed") return `${job.launcherName}: ${noun} finished`;
-  if (job.status === "cancelled") return `${job.launcherName}: stopped watching`;
-  if (job.status === "detached") return `${job.launcherName}: stopped watching after 6 hours`;
-  return `${job.launcherName}: ${noun} failed${job.exitCode != null ? ` (exit ${job.exitCode})` : ""}`;
+  if (job.action === "attach") {
+    return text("models.headlineOutput", { name: job.launcherName }, `Output of ${job.launcherName}`);
+  }
+  const nounKey = job.action === "start" ? "models.nounStart" : "models.nounStop";
+  const noun = text(nounKey, undefined, job.action === "start" ? "start script" : "stop script");
+  if (job.status === "completed") {
+    return text("models.headlineFinished", { name: job.launcherName, noun }, `${job.launcherName}: ${noun} finished`);
+  }
+  if (job.status === "cancelled") {
+    return text("models.headlineCancelled", { name: job.launcherName }, `${job.launcherName}: stopped watching`);
+  }
+  if (job.status === "detached") {
+    return text("models.headlineDetached", { name: job.launcherName }, `${job.launcherName}: stopped watching after 6 hours`);
+  }
+  return job.exitCode != null
+    ? text(
+        "models.headlineFailedExit",
+        { name: job.launcherName, noun, code: job.exitCode },
+        `${job.launcherName}: ${noun} failed (exit ${job.exitCode})`
+      )
+    : text("models.headlineFailed", { name: job.launcherName, noun }, `${job.launcherName}: ${noun} failed`);
 }
 
 export function jobTone(job: LauncherJob): TagTone {
@@ -53,20 +75,29 @@ export function jobTone(job: LauncherJob): TagTone {
   return "neutral";
 }
 
-const STATUS_LABEL: Record<LauncherJob["status"], string> = {
-  running: "Running",
-  completed: "Finished",
-  failed: "Failed",
-  cancelled: "Stopped watching",
-  detached: "Stopped watching",
-};
+function statusLabel(t: Translate, status: LauncherJob["status"]): string {
+  switch (status) {
+    case "running":
+      return t("models.statusRunning");
+    case "completed":
+      return t("models.statusFinished");
+    case "failed":
+      return t("models.statusFailed");
+    case "cancelled":
+      return t("models.statusStoppedWatching");
+    case "detached":
+      return t("models.statusStoppedWatching");
+    default:
+      return status;
+  }
+}
 
 function Elapsed({ job }: { job: LauncherJob }) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (job.status !== "running") return;
-    const t = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(t);
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
   }, [job.status]);
   const end = job.finishedAt ?? now;
   return <span className="mono">{formatElapsed(end - job.startedAt)}</span>;
@@ -87,6 +118,7 @@ function TerminalModal({
   running: boolean;
   onClose: () => void;
 }) {
+  const { t } = useTranslation("spark");
   const { mounted, visible } = useModalPresence(open);
   const overlayClose = useOverlayClose(onClose);
   useEffect(() => {
@@ -106,7 +138,7 @@ function TerminalModal({
       <div className="modal-sheet term-modal" role="dialog" aria-modal="true" aria-label={title}>
         <div className="modal-sheet__header">
           <h2 className="modal-sheet__title">{title}</h2>
-          <button type="button" className="icon-circle ml-auto" onClick={onClose} aria-label="Close output">
+          <button type="button" className="icon-circle ml-auto" onClick={onClose} aria-label={t("models.closeOutput")}>
             <XIcon className="h-4 w-4" />
           </button>
         </div>
@@ -135,6 +167,7 @@ export function LlmModelsPanel(props: { spark: SparkSnapshot; className?: string
 }
 
 function LlmModelsPanelFor({ spark, className }: { spark: SparkSnapshot; className?: string }) {
+  const { t } = useTranslation("spark");
   const sparkId = spark.id;
   const [launchers, setLaunchers] = useState<LlmLauncher[]>([]);
   const [statuses, setStatuses] = useState<Record<string, LauncherRunState>>({});
@@ -189,10 +222,10 @@ function LlmModelsPanelFor({ spark, className }: { spark: SparkSnapshot; classNa
   // Keep running/stopped fresh while the page is open.
   useEffect(() => {
     if (!online) return;
-    const t = window.setInterval(() => {
+    const timer = window.setInterval(() => {
       if (!document.hidden) void refresh();
     }, STATUS_REFRESH_MS);
-    return () => window.clearInterval(t);
+    return () => window.clearInterval(timer);
   }, [online, refresh]);
 
   // A finished job changes what is running: re-check, and run a queued start after its stop.
@@ -207,7 +240,7 @@ function LlmModelsPanelFor({ spark, className }: { spark: SparkSnapshot; classNa
       const next = queuedStart;
       setQueuedStart(null);
       if (job.status === "completed") void run(next, "start");
-      else setActionError("The stop script did not finish cleanly, so the new model was not started.");
+      else setActionError(t("models.queuedNotStarted"));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [job, queuedStart, refresh]);
@@ -287,17 +320,17 @@ function LlmModelsPanelFor({ spark, className }: { spark: SparkSnapshot; classNa
           <div className="sp-launch__title">
             <b>{l.name}</b>
             {mine && job?.status === "running" && job.action === "stop" ? (
-              <Tag tone="info">Stopping…</Tag>
+              <Tag tone="info">{t("models.stopping")}</Tag>
             ) : serving ? (
               <Tag tone="good" title={live?.modelId ?? undefined}>
-                Serving :{l.port}
+                {t("models.serving", { port: l.port })}
               </Tag>
             ) : state === "running" ? (
-              <Tag tone="info" title="The start script is still running on the Spark">
-                Running
+              <Tag tone="info" title={t("models.runningTitle")}>
+                {t("shared.running")}
               </Tag>
             ) : state === "stopped" ? (
-              <Tag>Stopped</Tag>
+              <Tag>{t("models.stopped")}</Tag>
             ) : null}
           </div>
           <div className="sp-launch__dir mono" title={`${l.dir}/${l.startScript} · ${l.dir}/${l.stopScript}`}>
@@ -309,40 +342,44 @@ function LlmModelsPanelFor({ spark, className }: { spark: SparkSnapshot; classNa
         <div className="sp-launch__actions">
           {pending?.kind === "stop" ? (
             <>
-              <span className="sp-launch__ask">Run {l.stopScript}?</span>
+              <span className="sp-launch__ask">{t("models.runStop", { script: l.stopScript })}</span>
               <button type="button" className="btn btn--sm btn--danger" onClick={() => void run(l.id, "stop")}>
-                Stop
+                {t("models.stop")}
               </button>
               <button type="button" className="btn btn--sm btn--ghost" onClick={() => setConfirm(null)}>
-                Cancel
+                {t("shared.cancel")}
               </button>
             </>
           ) : pending?.kind === "switch" ? (
             <>
-              <span className="sp-launch__ask">{other?.name ?? "Another model"} is running. Stop it first, or run both?</span>
+              <span className="sp-launch__ask">
+                {other?.name
+                  ? t("models.switchAsk", { name: other.name })
+                  : t("models.switchAskGeneric")}
+              </span>
               <button type="button" className="btn btn--sm btn--primary" onClick={() => void switchTo(l, pending.otherId)}>
-                Stop it, then start
+                {t("models.stopThenStart")}
               </button>
               <button
                 type="button"
                 className="btn btn--sm"
-                title="Start this one too and leave the other running (its start script can still refuse if memory is short)"
+                title={t("models.runBothTitle")}
                 onClick={() => void run(l.id, "start")}
               >
-                Run both
+                {t("models.runBoth")}
               </button>
               <button type="button" className="btn btn--sm btn--ghost" onClick={() => setConfirm(null)}>
-                Cancel
+                {t("shared.cancel")}
               </button>
             </>
           ) : pending?.kind === "remove" ? (
             <>
-              <span className="sp-launch__ask">Remove from the list? Files stay untouched.</span>
+              <span className="sp-launch__ask">{t("models.removeAsk")}</span>
               <button type="button" className="btn btn--sm btn--danger" onClick={() => void doRemove(l.id)}>
-                Remove
+                {t("shared.remove")}
               </button>
               <button type="button" className="btn btn--sm btn--ghost" onClick={() => setConfirm(null)}>
-                Cancel
+                {t("shared.cancel")}
               </button>
             </>
           ) : (
@@ -354,9 +391,9 @@ function LlmModelsPanelFor({ spark, className }: { spark: SparkSnapshot; classNa
                     className="btn btn--sm"
                     disabled={busy}
                     onClick={() => void run(l.id, "attach")}
-                    title="Show what the running start script is printing"
+                    title={t("models.outputRunningTitle")}
                   >
-                    Output
+                    {t("models.output")}
                   </button>
                   <button
                     type="button"
@@ -364,7 +401,7 @@ function LlmModelsPanelFor({ spark, className }: { spark: SparkSnapshot; classNa
                     disabled={busy || !online}
                     onClick={() => setConfirm({ kind: "stop", id: l.id })}
                   >
-                    Stop
+                    {t("models.stop")}
                   </button>
                 </>
               ) : (
@@ -374,9 +411,9 @@ function LlmModelsPanelFor({ spark, className }: { spark: SparkSnapshot; classNa
                     className="btn btn--sm"
                     disabled={busy || !online}
                     onClick={() => setConfirm({ kind: "stop", id: l.id })}
-                    title={`Run ${l.stopScript} (use this to clean up a model started elsewhere)`}
+                    title={t("models.stopTitle", { script: l.stopScript })}
                   >
-                    Stop
+                    {t("models.stop")}
                   </button>
                   <button
                     type="button"
@@ -384,15 +421,15 @@ function LlmModelsPanelFor({ spark, className }: { spark: SparkSnapshot; classNa
                     disabled={busy || !online}
                     onClick={() => requestStart(l)}
                   >
-                    Start
+                    {t("models.start")}
                   </button>
                 </>
               )}
               <button
                 type="button"
                 className="sp-iconbtn"
-                aria-label={`Edit ${l.name}`}
-                title="Edit"
+                aria-label={t("models.editAria", { name: l.name })}
+                title={t("models.editTitle")}
                 disabled={busy && mine}
                 onClick={() => setDialog({ open: true, launcher: l })}
               >
@@ -401,8 +438,8 @@ function LlmModelsPanelFor({ spark, className }: { spark: SparkSnapshot; classNa
               <button
                 type="button"
                 className="sp-iconbtn"
-                aria-label={`Remove ${l.name}`}
-                title="Remove from list"
+                aria-label={t("models.removeAria", { name: l.name })}
+                title={t("models.removeTitle")}
                 disabled={busy && mine}
                 onClick={() => setConfirm({ kind: "remove", id: l.id })}
               >
@@ -417,36 +454,33 @@ function LlmModelsPanelFor({ spark, className }: { spark: SparkSnapshot; classNa
 
   return (
     <Panel
-      title="Models"
+      title={t("models.title")}
       icon={<BotIcon className="h-4 w-4" />}
       className={className}
       actions={
         <button type="button" className="btn btn--sm" onClick={() => setDialog({ open: true, launcher: null })}>
           <PlusIcon className="h-3.5 w-3.5" />
-          Add model
+          {t("models.add")}
         </button>
       }
     >
       <div className="sp-models">
         {loadError ? (
           <p className="sp-models__error" role="alert">
-            Could not load models: {loadError}
+            {t("models.loadFailed", { message: loadError })}
           </p>
         ) : null}
         {loaded && !loadError && launchers.length === 0 ? (
           <div className="sp-models__empty">
-            <p>
-              Add the folder on {spark.name} that holds a model&rsquo;s <span className="mono">start.sh</span> and{" "}
-              <span className="mono">stop.sh</span>. Then start and stop it from here and watch it load.
-            </p>
+            <p>{t("models.empty", { name: spark.name })}</p>
             <button type="button" className="btn btn--primary btn--sm" onClick={() => setDialog({ open: true, launcher: null })}>
               <PlusIcon className="h-3.5 w-3.5" />
-              Add your first model
+              {t("models.addFirst")}
             </button>
           </div>
         ) : null}
         {launchers.length > 0 ? <ul className="sp-models__list">{rows}</ul> : null}
-        {!online && launchers.length > 0 ? <p className="sp-models__hint">{spark.name} is offline, so models cannot be started or stopped.</p> : null}
+        {!online && launchers.length > 0 ? <p className="sp-models__hint">{t("models.offline", { name: spark.name })}</p> : null}
         {actionError ? (
           <p className="sp-models__error" role="alert">
             {actionError}
@@ -457,8 +491,8 @@ function LlmModelsPanelFor({ spark, className }: { spark: SparkSnapshot; classNa
           <div className="sp-job">
             <div className="sp-job__bar">
               <div className="sp-job__title">
-                <Tag tone={jobTone(job)}>{STATUS_LABEL[job.status]}</Tag>
-                <span className="sp-job__name">{jobHeadline(job)}</span>
+                <Tag tone={jobTone(job)}>{statusLabel(t as unknown as Translate, job.status)}</Tag>
+                <span className="sp-job__name">{jobHeadline(job, t as unknown as Translate)}</span>
                 <Elapsed job={job} />
               </div>
               <div className="sp-job__tools">
@@ -467,36 +501,36 @@ function LlmModelsPanelFor({ spark, className }: { spark: SparkSnapshot; classNa
                     type="button"
                     className="btn btn--sm btn--ghost"
                     onClick={() => void cancel()}
-                    title={job.action === "stop" ? "Cancel the stop script" : "Stop watching. The script keeps running on the Spark."}
+                    title={job.action === "stop" ? t("models.cancelStopScript") : t("models.stopWatchingTitle")}
                   >
-                    {job.action === "stop" ? "Cancel" : "Stop watching"}
+                    {job.action === "stop" ? t("models.cancel") : t("models.stopWatching")}
                   </button>
                 ) : null}
                 {showTerminal ? (
                   <>
                     <button type="button" className="btn btn--sm btn--ghost" onClick={() => void copyOutput()}>
-                      {copied ? "Copied" : "Copy"}
+                      {copied ? t("shared.copied") : t("shared.copy")}
                     </button>
-                    <button type="button" className="sp-iconbtn" aria-label="Expand output" title="Expand" onClick={() => setExpanded(true)}>
+                    <button type="button" className="sp-iconbtn" aria-label={t("models.expandAria")} title={t("models.expand")} onClick={() => setExpanded(true)}>
                       <ExpandIcon className="h-3.5 w-3.5" />
                     </button>
                     <button type="button" className="btn btn--sm btn--ghost" onClick={() => setTermOpen(false)}>
-                      Hide output
+                      {t("models.hideOutput")}
                     </button>
                   </>
                 ) : (
                   <button type="button" className="btn btn--sm btn--ghost" onClick={() => setTermOpen(true)}>
-                    Show output
+                    {t("models.showOutput")}
                   </button>
                 )}
               </div>
             </div>
             {job.error ? <p className="sp-models__error">{job.error}</p> : null}
-            {jobError ? <p className="sp-models__hint">Lost contact with the dashboard server: {jobError}. Retrying…</p> : null}
+            {jobError ? <p className="sp-models__hint">{t("models.lostContact", { message: jobError })}</p> : null}
             {showTerminal ? (
               <>
                 <LiveTerminal lines={lines} partial={partial} running={job.status === "running"} />
-                {truncated ? <p className="sp-models__hint">Only the newest 5,000 lines are kept.</p> : null}
+                {truncated ? <p className="sp-models__hint">{t("models.truncated")}</p> : null}
               </>
             ) : null}
           </div>
@@ -504,7 +538,7 @@ function LlmModelsPanelFor({ spark, className }: { spark: SparkSnapshot; classNa
 
         <label className="sp-models__pref">
           <input type="checkbox" checked={autoShow} onChange={(e) => toggleAutoShow(e.target.checked)} />
-          <span>Show the output when I start or stop a model</span>
+          <span>{t("models.autoShow")}</span>
         </label>
       </div>
 
@@ -521,7 +555,7 @@ function LlmModelsPanelFor({ spark, className }: { spark: SparkSnapshot; classNa
       />
       <TerminalModal
         open={expanded && Boolean(job)}
-        title={job ? jobHeadline(job) : "Output"}
+        title={job ? jobHeadline(job, t as unknown as Translate) : t("models.outputTitle")}
         lines={lines}
         partial={partial}
         running={job?.status === "running"}

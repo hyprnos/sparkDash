@@ -51,6 +51,36 @@
     "iosHelp": "Tap the <b>Share</b> icon ⬆︎ in Safari, then <b>Add to Home Screen</b>.",
     "dismiss": "Dismiss"
   },
+  "connection": {
+    "connecting": "Connecting to live telemetry…",
+    "stale": "Telemetry is stale. Last valid update was {{age}} ago.",
+    "disconnectedShowing": "Live telemetry disconnected. Showing data from {{age}} ago.",
+    "waiting": "Live telemetry is disconnected. Waiting for the first valid update…",
+    "announcedError": "Telemetry data error.",
+    "announcedStale": "Telemetry is stale.",
+    "announcedDisconnected": "Live telemetry is disconnected."
+  },
+  "errorBanner": {
+    "dismiss": "Dismiss",
+    "dismissAria": "Dismiss error"
+  },
+  "openAccess": {
+    "label": "Open access",
+    "explanation": "This dashboard is reachable from your network without a token, so anyone on it can change settings. Set SPARKDASH_TOKEN on the server to require one.",
+    "dontShowAgain": "Don't show again"
+  },
+  "shutdownAll": {
+    "label": "Shut down all",
+    "title": "Shut down all online Sparks",
+    "confirmTitle": "Shutdown All",
+    "confirmOne": "Gracefully shut down all 1 online Spark? Offline nodes will be skipped.",
+    "confirmMany": "Gracefully shut down all {{count}} online Sparks? Offline nodes will be skipped.",
+    "confirmLabel": "Shut down all",
+    "resultShutDown": "{{count}} shut down",
+    "resultFailed": "{{count}} failed",
+    "resultSkipped": "{{count}} skipped",
+    "batchFailed": "Batch shutdown failed"
+  },
   "errors": {
     "loadSettings": "Could not load settings: {{message}}. Reload to retry.",
     "refreshSparks": "Could not refresh Sparks: {{message}}. Previous data remains visible.",

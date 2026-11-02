@@ -55,5 +55,35 @@
     "loadSettings": "تعذّر تحميل الإعدادات: {{message}}. أعد تحميل الصفحة للمحاولة مرة أخرى.",
     "refreshSparks": "تعذّر تحديث Sparks: {{message}}. ما زالت البيانات السابقة معروضة.",
     "saveOrder": "تعذّر حفظ ترتيب Sparks: {{message}}. تمت استعادة الترتيب السابق."
+  },
+  "connection": {
+    "connecting": "جارٍ الاتصال بالقياسات الحية…",
+    "stale": "القياسات قديمة. آخر تحديث صالح كان قبل {{age}}.",
+    "disconnectedShowing": "انقطع الاتصال بالقياسات الحية. تُعرض بيانات من قبل {{age}}.",
+    "waiting": "انقطع الاتصال بالقياسات الحية. بانتظار أول تحديث صالح…",
+    "announcedError": "خطأ في بيانات القياس.",
+    "announcedStale": "القياسات قديمة.",
+    "announcedDisconnected": "انقطع الاتصال بالقياسات الحية."
+  },
+  "errorBanner": {
+    "dismiss": "تجاهل",
+    "dismissAria": "تجاهل الخطأ"
+  },
+  "openAccess": {
+    "label": "وصول مفتوح",
+    "explanation": "هذه اللوحة متاحة من شبكتك دون رمز، لذا يمكن لأي شخص فيها تغيير الإعدادات. اضبط SPARKDASH_TOKEN على الخادم لطلب رمز.",
+    "dontShowAgain": "لا تُظهر مجددًا"
+  },
+  "shutdownAll": {
+    "label": "إيقاف الكل",
+    "title": "إيقاف كل Spark المتصلة",
+    "confirmTitle": "إيقاف الكل",
+    "confirmOne": "هل تريد إيقاف Spark الوحيد المتصل بأمان؟ ستُتخطى العقد غير المتصلة.",
+    "confirmMany": "هل تريد إيقاف كل Spark المتصلة ({{count}}) بأمان؟ ستُتخطى العقد غير المتصلة.",
+    "confirmLabel": "إيقاف الكل",
+    "resultShutDown": "أُوقف {{count}}",
+    "resultFailed": "فشل {{count}}",
+    "resultSkipped": "تُخطي {{count}}",
+    "batchFailed": "فشل الإيقاف الجماعي"
   }
 }

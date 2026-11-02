@@ -55,5 +55,35 @@
     "loadSettings": "設定を読み込めませんでした: {{message}}。再読み込みしてから再試行してください。",
     "refreshSparks": "Sparks を更新できませんでした: {{message}}。以前のデータを表示しています。",
     "saveOrder": "Spark の順序を保存できませんでした: {{message}}。以前の順序に戻しました。"
+  },
+  "connection": {
+    "connecting": "ライブテレメトリに接続しています…",
+    "stale": "テレメトリが古くなっています。最後の有効な更新は {{age}} 前です。",
+    "disconnectedShowing": "ライブテレメトリが切断されました。{{age}} 前のデータを表示しています。",
+    "waiting": "ライブテレメトリが切断されました。最初の有効な更新を待っています…",
+    "announcedError": "テレメトリデータのエラーです。",
+    "announcedStale": "テレメトリが古くなっています。",
+    "announcedDisconnected": "ライブテレメトリが切断されました。"
+  },
+  "errorBanner": {
+    "dismiss": "閉じる",
+    "dismissAria": "エラーを閉じる"
+  },
+  "openAccess": {
+    "label": "オープンアクセス",
+    "explanation": "このダッシュボードはトークンなしでネットワークから到達できるため、ネットワーク上の誰でも設定を変更できます。サーバーに SPARKDASH_TOKEN を設定してトークンを必須にしてください。",
+    "dontShowAgain": "今後表示しない"
+  },
+  "shutdownAll": {
+    "label": "すべてシャットダウン",
+    "title": "オンラインの Spark をすべてシャットダウン",
+    "confirmTitle": "すべてシャットダウン",
+    "confirmOne": "オンラインの Spark 1 台をすべて正常にシャットダウンしますか？オフラインのノードはスキップされます。",
+    "confirmMany": "オンラインの Spark {{count}} 台をすべて正常にシャットダウンしますか？オフラインのノードはスキップされます。",
+    "confirmLabel": "すべてシャットダウン",
+    "resultShutDown": "{{count}} 台をシャットダウンしました",
+    "resultFailed": "{{count}} 台が失敗しました",
+    "resultSkipped": "{{count}} 台をスキップしました",
+    "batchFailed": "一括シャットダウンに失敗しました"
   }
 }

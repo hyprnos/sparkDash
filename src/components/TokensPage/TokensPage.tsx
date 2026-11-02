@@ -417,7 +417,7 @@ export function TokensPage({ sparks, onSelectSpark }: { sparks: SparkSnapshot[];
               <li>{t("about.retention", { hours: data?.history.retention.hours ?? 840, days: data?.history.retention.days ?? 35 })}</li>
               <li>{data?.lifetime ? t("about.allTime") : t("about.allTimeUnavailable")}</li>
               <li>{t("about.vocabulary")}</li>
-              {view.w.prevKeys.length === 0 && spec.key !== "all" ? <li>{t("about.noComparison", { period: copy.prev })}</li> : null}
+              {view.w.prevKeys.length === 0 && spec.key !== "all" ? <li>{t("about.noComparison")}</li> : null}
             </ul>
           </section>
         </>

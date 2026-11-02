@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { HISTORY_MAX, useMetricsHistory, useTimedMetricsHistory, avgPositive } from "../../hooks/metricsStore";
 import type { TimedSample } from "../../hooks/ringBuffer";
 
@@ -58,9 +59,11 @@ function fmtSpan(seconds: number): string {
   return `${h % 1 === 0 ? h : h.toFixed(1)}h`;
 }
 
-function historyLabel(): string {
-  return `last 30m · averages since page opened (up to ${fmtSpan(HISTORY_MAX * 2)})`;
+function historyLabel(t: Translate): string {
+  return t("trend.label", { span: fmtSpan(HISTORY_MAX * 2) });
 }
+
+type Translate = (key: string, vars?: Record<string, string | number>) => string;
 
 /** Newest DISPLAY_WINDOW samples — the slice the chart draws. */
 function windowed(data: readonly number[]): readonly number[] {
@@ -86,6 +89,7 @@ export function LlmTrendChart({
   sparkId: string;
   llmPort: number;
 }) {
+  const { t } = useTranslation("spark");
   const gen = useMetricsHistory(sparkId, `llm:${llmPort}.tps`);
   const prefill = useMetricsHistory(sparkId, `llm:${llmPort}.prefill`);
   const ttft = useMetricsHistory(sparkId, `llm:${llmPort}.ttft`);
@@ -113,18 +117,18 @@ export function LlmTrendChart({
   return (
     <div className="sp-section">
       <div className="sp-section__head">
-        <span className="eyebrow">tok/s history</span>
-        <span className="sp-muted">{historyLabel()}</span>
+        <span className="eyebrow">{t("trend.title")}</span>
+        <span className="sp-muted">{historyLabel(t)}</span>
       </div>
       {!hasData ? (
-        <p className="sp-muted">No samples yet.</p>
+        <p className="sp-muted">{t("trend.noSamples")}</p>
       ) : (
         <svg
           viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
           preserveAspectRatio="none"
           className="sp-trend-svg"
           role="img"
-          aria-label="Generation and prefill tokens per second over the last 30 minutes"
+          aria-label={t("trend.aria")}
         >
           {prefillPts.map((points, index) => (
             <g key={`prefill-${index}`}>
@@ -158,20 +162,20 @@ export function LlmTrendChart({
       )}
       <div className="sp-trend-foot">
         <span>
-          Gen avg{" "}
+          {t("trend.genAvg")}{" "}
           <span className="mono text-accent">{fmt(genAvg)}</span>
         </span>
         <span>
-          Prefill avg{" "}
+          {t("trend.prefillAvg")}{" "}
           <span className="mono text-text">{fmt(prefillAvg)}</span>
         </span>
         <span>
-          TTFT avg{" "}
+          {t("trend.ttftAvg")}{" "}
           <span className="mono">
             {ttftAvg != null ? `${ttftAvg.toFixed(3)}s` : "—"}
           </span>
         </span>
-        <span>avg over busy samples only</span>
+        <span>{t("trend.busySamples")}</span>
       </div>
     </div>
   );

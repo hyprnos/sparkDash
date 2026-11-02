@@ -1,10 +1,13 @@
 import { useEffect, useId, useState, type KeyboardEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { fetchLlmDaily } from "../../api/client";
 import type { LlmDailyDay } from "../../api/types";
 
 const CHART_W = 196;
 const CHART_H = 36;
 const POLL_MS = 60_000;
+
+type Translate = (key: string, vars?: Record<string, string | number>) => string;
 
 function fmt(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(n)) return "—";
@@ -33,15 +36,29 @@ export function barHeight(value: number, seriesMax: number, height: number): num
 }
 
 /** Tooltip lines for one day: date, decode peak, prefill peak(s). */
-export function dailyTooltipLines(day: LlmDailyDay, hasSplit: boolean): string[] {
+export function dailyTooltipLines(day: LlmDailyDay, hasSplit: boolean, tr?: Translate): string[] {
+  const text = (key: string, vars: Record<string, string | number>, fallback: string) =>
+    tr ? tr(key, vars) : fallback;
   return [
     day.date,
-    `Decode peak ${fmt(day.decodeMax)} tok/s (avg ${fmt(day.decodeAvg)})`,
+    text("daily.tooltipDecode", { peak: fmt(day.decodeMax), avg: fmt(day.decodeAvg) }, `Decode peak ${fmt(day.decodeMax)} tok/s (avg ${fmt(day.decodeAvg)})`),
     hasSplit
-      ? `Uncached prefill peak ${fmt(day.uncachedPrefillMax)} tok/s (avg ${fmt(day.uncachedPrefillAvg)})`
-      : `Prefill peak ${fmt(day.prefillMax)} tok/s (avg ${fmt(day.prefillAvg)})`,
+      ? text(
+          "daily.tooltipUncachedPrefill",
+          { peak: fmt(day.uncachedPrefillMax), avg: fmt(day.uncachedPrefillAvg) },
+          `Uncached prefill peak ${fmt(day.uncachedPrefillMax)} tok/s (avg ${fmt(day.uncachedPrefillAvg)})`
+        )
+      : text(
+          "daily.tooltipPrefill",
+          { peak: fmt(day.prefillMax), avg: fmt(day.prefillAvg) },
+          `Prefill peak ${fmt(day.prefillMax)} tok/s (avg ${fmt(day.prefillAvg)})`
+        ),
     hasSplit
-      ? `Cached prefill peak ${fmt(day.cachedPrefillMax)} tok/s (avg ${fmt(day.cachedPrefillAvg)})`
+      ? text(
+          "daily.tooltipCachedPrefill",
+          { peak: fmt(day.cachedPrefillMax), avg: fmt(day.cachedPrefillAvg) },
+          `Cached prefill peak ${fmt(day.cachedPrefillMax)} tok/s (avg ${fmt(day.cachedPrefillAvg)})`
+        )
       : null,
   ].filter((line): line is string => line != null);
 }
@@ -53,6 +70,7 @@ export function LlmDailyChart({
   sparkId: string;
   llmPort: number;
 }) {
+  const { t } = useTranslation("spark");
   const [days, setDays] = useState<LlmDailyDay[] | null>(null);
   /** Day under the pointer or keyboard cursor; null hides the tooltip. */
   const [active, setActive] = useState<number | null>(null);
@@ -71,10 +89,10 @@ export function LlmDailyChart({
         });
     };
     load();
-    const t = setInterval(load, POLL_MS);
+    const timer = setInterval(load, POLL_MS);
     return () => {
       cancelled = true;
-      clearInterval(t);
+      clearInterval(timer);
     };
   }, [sparkId, llmPort]);
 
@@ -88,7 +106,7 @@ export function LlmDailyChart({
   // Each series on its own 14-day scale (see barHeight).
   const decodeMax = Math.max(0, ...decodeVals);
   const prefillMax = Math.max(0, ...prefillVals);
-  const prefillName = hasSplit ? "uncached prefill" : "prefill";
+  const prefillName = hasSplit ? t("daily.uncachedPrefill") : t("daily.prefill");
   const axisLabel = (m: number) => (m > 0 ? formatAxisMax(m) : "—");
   const n = days.length;
   const gap = 1.5;
@@ -122,17 +140,19 @@ export function LlmDailyChart({
     setActive(next);
   };
 
+  const prefillDisplay = prefillName.charAt(0).toUpperCase() + prefillName.slice(1);
+
   return (
     <div className="sp-section">
       <div className="sp-section__head">
-        <span className="eyebrow">Daily peak tok/s</span>
+        <span className="eyebrow">{t("daily.title")}</span>
         <span className="sp-muted">
-          <span className="text-accent">decode</span> ·{" "}
-          <span className="text-text opacity-60">{prefillName}</span> · own scales · 14d
+          <span className="text-accent">{t("daily.decodeLabel")}</span> ·{" "}
+          <span className="text-text opacity-60">{t("daily.legend", { prefill: prefillName })}</span>
         </span>
       </div>
       {!busy ? (
-        <p className="text-[10px] text-muted">No busy samples in the last 14 days.</p>
+        <p className="text-[10px] text-muted">{t("daily.empty")}</p>
       ) : (
         <div className="flex items-stretch gap-1.5">
           <div
@@ -144,14 +164,14 @@ export function LlmDailyChart({
               <span
                 className="block text-accent"
                 data-testid="daily-chart-ymax-decode"
-                title={`Decode scale: top of the chart is ${axisLabel(decodeMax)}`}
+                title={t("daily.decodeScaleTitle", { value: axisLabel(decodeMax) })}
               >
                 {axisLabel(decodeMax)}
               </span>
               <span
                 className="block text-text opacity-60"
                 data-testid="daily-chart-ymax-prefill"
-                title={`${prefillName[0].toUpperCase()}${prefillName.slice(1)} scale: top of the chart is ${axisLabel(prefillMax)}`}
+                title={t("daily.prefillScaleTitle", { name: prefillDisplay, value: axisLabel(prefillMax) })}
               >
                 {axisLabel(prefillMax)}
               </span>
@@ -162,7 +182,12 @@ export function LlmDailyChart({
             className="relative rounded-sm outline-none focus-visible:ring-1 focus-visible:ring-accent"
             tabIndex={0}
             role="group"
-            aria-label={`Daily peak decode and prefill tokens per second, last ${n} days. Each series has its own scale: decode 0 to ${axisLabel(decodeMax)}, ${prefillName} 0 to ${axisLabel(prefillMax)}. Use the arrow keys to read each day.`}
+            aria-label={t("daily.aria", {
+              days: n,
+              decodeMax: axisLabel(decodeMax),
+              prefill: prefillName,
+              prefillMax: axisLabel(prefillMax),
+            })}
             aria-describedby={activeDay ? tooltipId : undefined}
             onKeyDown={onKeyDown}
             onFocus={() => {
@@ -241,7 +266,7 @@ export function LlmDailyChart({
                     : { right: CHART_W - (activeIdx + 1) * slot }
                 }
               >
-                {dailyTooltipLines(activeDay, hasSplit).map((line, i) => (
+                {dailyTooltipLines(activeDay, hasSplit, t).map((line, i) => (
                   <div
                     key={i}
                     className={i === 0 ? "font-semibold text-text-strong" : "font-tabular"}

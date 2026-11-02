@@ -14,6 +14,9 @@ import { decodeBenchTypeLabel } from "../../shared/llmPrompts.js";
 import { backendLabel } from "../../shared/llmBackends.js";
 import { formatContextSize } from "../../shared/prefillBench.js";
 import { QUALITY_CATEGORIES, QUALITY_CATEGORY_LABELS, checkQualityComparable } from "../../shared/qualityBench.js";
+import { decodeTypeLabel } from "./benchTypeLabels";
+import enSpark from "../../locales/en/spark.json";
+import { qualityCategoryLabel } from "./qualityCategoryLabels";
 import type { DecodeBenchJob, PrefillBenchJob, QualityBenchJob, ToolEvalRun } from "../../api/types";
 import { compareToolResults, configCaveats, type Delta as CompareDelta } from "../bench/tooleval/compare";
 import { scoreTier } from "../bench/tooleval/format";
@@ -177,6 +180,8 @@ export interface ShareCardModel {
   footer: string;
   /** Epoch ms the card was produced — footer stamp and filename. */
   generatedAt: number;
+  /** Painted where the model name is missing, in the caller's language. */
+  unknownModelLabel?: string;
   /** Set for the Quality card: painted as a ring and tiles instead of the row table. */
   quality?: ShareCardQuality;
   /** Set for the Tool Eval card: painted as a score hero, outcome strip and category grid. */
@@ -187,6 +192,8 @@ export interface ShareCardModel {
 
 export interface ShareCardSource {
   llmPort: number;
+  /** Translator for the card's own words; without one the English fallbacks below are painted. */
+  t?: (key: string, vars?: Record<string, string | number>) => string;
   modelId: string | null;
   /** Backend id from the probe (`tensorfold`, `sglang`, …). */
   engine?: string | null;
@@ -196,6 +203,23 @@ export interface ShareCardSource {
   sparkName?: string | null;
   /** Remote bench host (hostname / URL) instead of this Spark's LAN path. */
   remoteHost?: string | null;
+}
+
+/**
+ * English text for one catalog key, used when a caller builds a card without a
+ * translator (the Tool Eval pages, tests). The `spark` catalog is already bundled
+ * for i18next, so this adds no weight.
+ */
+export function shareCardEnglish(key: string, vars?: Record<string, string | number>): string | null {
+  let node: unknown = enSpark;
+  for (const part of key.split(".")) {
+    if (!node || typeof node !== "object") return null;
+    node = (node as Record<string, unknown>)[part];
+  }
+  if (typeof node !== "string") return null;
+  return vars
+    ? node.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_match, name: string) => String(vars[name] ?? ""))
+    : node;
 }
 
 /** `2026-09-17` in local time. */
@@ -217,17 +241,18 @@ export function shareCardFileName(model: ShareCardModel, kind: "decode" | "prefi
 }
 
 export function shareCardStatus(
-  status: DecodeBenchJob["status"] | PrefillBenchJob["status"] | QualityBenchJob["status"]
+  status: DecodeBenchJob["status"] | PrefillBenchJob["status"] | QualityBenchJob["status"],
+  t?: (key: string, vars?: Record<string, string | number>) => string
 ): { label: string; tone: ShareCardTone } {
   switch (status) {
     case "completed":
-      return { label: "COMPLETED", tone: "ok" };
+      return { label: t ? t("shareCard.statusCompleted") : "COMPLETED", tone: "ok" };
     case "running":
-      return { label: "RUNNING", tone: "warn" };
+      return { label: t ? t("shareCard.statusRunning") : "RUNNING", tone: "warn" };
     case "failed":
-      return { label: "FAILED", tone: "bad" };
+      return { label: t ? t("shareCard.statusFailed") : "FAILED", tone: "bad" };
     case "cancelled":
-      return { label: "CANCELLED", tone: "muted" };
+      return { label: t ? t("shareCard.statusCancelled") : "CANCELLED", tone: "muted" };
     default:
       return { label: String(status).toUpperCase(), tone: "muted" };
   }
@@ -258,7 +283,11 @@ export function shareCardChips(src: ShareCardSource): ShareCardChip[] {
 
 /** `Port 8888 · org/model`, or the remote host when the run used one. */
 export function shareCardSubtitle(src: ShareCardSource): string {
-  const target = src.remoteHost ? src.remoteHost : `Port ${src.llmPort}`;
+  const target = src.remoteHost
+    ? src.remoteHost
+    : src.t
+      ? src.t("shareCard.port", { port: src.llmPort })
+      : `Port ${src.llmPort}`;
   return src.modelId ? `${target} · ${src.modelId}` : target;
 }
 
@@ -271,6 +300,8 @@ export function buildDecodeShareCard(
   src: ShareCardSource,
   now: number = Date.now()
 ): ShareCardModel {
+  const tr = (key: string, vars?: Record<string, string | number>, fallback?: string) =>
+    src.t ? src.t(key, vars) : (shareCardEnglish(key, vars) ?? fallback ?? key);
   const rows = job.results
     .slice()
     .sort((a, b) => a.concurrency - b.concurrency)
@@ -281,8 +312,8 @@ export function buildDecodeShareCard(
       return {
         load: `×${r.concurrency}`,
         detail: failed
-          ? r.error || "failed"
-          : `TTFT ${formatTtft(r.meanTtftMs)} · ${r.streamsOk}/${streams} streams`,
+          ? r.error || tr("shareCard.failed", undefined, "failed")
+          : tr("shareCard.ttftDetail", { ttft: formatTtft(r.meanTtftMs), streams: `${r.streamsOk}/${streams}` }, `TTFT ${formatTtft(r.meanTtftMs)} · ${r.streamsOk}/${streams} streams`),
         primary: failed ? "—" : agg.toFixed(1),
         secondary: failed ? "—" : r.meanDecodeTps.toFixed(1),
         primaryUnit: "tok/s",
@@ -295,19 +326,30 @@ export function buildDecodeShareCard(
   return {
     brand: "sparkDash",
     host: src.sparkName || "",
-    title: "Decode benchmark",
+    title: tr("shareCard.decodeTitle", undefined, "Decode benchmark"),
     subtitle: shareCardSubtitle(src),
     chips: shareCardChips(src),
-    status: shareCardStatus(job.status),
-    meta: `${decodeBenchTypeLabel(job.config?.promptType)} · ${job.config?.maxTokens ?? "?"} tok · ${decodeBenchSamplingLabel(job.config)}${
-      job.config?.contextTokens ? ` · ${formatContextSize(job.config.contextTokens)} start ctx` : ""
+    status: shareCardStatus(job.status, src.t),
+    meta: `${decodeTypeLabel(tr as (key: string, vars?: Record<string, string | number>) => string, job.config?.promptType)} · ${job.config?.maxTokens ?? "?"} tok · ${decodeBenchSamplingLabel(job.config, src.t)}${
+      job.config?.contextTokens
+        ? ` · ${tr("shareCard.startCtx", { size: formatContextSize(job.config.contextTokens) }, `${formatContextSize(job.config.contextTokens)} start ctx`)}`
+        : ""
     } · ${
-      concurrencies.length ? `${concurrencies.join(", ")} conc` : "—"
+      concurrencies.length
+        ? tr("shareCard.concTag", { list: concurrencies.join(", ") }, `${concurrencies.join(", ")} conc`)
+        : "—"
     }${job.durationMs != null ? ` · ${formatDuration(job.durationMs)}` : ""}`,
-    columns: { load: "Load", primary: "Aggregate", secondary: "Stream" },
+    columns: {
+      load: tr("shareCard.decodeLoad", undefined, "Load"),
+      primary: tr("shareCard.decodeAggregate", undefined, "Aggregate"),
+      secondary: tr("shareCard.decodeStream", undefined, "Stream"),
+    },
     rows,
-    legend:
-      "Aggregate — total decode tok/s across all concurrent streams. Stream — per-stream average decode.",
+    legend: tr(
+      "shareCard.decodeLegend",
+      undefined,
+      "Aggregate — total decode tok/s across all concurrent streams. Stream — per-stream average decode."
+    ),
     footer: "github.com/MiaAI-Lab/sparkDash",
     generatedAt: now,
   };
@@ -322,20 +364,24 @@ export function buildPrefillShareCard(
   src: ShareCardSource,
   now: number = Date.now()
 ): ShareCardModel {
+  const tr = (key: string, vars?: Record<string, string | number>, fallback?: string) =>
+    src.t ? src.t(key, vars) : (shareCardEnglish(key, vars) ?? fallback ?? key);
   const rows = job.results
     .slice()
     .sort((a, b) => a.targetTokens - b.targetTokens)
     .map<ShareCardRow>((r) => {
       const failed = Boolean(r.error) || r.prefillTps <= 0;
       const partial = !failed && r.samples != null && r.samplesRequested != null && r.samples < r.samplesRequested;
-      const flags = [partial ? `${r.samples}/${r.samplesRequested} samples` : null, !failed && r.lowConfidence ? "low confidence" : null].filter(Boolean);
+      const flags = [partial ? `${r.samples}/${r.samplesRequested} samples` : null, !failed && r.lowConfidence ? tr("prefillBench.lowConfidenceShort", undefined, "low confidence") : null].filter(Boolean);
       return {
         load: formatContextSize(r.targetTokens),
         detail: failed
-          ? r.error || "No prefill rate was measured"
-          : `TTFT ${formatTtft(r.ttftMs)} · ${
-              r.promptTokens > 0 ? `${r.promptTokens.toLocaleString("en-US")} tokens` : "—"
-            }${flags.length ? ` · ${flags.join(", ")}` : ""}`,
+          ? r.error || tr("bench.noPrefillRate", undefined, "No prefill rate was measured")
+          : tr("shareCard.prefillDetail", {
+              ttft: formatTtft(r.ttftMs),
+              tokens: r.promptTokens > 0 ? r.promptTokens.toLocaleString("en-US") : "—",
+            }, `TTFT ${formatTtft(r.ttftMs)} · ${r.promptTokens > 0 ? `${r.promptTokens.toLocaleString("en-US")} tokens` : "—"}`) +
+            (flags.length ? ` · ${flags.join(", ")}` : ""),
         primary: failed ? "—" : r.prefillTps.toFixed(1),
         secondary: failed ? "—" : formatTtft(r.ttftMs),
         primaryUnit: "tok/s",
@@ -348,17 +394,24 @@ export function buildPrefillShareCard(
   return {
     brand: "sparkDash",
     host: src.sparkName || "",
-    title: "Prefill benchmark",
+    title: tr("shareCard.prefillTitle", undefined, "Prefill benchmark"),
     subtitle: shareCardSubtitle(src),
     chips: shareCardChips(src),
-    status: shareCardStatus(job.status),
-    meta: `${sizes.length ? `${sizes.map(formatContextSize).join(", ")} ctx` : "—"}${
+    status: shareCardStatus(job.status, src.t),
+    meta: `${sizes.length ? tr("shareCard.ctxTag", { size: sizes.map(formatContextSize).join(", ") }, `${sizes.map(formatContextSize).join(", ")} ctx`) : "—"}${
       job.durationMs != null ? ` · ${formatDuration(job.durationMs)}` : ""
     }`,
-    columns: { load: "Context", primary: "Prefill", secondary: "TTFT" },
+    columns: {
+      load: tr("shareCard.prefillContext", undefined, "Context"),
+      primary: tr("shareCard.prefillPrimary", undefined, "Prefill"),
+      secondary: tr("shareCard.prefillSecondary", undefined, "TTFT"),
+    },
     rows,
-    legend:
-      "Prefill — server prompt timing, else tokens ÷ (TTFT − request overhead), cache hits excluded. TTFT — time to first token. Median-rate sample.",
+    legend: tr(
+      "shareCard.prefillLegend",
+      undefined,
+      "Prefill — server prompt timing, else tokens ÷ (TTFT − request overhead), cache hits excluded. TTFT — time to first token. Median-rate sample."
+    ),
     footer: "github.com/MiaAI-Lab/sparkDash",
     generatedAt: now,
   };
@@ -376,6 +429,8 @@ export function buildQualityShareCard(
 ): ShareCardModel {
   // Runs from different suite/scoring versions are not comparable: show the plain card.
   if (compare && !checkQualityComparable(job, compare).ok) compare = null;
+  const tr = (key: string, vars?: Record<string, string | number>, fallback?: string) =>
+    src.t ? src.t(key, vars) : (shareCardEnglish(key, vars) ?? fallback ?? key);
   const rows: ShareCardRow[] = [];
   for (const cat of QUALITY_CATEGORIES) {
     const s = job.results?.categories?.[cat];
@@ -383,12 +438,14 @@ export function buildQualityShareCard(
     const other = compare?.results?.categories?.[cat];
     const delta = s.pct != null && other?.pct != null ? Math.round((s.pct - other.pct) * 10) / 10 : null;
     rows.push({
-      load: QUALITY_CATEGORY_LABELS[cat],
-      detail: `${s.passed}/${s.scored ?? s.total} items${s.errors > 0 ? ` · ${s.errors} error${s.errors === 1 ? "" : "s"}` : ""}`,
+      load: src.t ? qualityCategoryLabel(src.t, cat) : QUALITY_CATEGORY_LABELS[cat],
+      detail: `${tr("shareCard.qualityItems", { passed: s.passed, total: s.scored ?? s.total }, `${s.passed}/${s.scored ?? s.total} items`)}${
+        s.errors > 0 ? ` · ${s.errors} error${s.errors === 1 ? "" : "s"}` : ""
+      }`,
       primary: s.pct == null ? "—" : s.pct.toFixed(1),
       secondary: delta == null ? "" : `${delta > 0 ? "+" : ""}${delta.toFixed(1)}`,
       primaryUnit: "%",
-      secondaryUnit: delta == null ? "" : "pts",
+      secondaryUnit: delta == null ? "" : tr("shareCard.qualityDeltaUnit", undefined, "pts"),
       tone: s.pct == null ? "bad" : delta != null && delta < 0 ? "warn" : "ok",
     });
   }
@@ -407,31 +464,42 @@ export function buildQualityShareCard(
   const catKeys = QUALITY_CATEGORIES.filter((c) => job.results?.categories?.[c]);
   const itemTotal = catKeys.reduce((n, c) => n + (job.results?.categories?.[c]?.total ?? 0), 0);
   const summary = [
-    `${tiles.length} ${tiles.length === 1 ? "category" : "categories"}`,
-    `${itemTotal.toLocaleString("en-US")} items`,
+    tiles.length === 1
+      ? tr("shareCard.qualitySummaryCategoriesOne", { count: tiles.length }, "1 category")
+      : tr("shareCard.qualitySummaryCategoriesMany", { count: tiles.length }, `${tiles.length} categories`),
+    tr("shareCard.qualitySummaryItems", { count: itemTotal.toLocaleString("en-US") }, `${itemTotal.toLocaleString("en-US")} items`),
     ...(job.durationMs != null ? [formatDuration(job.durationMs)] : []),
   ].join(" · ");
   return {
     quality: {
       overall: overall ?? null,
       modelName: src.modelId || "",
-      target: src.remoteHost ? src.remoteHost : `Port ${src.llmPort}`,
+      target: src.remoteHost
+        ? src.remoteHost
+        : src.t
+          ? src.t("shareCard.port", { port: src.llmPort })
+          : `Port ${src.llmPort}`,
       runLabel: job.config?.label || "",
       summary,
       tiles,
     },
     brand: "sparkDash",
     host: src.sparkName || "",
-    title: "Quality benchmark",
+    unknownModelLabel: tr("shareCard.unknownModel", undefined, "Unknown model"),
+    title: tr("shareCard.qualityTitle", undefined, "Quality benchmark"),
     subtitle: shareCardSubtitle(src),
     chips: shareCardChips(src),
-    status: shareCardStatus(job.status),
-    meta: `Overall ${overall == null ? "—" : `${overall.toFixed(1)}%`}${job.config?.label ? ` · ${job.config.label}` : ""}${
-      job.durationMs != null ? ` · ${formatDuration(job.durationMs)}` : ""
-    }`,
-    columns: { load: "Category", primary: "Score", secondary: compare ? "vs other" : "" },
+    status: shareCardStatus(job.status, src.t),
+    meta: `${tr("shareCard.qualityOverall", { overall: overall == null ? "—" : `${overall.toFixed(1)}%` }, `Overall ${overall == null ? "—" : `${overall.toFixed(1)}%`}`)}${
+      job.config?.label ? ` · ${job.config.label}` : ""
+    }${job.durationMs != null ? ` · ${formatDuration(job.durationMs)}` : ""}`,
+    columns: {
+      load: tr("shareCard.qualityCategory", undefined, "Category"),
+      primary: tr("shareCard.qualityScore", undefined, "Score"),
+      secondary: compare ? tr("shareCard.qualityVsOther", undefined, "vs other") : "",
+    },
     rows,
-    legend: "Score — share of items passed. Temperature 0, fixed seed.",
+    legend: tr("shareCard.qualityLegend", undefined, "Score — share of items passed. Temperature 0, fixed seed."),
     footer: "github.com/MiaAI-Lab/sparkDash",
     generatedAt: now,
   };
@@ -1171,7 +1239,7 @@ function paintQualityCard(ctx: ShareCardContext, P: Palette, model: ShareCardMod
   ctx.textBaseline = "alphabetic";
   ctx.fillStyle = P.textStrong;
   ctx.font = font(700, 44);
-  ctx.fillText("Quality benchmark", PAD, PAD + 78);
+  ctx.fillText(model.title, PAD, PAD + 78);
   ctx.font = font(700, 20);
   const pillW = ctx.measureText(model.status.label).width + 40;
   drawPill(ctx, P, PAD + inner - pillW, PAD + 46, model.status.label, model.status.tone);
@@ -1229,7 +1297,7 @@ function paintQualityCard(ctx: ShareCardContext, P: Palette, model: ShareCardMod
   ctx.textBaseline = "alphabetic";
   ctx.fillStyle = P.textStrong;
   ctx.font = font(700, 36);
-  ctx.fillText(fitText(ctx, q.modelName || "Unknown model", textW), textX, cy - 40);
+  ctx.fillText(fitText(ctx, q.modelName || model.unknownModelLabel || "Unknown model", textW), textX, cy - 40);
   ctx.fillStyle = P.muted;
   ctx.font = font(500, 22);
   const where = [q.target, q.runLabel].filter(Boolean).join(" · ");

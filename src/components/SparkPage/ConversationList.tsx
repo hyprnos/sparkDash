@@ -1,6 +1,8 @@
+import { useTranslation } from "react-i18next";
 import type { ConversationRow } from "../../api/types";
 import { PlusIcon } from "../ui/icons";
 
+/** Product names, not translated. */
 const SOURCE_LABEL: Record<string, string> = {
   openclaw: "OpenClaw",
   hermes: "Hermes",
@@ -15,13 +17,15 @@ interface ConversationListProps {
   now?: number;
 }
 
-function formatSessionAge(lastUsedAt: number | undefined, now: number): string {
+type Translate = (key: string, vars?: Record<string, string | number>) => string;
+
+function formatSessionAge(lastUsedAt: number | undefined, now: number, t: Translate): string {
   if (lastUsedAt == null || !Number.isFinite(lastUsedAt)) return "—";
   const delta = Math.max(0, now - lastUsedAt);
   const minute = 60_000;
   const hour = 60 * minute;
   const day = 24 * hour;
-  if (delta < minute) return "now";
+  if (delta < minute) return t("conversations.now");
   if (delta < hour) return `${Math.floor(delta / minute)}m`;
   if (delta < day) return `${Math.floor(delta / hour)}h`;
   if (delta < 7 * day) return `${Math.floor(delta / day)}d`;
@@ -52,19 +56,19 @@ function contextLabel(row: ConversationRow): string {
   return `${used}/${formatTokens(row.contextWindow)}`;
 }
 
-function contextTitle(row: ConversationRow): string {
+function contextTitle(row: ConversationRow, t: Translate): string {
   const used = row.contextUsed?.toLocaleString();
   const window = row.contextWindow?.toLocaleString();
-  if (used && window) return `${row.contextApprox ? "~" : ""}${used} / ${window} tokens`;
-  if (used) return `${row.contextApprox ? "~" : ""}${used} tokens`;
-  if (window) return `${window} token window`;
+  if (used && window) return t("conversations.contextTitle", { used, window });
+  if (used) return t("conversations.contextUsedTitle", { used });
+  if (window) return t("conversations.contextWindowTitle", { window });
   return "";
 }
 
-function stateLabel(row: ConversationRow, now: number): string {
-  if (row.badge === "generating") return "Generating";
-  if (row.badge === "stalled") return "Stalled";
-  return formatSessionAge(row.lastUsedAt, now);
+function stateLabel(row: ConversationRow, now: number, t: Translate): string {
+  if (row.badge === "generating") return t("conversations.generating");
+  if (row.badge === "stalled") return t("conversations.stalled");
+  return formatSessionAge(row.lastUsedAt, now, t);
 }
 
 function laneLabel(source: string, agent?: string): string {
@@ -90,30 +94,32 @@ function groupConversations(rows: ConversationRow[]) {
 }
 
 export function ConversationList({ conversations, onAddHarness, now = Date.now() }: ConversationListProps) {
+  const { t } = useTranslation("spark");
   const groups = groupConversations(conversations);
+  const translate = t as unknown as Translate;
 
   return (
     <div className="occupancy">
       <div className="occupancy-head">
         <span className="occupancy-head-count">{conversations.length}</span>
-        <span className="occupancy-head-title">Sessions</span>
+        <span className="occupancy-head-title">{t("conversations.sessions")}</span>
         {onAddHarness && (
-          <button type="button" title="Add harness" aria-label="Add harness" onClick={onAddHarness} className="occupancy-head-add">
+          <button type="button" title={t("conversations.addHarness")} aria-label={t("conversations.addHarness")} onClick={onAddHarness} className="occupancy-head-add">
             <PlusIcon className="h-3.5 w-3.5" />
           </button>
         )}
       </div>
       {conversations.length === 0 ? (
         <div className="occupancy-empty">
-          <p>No sessions on this LLM. Attach OpenClaw, Hermes, OpenCode, oh-my-pi, or DeepSeek Harness.</p>
+          <p>{t("conversations.empty")}</p>
           {onAddHarness && (
             <button type="button" onClick={onAddHarness} className="occupancy-add-harness">
-              + Harness
+              {t("conversations.addHarnessShort")}
             </button>
           )}
         </div>
       ) : (
-        <div className="occupancy-list" aria-label="Harness sessions on this LLM">
+        <div className="occupancy-list" aria-label={t("conversations.listAria")}>
           {groups.map((group) => (
             <section key={group.key} className="occupancy-lane">
               <h3 className="occupancy-lane-label">{group.label}</h3>
@@ -121,13 +127,13 @@ export function ConversationList({ conversations, onAddHarness, now = Date.now()
                 {group.rows.map((row) => {
                   const ctx = contextLabel(row);
                   return (
-                    <li key={row.id} className={`occupancy-row is-${occupancyTone(row, now)}`} title={row.stale ? "Last refresh failed; this row is stale" : undefined}>
+                    <li key={row.id} className={`occupancy-row is-${occupancyTone(row, now)}`} title={row.stale ? t("conversations.staleTitle") : undefined}>
                       <span className="occupancy-dot" aria-hidden="true" />
                       <span className="occupancy-handle" title={row.handle}>{row.handle}</span>
-                      <span className="occupancy-ctx" title={ctx ? contextTitle(row) : undefined}>{ctx}</span>
+                      <span className="occupancy-ctx" title={ctx ? contextTitle(row, translate) : undefined}>{ctx}</span>
                       <span className="occupancy-state">
-                        {stateLabel(row, now)}
-                        {row.stale ? <span className="occupancy-stale"> stale</span> : null}
+                        {stateLabel(row, now, translate)}
+                        {row.stale ? <span className="occupancy-stale"> {t("conversations.stale")}</span> : null}
                       </span>
                     </li>
                   );

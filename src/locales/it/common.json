@@ -55,5 +55,35 @@
     "loadSettings": "Impossibile caricare le impostazioni: {{message}}. Ricarica per riprovare.",
     "refreshSparks": "Impossibile aggiornare gli Sparks: {{message}}. Restano visibili i dati precedenti.",
     "saveOrder": "Impossibile salvare l'ordine degli Sparks: {{message}}. È stato ripristinato l'ordine precedente."
+  },
+  "connection": {
+    "connecting": "Connessione alla telemetria in tempo reale…",
+    "stale": "La telemetria non è aggiornata. L’ultimo aggiornamento valido è di {{age}} fa.",
+    "disconnectedShowing": "Telemetria in tempo reale disconnessa. Sono mostrati dati di {{age}} fa.",
+    "waiting": "La telemetria in tempo reale è disconnessa. In attesa del primo aggiornamento valido…",
+    "announcedError": "Errore nei dati di telemetria.",
+    "announcedStale": "La telemetria non è aggiornata.",
+    "announcedDisconnected": "La telemetria in tempo reale è disconnessa."
+  },
+  "errorBanner": {
+    "dismiss": "Ignora",
+    "dismissAria": "Ignora errore"
+  },
+  "openAccess": {
+    "label": "Accesso aperto",
+    "explanation": "Questa dashboard è raggiungibile dalla tua rete senza token, quindi chiunque sulla rete può modificare le impostazioni. Imposta SPARKDASH_TOKEN sul server per richiederlo.",
+    "dontShowAgain": "Non mostrare più"
+  },
+  "shutdownAll": {
+    "label": "Spegni tutto",
+    "title": "Spegni tutti gli Spark online",
+    "confirmTitle": "Spegni tutto",
+    "confirmOne": "Spegnere in modo ordinato l’unico Spark online? I nodi offline verranno saltati.",
+    "confirmMany": "Spegnere in modo ordinato tutti i {{count}} Spark online? I nodi offline verranno saltati.",
+    "confirmLabel": "Spegni tutto",
+    "resultShutDown": "{{count}} spenti",
+    "resultFailed": "{{count}} non riusciti",
+    "resultSkipped": "{{count}} saltati",
+    "batchFailed": "Spegnimento collettivo non riuscito"
   }
 }

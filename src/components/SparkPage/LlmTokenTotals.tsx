@@ -4,25 +4,18 @@
  * anchor line + one import line (see docs/LOCAL-MODS.md).
  */
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { fetchLlmTokenTotals } from "../../api/llmTokenClient";
 import { formatTokensCompact } from "../../shared/tokenFormat";
 import { formatSince } from "../../shared/formatSince";
 import type { LlmTokenRange, LlmTokenSeriesTotals } from "../../api/llmTokenTypes";
-import { LEDGER_HINT, LEDGER_TITLE } from "./tokenTotalsCopy";
 
 const POLL_MS = 60_000;
 
-const RANGE_OPTIONS: Array<{ value: LlmTokenRange; label: string }> = [
-  { value: "all", label: "All time" },
-  { value: "today", label: "Last 24 hours" },
-  { value: "6h", label: "Last 6 hours" },
-  { value: "1h", label: "Last 1 hour" },
-  { value: "7d", label: "Last 7 days" },
-  { value: "14d", label: "Last 14 days" },
-  { value: "30d", label: "Last month" },
-];
+const RANGE_ORDER: LlmTokenRange[] = ["all", "today", "6h", "1h", "7d", "14d", "30d"];
 
 export function LlmTokenTotals({ sparkId, llmPort }: { sparkId: string; llmPort: number }) {
+  const { t } = useTranslation("spark");
   const [series, setSeries] = useState<LlmTokenSeriesTotals[] | null>(null);
   const [range, setRange] = useState<LlmTokenRange>("all");
 
@@ -38,10 +31,10 @@ export function LlmTokenTotals({ sparkId, llmPort }: { sparkId: string; llmPort:
         });
     };
     load();
-    const t = setInterval(load, POLL_MS);
+    const timer = setInterval(load, POLL_MS);
     return () => {
       cancelled = true;
-      clearInterval(t);
+      clearInterval(timer);
     };
   }, [sparkId, llmPort, range]);
 
@@ -53,38 +46,57 @@ export function LlmTokenTotals({ sparkId, llmPort }: { sparkId: string; llmPort:
 
   if (rows.length === 0 && range === "all") return null;
 
+  const rangeLabel = (value: LlmTokenRange): string => {
+    switch (value) {
+      case "all":
+        return t("tokenTotals.rangeAll");
+      case "today":
+        return t("tokenTotals.rangeToday");
+      case "6h":
+        return t("tokenTotals.range6h");
+      case "1h":
+        return t("tokenTotals.range1h");
+      case "7d":
+        return t("tokenTotals.range7d");
+      case "14d":
+        return t("tokenTotals.range14d");
+      default:
+        return t("tokenTotals.range30d");
+    }
+  };
+
   return (
     <div className="sp-section">
       <div className="sp-section__head">
-        <span className="min-w-0" title={LEDGER_TITLE}>
-          <span className="eyebrow block">Total tokens by model</span>
-          <span className="sp-muted block">{LEDGER_HINT}</span>
+        <span className="min-w-0" title={t("tokenTotals.ledgerTooltip")}>
+          <span className="eyebrow block">{t("tokenTotals.ledgerTitle")}</span>
+          <span className="sp-muted block">{t("tokenTotals.ledgerHint")}</span>
         </span>
         <div className="flex items-center gap-2">
           <select
             value={range}
             onChange={(e) => setRange(e.target.value as LlmTokenRange)}
-            aria-label="Token totals time range"
+            aria-label={t("tokenTotals.rangeLabel")}
             className="sp-select"
           >
-            {RANGE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
+            {RANGE_ORDER.map((value) => (
+              <option key={value} value={value}>
+                {rangeLabel(value)}
               </option>
             ))}
           </select>
           <span className="sp-tok-cols">
-            <span className="inline-block w-14 text-right">Cached</span>
+            <span className="inline-block w-14 text-right">{t("tokenTotals.cachedColumn")}</span>
 
-            <span className="inline-block w-14 text-right">Prefill</span>
+            <span className="inline-block w-14 text-right">{t("tokenTotals.prefillColumn")}</span>
 
-            <span className="inline-block w-16 text-right">Generated</span>
+            <span className="inline-block w-16 text-right">{t("tokenTotals.generatedColumn")}</span>
           </span>
         </div>
       </div>
       <div className="sp-tok-rows">
         {rows.length === 0 ? (
-          <p className="sp-muted">No tokens recorded in this period.</p>
+          <p className="sp-muted">{t("tokenTotals.empty")}</p>
         ) : (
           rows.map((row) => {
           const seen = formatSince(row.lastSeenAt);
@@ -92,7 +104,12 @@ export function LlmTokenTotals({ sparkId, llmPort }: { sparkId: string; llmPort:
             <div
               key={row.modelId}
               className="flex items-center justify-between gap-2 text-[11px]"
-              title={`${row.promptTokens.toLocaleString()} prompt · ${row.cachedTokens.toLocaleString()} cached · ${(row.promptTokens - row.cachedTokens).toLocaleString()} prefill · ${row.completionTokens.toLocaleString()} generated${seen ? ` · ${seen} ago` : ""}`}
+              title={`${t("tokenTotals.rowTitle", {
+                prompt: row.promptTokens.toLocaleString(),
+                cached: row.cachedTokens.toLocaleString(),
+                prefill: (row.promptTokens - row.cachedTokens).toLocaleString(),
+                generated: row.completionTokens.toLocaleString(),
+              })}${seen ? t("tokenTotals.rowSeen", { since: seen }) : ""}`}
             >
               <span
                 className="min-w-0 flex-1 truncate text-text"

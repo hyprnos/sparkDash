@@ -55,5 +55,35 @@
     "loadSettings": "설정을 불러오지 못했습니다: {{message}}. 새로 고친 뒤 다시 시도하세요.",
     "refreshSparks": "Sparks를 새로 고치지 못했습니다: {{message}}. 이전 데이터를 계속 표시합니다.",
     "saveOrder": "Spark 순서를 저장하지 못했습니다: {{message}}. 이전 순서로 되돌렸습니다."
+  },
+  "connection": {
+    "connecting": "실시간 텔레메트리에 연결하는 중…",
+    "stale": "텔레메트리가 오래되었습니다. 마지막 유효 업데이트는 {{age}} 전입니다.",
+    "disconnectedShowing": "실시간 텔레메트리가 끊겼습니다. {{age}} 전 데이터를 표시합니다.",
+    "waiting": "실시간 텔레메트리가 끊겼습니다. 첫 유효 업데이트를 기다리는 중…",
+    "announcedError": "텔레메트리 데이터 오류입니다.",
+    "announcedStale": "텔레메트리가 오래되었습니다.",
+    "announcedDisconnected": "실시간 텔레메트리가 끊겼습니다."
+  },
+  "errorBanner": {
+    "dismiss": "닫기",
+    "dismissAria": "오류 닫기"
+  },
+  "openAccess": {
+    "label": "개방형 접근",
+    "explanation": "이 대시보드는 토큰 없이 네트워크에서 접근할 수 있어 네트워크의 누구나 설정을 바꿀 수 있습니다. 서버에 SPARKDASH_TOKEN을 설정해 토큰을 요구하세요.",
+    "dontShowAgain": "다시 표시하지 않기"
+  },
+  "shutdownAll": {
+    "label": "모두 종료",
+    "title": "온라인 Spark 모두 종료",
+    "confirmTitle": "모두 종료",
+    "confirmOne": "온라인 Spark 1대를 모두 정상 종료할까요? 오프라인 노드는 건너뜁니다.",
+    "confirmMany": "온라인 Spark {{count}}대를 모두 정상 종료할까요? 오프라인 노드는 건너뜁니다.",
+    "confirmLabel": "모두 종료",
+    "resultShutDown": "{{count}}대 종료됨",
+    "resultFailed": "{{count}}대 실패",
+    "resultSkipped": "{{count}}대 건너뜀",
+    "batchFailed": "일괄 종료 실패"
   }
 }

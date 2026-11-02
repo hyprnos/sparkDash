@@ -46,3 +46,38 @@
   right: 8px;
   transform: translateX(calc(var(--tab) * -100%));
 }
+/* Token totals, e-paper and overview reading order (Arabic).
+   The tables, insight bullets and row figures above use physical directions;
+   mirror them so labels start at the right edge and numbers end at the left. */
+[dir="rtl"] .tk-table th,
+[dir="rtl"] .tk-table td {
+  text-align: right;
+}
+[dir="rtl"] .tk-table .is-num {
+  text-align: left;
+}
+[dir="rtl"] .tk-insights li {
+  padding-left: 0;
+  padding-right: 16px;
+}
+[dir="rtl"] .tk-insights li::before {
+  left: auto;
+  right: 0;
+}
+[dir="rtl"] .tk-about ul {
+  padding-left: 0;
+  padding-right: 18px;
+}
+[dir="rtl"] .eink-badge {
+  margin-left: 0;
+  margin-right: 8px;
+}
+[dir="rtl"] .ov-row__num {
+  text-align: left;
+}
+[dir="rtl"] .ov-alert,
+[dir="rtl"] .health-row,
+[dir="rtl"] .health-row--critical {
+  border-left-width: 1px;
+  border-right-width: 4px;
+}

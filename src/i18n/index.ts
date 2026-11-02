@@ -36,9 +36,9 @@ export const LOCALES: readonly Locale[] = [
 /**
  * Namespaces a translator can work on, one file per area: the shell's settings,
  * language picker, navigation and shared copy, plus one file per dashboard page
- * (`tokens`, `eink`, `overview`) so a page can be translated on its own.
+ * (`tokens`, `eink`, `overview`, `spark`) so a page can be translated on its own.
  */
-export const NAMESPACES = ["settings", "language", "nav", "common", "tokens", "eink", "overview"] as const;
+export const NAMESPACES = ["settings", "language", "nav", "common", "tokens", "eink", "overview", "spark"] as const;
 
 export const LOCALE_STORAGE_KEY = "sparkdash-locale";
 

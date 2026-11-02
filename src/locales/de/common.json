@@ -55,5 +55,35 @@
     "loadSettings": "Einstellungen konnten nicht geladen werden: {{message}}. Zum Wiederholen neu laden.",
     "refreshSparks": "Sparks konnten nicht aktualisiert werden: {{message}}. Die vorherigen Daten bleiben sichtbar.",
     "saveOrder": "Spark-Reihenfolge konnte nicht gespeichert werden: {{message}}. Die vorherige Reihenfolge wurde wiederhergestellt."
+  },
+  "connection": {
+    "connecting": "Verbindung zur Live-Telemetrie…",
+    "stale": "Die Telemetrie ist veraltet. Die letzte gültige Aktualisierung war vor {{age}}.",
+    "disconnectedShowing": "Live-Telemetrie getrennt. Angezeigt werden Daten von vor {{age}}.",
+    "waiting": "Die Live-Telemetrie ist getrennt. Warte auf die erste gültige Aktualisierung…",
+    "announcedError": "Fehler in den Telemetriedaten.",
+    "announcedStale": "Die Telemetrie ist veraltet.",
+    "announcedDisconnected": "Die Live-Telemetrie ist getrennt."
+  },
+  "errorBanner": {
+    "dismiss": "Ausblenden",
+    "dismissAria": "Fehler ausblenden"
+  },
+  "openAccess": {
+    "label": "Offener Zugang",
+    "explanation": "Dieses Dashboard ist aus Ihrem Netzwerk ohne Token erreichbar, daher kann jeder darin die Einstellungen ändern. Setzen Sie SPARKDASH_TOKEN auf dem Server, um eines zu verlangen.",
+    "dontShowAgain": "Nicht mehr anzeigen"
+  },
+  "shutdownAll": {
+    "label": "Alle herunterfahren",
+    "title": "Alle online Sparks herunterfahren",
+    "confirmTitle": "Alle herunterfahren",
+    "confirmOne": "Den einzigen online Spark sauber herunterfahren? Offline-Knoten werden übersprungen.",
+    "confirmMany": "Alle {{count}} online Sparks sauber herunterfahren? Offline-Knoten werden übersprungen.",
+    "confirmLabel": "Alle herunterfahren",
+    "resultShutDown": "{{count}} heruntergefahren",
+    "resultFailed": "{{count}} fehlgeschlagen",
+    "resultSkipped": "{{count}} übersprungen",
+    "batchFailed": "Sammel-Herunterfahren fehlgeschlagen"
   }
 }

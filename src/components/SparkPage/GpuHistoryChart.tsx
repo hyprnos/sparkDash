@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { GpuMetrics } from "../../api/types";
 import { getGpuHistory } from "../../api/client";
 import { backfillHistory, getMetricHistorySamples, useTimedMetricsHistory } from "../../hooks/metricsStore";
@@ -109,6 +110,7 @@ export function GpuHistoryChart({
   gpu: GpuMetrics | null;
   windowMs: number;
 }) {
+  const { t } = useTranslation("spark");
   const gradId = useId();
   const usage = useTimedMetricsHistory(sparkId, "gpu.usage");
   const temp = useTimedMetricsHistory(sparkId, "gpu.temp");
@@ -122,12 +124,37 @@ export function GpuHistoryChart({
   const indexKey = indices.join(",");
   const deviceLabels = new Map((gpu?.gpus ?? []).map((d) => [
     d.index,
-    d.vendor === "amd" ? `AMD GPU ${d.physicalIndex ?? d.index}` : `GPU ${d.physicalIndex ?? d.index}`,
+    d.vendor === "amd"
+      ? t("gpu.amdGpu", { index: d.physicalIndex ?? d.index })
+      : t("gpu.gpuNumber", { index: d.physicalIndex ?? d.index }),
   ]));
   const [viewRaw, setViewRaw] = useState<string | null>(() => readPref(VIEW_KEY));
   const [metric, setMetric] = useState<GpuMetric>(() => parseGpuMetric(readPref(METRIC_KEY)));
   const view: GpuView = multi ? parseGpuView(viewRaw, indices) : "combined";
-  const specs = useMemo(() => chartSeriesSpecs(view, metric, indices, deviceLabels), [view, metric, indexKey, gpu?.gpus]);
+  const specs = useMemo(() => chartSeriesSpecs(view, metric, indices, deviceLabels), [view, metric, indexKey, gpu?.gpus, t]);
+
+  const seriesLabel = (id: string): string | null => {
+    switch (id) {
+      case "usage":
+        return t("gpu.legendUtilization");
+      case "powerPct":
+        return t("gpu.legendPowerLimit");
+      case "temp":
+        return t("gpu.legendTemperature");
+      default:
+        return null;
+    }
+  };
+  const metricLabel = (id: string): string => {
+    switch (id) {
+      case "usage":
+        return t("gpu.metricUtilization");
+      case "powerPct":
+        return t("gpu.metricPower");
+      default:
+        return t("gpu.metricTemperature");
+    }
+  };
 
   const lines = useMemo<Line[]>(() => {
     // The aggregate series change on every sample and on backfill, which is also when the per-card ones do.
@@ -137,12 +164,12 @@ export function GpuHistoryChart({
     if (!end) return [];
     return all.map(({ sp, samples }) => ({
       key: sp.key,
-      label: sp.label,
+      label: seriesLabel(sp.key) ?? sp.label,
       color: sp.color,
       fill: sp.fill,
       segs: seriesSegments(samples, windowMs, end),
     }));
-  }, [specs, usage, sparkId, windowMs]);
+  }, [specs, usage, sparkId, windowMs, t]);
 
   const endAt = useMemo(
     () => Math.max(0, ...specs.map((sp) => getMetricHistorySamples(sparkId, sp.metric).at(-1)?.at ?? 0)),
@@ -166,10 +193,10 @@ export function GpuHistoryChart({
     setMetric(m);
     writePref(METRIC_KEY, m);
   };
-  const viewOptions: Array<[GpuView, string]> = [["combined", "Combined"], ["all", "All GPUs"], ...indices.map((i): [GpuView, string] => [i, deviceLabels.get(i) ?? `GPU ${i}`])];
+  const viewOptions: Array<[GpuView, string]> = [["combined", t("gpu.viewCombined")], ["all", t("gpu.viewAllGpus")], ...indices.map((i): [GpuView, string] => [i, deviceLabels.get(i) ?? t("gpu.gpuNumber", { index: i })])];
   const controls = multi ? (
     <div className="sp-chart__controls">
-      <div className="seg" role="group" aria-label="GPUs to plot">
+      <div className="seg" role="group" aria-label={t("gpu.gpusToPlot")}>
         {viewOptions.map(([v, label]) => (
           <button
             key={String(v)}
@@ -184,7 +211,7 @@ export function GpuHistoryChart({
         ))}
       </div>
       {view === "all" && (
-        <div className="seg" role="group" aria-label="Metric to plot">
+        <div className="seg" role="group" aria-label={t("gpu.metricToPlot")}>
           {GPU_METRICS.map((m) => (
             <button
               key={m.id}
@@ -193,7 +220,7 @@ export function GpuHistoryChart({
               aria-pressed={m.id === metric}
               onClick={() => pickMetric(m.id)}
             >
-              {m.label}
+              {metricLabel(m.id)}
             </button>
           ))}
         </div>
@@ -217,7 +244,7 @@ export function GpuHistoryChart({
       <div>
         {controls}
         <div className="sp-chart sp-chart--empty" ref={wrapRef}>
-          <p className="sp-chart__note">Collecting history. The chart fills in while this page is open.</p>
+          <p className="sp-chart__note">{t("gpu.collecting")}</p>
         </div>
       </div>
     );
@@ -231,7 +258,7 @@ export function GpuHistoryChart({
         height={HEIGHT}
         viewBox={`0 0 ${width} ${HEIGHT}`}
         role="img"
-        aria-label="GPU utilization, power and temperature history"
+        aria-label={t("gpu.chartAria")}
       >
         <defs>
           <clipPath id={`${gradId}-plot`}>
@@ -264,7 +291,7 @@ export function GpuHistoryChart({
           {axB}
         </text>
         <text x={width - PAD.r} y={HEIGHT - 4} textAnchor="end">
-          now
+          {t("gpu.now")}
         </text>
         <g clipPath={`url(#${gradId}-plot)`}>
           {hasData &&

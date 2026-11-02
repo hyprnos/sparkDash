@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { getUnitHistory } from "../../api/client";
 import type {
   HistoryStat,
@@ -13,6 +14,8 @@ import { Panel } from "../ui/Panel";
 import { ChartIcon } from "../ui/icons";
 import { HistoryChart, type HistoryChartSeries, type HistoryThreshold } from "./HistoryChart";
 
+type Translate = (key: string, vars?: Record<string, string | number>) => string;
+
 /**
  * The unit's server-side history (Settings → Metrics history): 48 h of 1-minute and
  * 30 days of 15-minute buckets from GET /api/sparks/:id/history, as small multiples
@@ -24,13 +27,20 @@ export const HISTORY_RANGES: readonly MetricsHistoryRange[] = ["1h", "6h", "24h"
 export const HISTORY_POLL_MS = 30_000;
 export const HISTORY_RANGE_KEY = "sparkdash.ui.history.range";
 
-const RANGE_TITLE: Record<MetricsHistoryRange, string> = {
-  "1h": "last hour",
-  "6h": "last 6 hours",
-  "24h": "last 24 hours",
-  "7d": "last 7 days",
-  "30d": "last 30 days",
-};
+function rangeTitle(t: Translate, range: MetricsHistoryRange): string {
+  switch (range) {
+    case "1h":
+      return t("history.range1h");
+    case "6h":
+      return t("history.range6h");
+    case "24h":
+      return t("history.range24h");
+    case "7d":
+      return t("history.range7d");
+    default:
+      return t("history.range30d");
+  }
+}
 
 export function readHistoryRange(): MetricsHistoryRange {
   try {
@@ -50,9 +60,9 @@ function writeHistoryRange(range: MetricsHistoryRange) {
   }
 }
 
-function stepLabel(ms: number): string {
-  if (ms < 60_000) return `${Math.round(ms / 1000)} s`;
-  return `${Math.round(ms / 60_000)} min`;
+function stepLabel(t: Translate, ms: number): string {
+  if (ms < 60_000) return t("history.stepSeconds", { count: Math.round(ms / 1000) });
+  return t("history.stepMinutes", { count: Math.round(ms / 60_000) });
 }
 
 const pct = (v: number) => `${v < 10 ? v.toFixed(1) : Math.round(v)}%`;
@@ -121,6 +131,7 @@ function buildCharts(
   timeline: readonly number[],
   kind: string | undefined,
   temperatureUnit: "celsius" | "fahrenheit",
+  t: Translate,
 ): ChartDef[] {
   const pts = data.points;
   const f = temperatureUnit === "fahrenheit";
@@ -133,52 +144,52 @@ function buildCharts(
   const charts: ChartDef[] = [
     {
       id: "gpuUtil",
-      title: "GPU utilization",
+      title: t("history.chartGpuUtil"),
       format: pct,
       yMin: 0,
       yMax: 100,
-      series: [{ key: "gpuUtil", label: "GPU", color: accent, band: "max", values: aligned(timeline, pts, (p) => p.gpuUtil) }],
+      series: [{ key: "gpuUtil", label: t("history.seriesGpu"), color: accent, band: "max", values: aligned(timeline, pts, (p) => p.gpuUtil) }],
     },
     {
       id: "gpuTemp",
-      title: "GPU temperature",
+      title: t("history.chartGpuTemp"),
       format: temp,
       yUnit: 5,
-      series: [{ key: "gpuTemp", label: "GPU", color: "var(--color-info)", band: "max", values: aligned(timeline, pts, (p) => p.gpuTemp, toTemp) }],
+      series: [{ key: "gpuTemp", label: t("history.seriesGpu"), color: "var(--color-info)", band: "max", values: aligned(timeline, pts, (p) => p.gpuTemp, toTemp) }],
     },
     {
       id: "gpuPower",
-      title: "GPU power",
+      title: t("history.chartGpuPower"),
       format: watts,
       yMin: 0,
-      series: [{ key: "gpuPower", label: "Power", color: "var(--color-violet)", band: "max", values: aligned(timeline, pts, (p) => p.gpuPower) }],
+      series: [{ key: "gpuPower", label: t("history.seriesPower"), color: "var(--color-violet)", band: "max", values: aligned(timeline, pts, (p) => p.gpuPower) }],
     },
     {
       id: "memFree",
-      title: model === "unified" ? "Memory free (unified)" : "VRAM free",
+      title: model === "unified" ? t("history.chartMemFreeUnified") : t("history.chartVramFree"),
       format: formatMb,
       yMin: 0,
       yUnit: 1024,
       thresholds: [
-        { value: headroom.low, label: `low ${formatMb(headroom.low)}`, color: "var(--color-warning)" },
-        { value: headroom.critical, label: `critical ${formatMb(headroom.critical)}`, color: "var(--color-danger)" },
+        { value: headroom.low, label: t("history.thresholdLow", { value: formatMb(headroom.low) }), color: "var(--color-warning)" },
+        { value: headroom.critical, label: t("history.thresholdCritical", { value: formatMb(headroom.critical) }), color: "var(--color-danger)" },
       ],
-      series: [{ key: "memFreeMB", label: "Free", color: "var(--color-success)", band: "min", values: aligned(timeline, pts, (p) => p.memFreeMB) }],
+      series: [{ key: "memFreeMB", label: t("history.seriesFree"), color: "var(--color-success)", band: "min", values: aligned(timeline, pts, (p) => p.memFreeMB) }],
     },
     {
       id: "cpuUtil",
-      title: "CPU utilization",
+      title: t("history.chartCpuUtil"),
       format: pct,
       yMin: 0,
       yMax: 100,
-      series: [{ key: "cpuUtil", label: "CPU", color: accent, band: "max", values: aligned(timeline, pts, (p) => p.cpuUtil) }],
+      series: [{ key: "cpuUtil", label: t("history.seriesCpu"), color: accent, band: "max", values: aligned(timeline, pts, (p) => p.cpuUtil) }],
     },
     {
       id: "cpuTemp",
-      title: "CPU temperature",
+      title: t("history.chartCpuTemp"),
       format: temp,
       yUnit: 5,
-      series: [{ key: "cpuTemp", label: "CPU", color: "var(--color-info)", band: "max", values: aligned(timeline, pts, (p) => p.cpuTemp, toTemp) }],
+      series: [{ key: "cpuTemp", label: t("history.seriesCpu"), color: "var(--color-info)", band: "max", values: aligned(timeline, pts, (p) => p.cpuTemp, toTemp) }],
     },
   ];
 
@@ -186,22 +197,22 @@ function buildCharts(
   if (kind === "host" && hasAny(ram)) {
     charts.push({
       id: "ramUsed",
-      title: "RAM used",
+      title: t("history.chartRamUsed"),
       format: formatMb,
       yMin: 0,
       yUnit: 1024,
-      series: [{ key: "ramUsedMB", label: "Used", color: accent, band: "max", values: ram }],
+      series: [{ key: "ramUsedMB", label: t("history.seriesUsed"), color: accent, band: "max", values: ram }],
     });
   }
 
   charts.push({
     id: "network",
-    title: "Network",
+    title: t("history.chartNetwork"),
     format: (v) => formatBytesPerSec(Math.round(v)),
     yMin: 0,
     series: [
-      { key: "netRx", label: "↓ rx", color: accent, values: aligned(timeline, pts, (p) => p.netRx) },
-      { key: "netTx", label: "↑ tx", color: "var(--color-info)", values: aligned(timeline, pts, (p) => p.netTx) },
+      { key: "netRx", label: t("history.seriesRx"), color: accent, values: aligned(timeline, pts, (p) => p.netRx) },
+      { key: "netTx", label: t("history.seriesTx"), color: "var(--color-info)", values: aligned(timeline, pts, (p) => p.netTx) },
     ],
   });
 
@@ -211,28 +222,28 @@ function buildCharts(
     charts.push(
       {
         id: `llm-${port}-gen`,
-        title: `Decode tok/s · :${port}`,
+        title: t("history.chartDecodePort", { port }),
         format: tokS,
         yMin: 0,
-        series: [{ key: "genTps", label: "Decode", color: accent, band: "max", values: aligned(timeline, lp, (p) => p.genTps) }],
+        series: [{ key: "genTps", label: t("history.seriesDecode"), color: accent, band: "max", values: aligned(timeline, lp, (p) => p.genTps) }],
       },
       {
         id: `llm-${port}-prefill`,
-        title: `Prefill tok/s · :${port}`,
+        title: t("history.chartPrefillPort", { port }),
         format: tokS,
         yMin: 0,
-        series: [{ key: "prefillTps", label: "Prefill", color: "var(--color-violet)", band: "max", values: aligned(timeline, lp, (p) => p.prefillTps) }],
+        series: [{ key: "prefillTps", label: t("history.seriesPrefill"), color: "var(--color-violet)", band: "max", values: aligned(timeline, lp, (p) => p.prefillTps) }],
       },
     );
     const kv = aligned(timeline, lp, (p) => p.kvUsage, (v) => v * 100);
     if (hasAny(kv)) {
       charts.push({
         id: `llm-${port}-kv`,
-        title: `KV cache · :${port}`,
+        title: t("history.chartKvPort", { port }),
         format: pct,
         yMin: 0,
         yMax: 100,
-        series: [{ key: "kvUsage", label: "KV", color: "var(--color-mem-engine)", band: "max", values: kv }],
+        series: [{ key: "kvUsage", label: t("history.seriesKv"), color: "var(--color-mem-engine)", band: "max", values: kv }],
       });
     }
   }
@@ -320,6 +331,7 @@ export function HistoryPanel({
   kind?: string;
   temperatureUnit: "celsius" | "fahrenheit";
 }) {
+  const { t } = useTranslation("spark");
   const [range, setRange] = useState<MetricsHistoryRange>(readHistoryRange);
   /** Shared crosshair: one timestamp for every chart. */
   const [cursorT, setCursorT] = useState<number | null>(null);
@@ -330,8 +342,8 @@ export function HistoryPanel({
   const enabled = data?.enabled === true ? data : null;
   const timeline = useMemo(() => (enabled ? buildTimeline(enabled) : []), [enabled]);
   const charts = useMemo(
-    () => (enabled ? buildCharts(enabled, timeline, kind, temperatureUnit) : []),
-    [enabled, timeline, kind, temperatureUnit],
+    () => (enabled ? buildCharts(enabled, timeline, kind, temperatureUnit, t as unknown as Translate) : []),
+    [enabled, timeline, kind, temperatureUnit, t],
   );
   const formats = useMemo(() => timeFormatters(range), [range]);
 
@@ -343,7 +355,7 @@ export function HistoryPanel({
   };
 
   const chips = (
-    <div className="seg" role="group" aria-label="History range">
+    <div className="seg" role="group" aria-label={t("history.rangeAria")}>
       {HISTORY_RANGES.map((r) => (
         <button
           key={r}
@@ -360,24 +372,21 @@ export function HistoryPanel({
 
   let body;
   if (error && !data) {
-    body = <p className="sp-error">Could not load history: {error}</p>;
+    body = <p className="sp-error">{t("history.loadFailed", { message: error })}</p>;
   } else if (!data) {
-    body = <p className="sp-muted">Loading history…</p>;
+    body = <p className="sp-muted">{t("history.loading")}</p>;
   } else if (!enabled) {
-    body = <p className="sp-muted">Metrics history is off on the server. Turn it on in Settings → Metrics history.</p>;
+    body = <p className="sp-muted">{t("history.disabled")}</p>;
   } else if (timeline.length === 0) {
     body = (
       <div className="sp-chart sp-chart--empty">
-        <p className="sp-chart__note">No history in this range yet. The server records every unit while it is online.</p>
+        <p className="sp-chart__note">{t("history.empty")}</p>
       </div>
     );
   } else {
     body = (
       <>
-        <p className="sp-hint">
-          Average per {stepLabel(enabled.stepMs)} · shaded: peak (low point for free memory) · gaps: offline or not
-          reported
-        </p>
+        <p className="sp-hint">{t("history.hint", { step: stepLabel(t as unknown as Translate, enabled.stepMs) })}</p>
         <div className="sp-hist-grid">
           {charts.map((c) => (
             <HistoryChart
@@ -409,13 +418,13 @@ export function HistoryPanel({
   const stale =
     error && data && loadedAt !== null ? (
       <p className="sp-error" role="status">
-        Stale: could not refresh ({error}). Showing data from {formats.stamp(loadedAt)}.
+        {t("history.stale", { message: error, time: formats.stamp(loadedAt) })}
       </p>
     ) : null;
 
   return (
     <div ref={screenRef} className="sp-hist">
-      <Panel title={`History · ${RANGE_TITLE[range]}`} icon={<ChartIcon />} actions={chips} bodyClassName="sp-stack sp-stack--tight">
+      <Panel title={t("history.title", { range: rangeTitle(t as unknown as Translate, range) })} icon={<ChartIcon />} actions={chips} bodyClassName="sp-stack sp-stack--tight">
         {stale}
         {body}
       </Panel>

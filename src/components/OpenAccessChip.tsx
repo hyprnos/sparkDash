@@ -1,10 +1,8 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { AuthMode } from "../api/types";
 
 export const OPEN_ACCESS_DISMISSED_KEY = "sparkdash.ui.openAccessDismissed";
-
-const EXPLANATION =
-  "This dashboard is reachable from your network without a token, so anyone on it can change settings. Set SPARKDASH_TOKEN on the server to require one.";
 
 function readDismissed(): boolean {
   try {
@@ -28,9 +26,11 @@ function writeDismissed() {
  * network. Dismissible per browser.
  */
 export function OpenAccessChip({ authMode }: { authMode: AuthMode | null }) {
+  const { t } = useTranslation("common");
   const [dismissed, setDismissed] = useState(readDismissed);
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const explanation = t("openAccess.explanation");
 
   useEffect(() => {
     if (!open) return;
@@ -64,16 +64,16 @@ export function OpenAccessChip({ authMode }: { authMode: AuthMode | null }) {
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-controls="open-access-popover"
-        title={EXPLANATION}
+        title={explanation}
       >
         <span className="open-access-dot" aria-hidden="true" />
-        Open access
+        {t("openAccess.label")}
       </button>
       {open && (
-        <div id="open-access-popover" className="open-access-popover" role="dialog" aria-label="Open access">
-          <p>{EXPLANATION}</p>
+        <div id="open-access-popover" className="open-access-popover" role="dialog" aria-label={t("openAccess.label")}>
+          <p>{explanation}</p>
           <button type="button" className="open-access-dismiss" onClick={dismiss}>
-            Don't show again
+            {t("openAccess.dontShowAgain")}
           </button>
         </div>
       )}

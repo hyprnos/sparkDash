@@ -1,9 +1,12 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { RoceDevice, RoceMetrics } from "../../api/types";
 import { Panel } from "../ui/Panel";
 import { NetworkIcon } from "../ui/icons";
 import { Tag } from "../ui/Tag";
 import { formatBytesPerSec } from "../../shared/formatBytes";
+
+type Translate = (key: string, vars?: Record<string, string | number>) => string;
 
 /** Counters worth showing, in this order; the rest stay in the API. */
 export const ROCE_COUNTER_ROWS: { key: string; label: string; loss?: boolean }[] = [
@@ -29,13 +32,59 @@ const ETH_ROWS: { key: string; label: string }[] = [
   { key: "tx_pause_ctrl_phy", label: "Pause frames sent" },
 ];
 
+/** Localized name of one counter row; the English label stays the fallback. */
+function counterLabel(t: Translate | undefined, key: string, fallback: string): string {
+  if (!t) return fallback;
+  switch (key) {
+    case "out_of_buffer":
+      return t("roce.counterOutOfBuffer");
+    case "packet_seq_err":
+      return t("roce.counterPacketSeqErr");
+    case "local_ack_timeout_err":
+      return t("roce.counterLocalAckTimeout");
+    case "rnr_nak_retry_err":
+      return t("roce.counterRnrNakRetry");
+    case "implied_nak_seq_err":
+      return t("roce.counterImpliedNakSeq");
+    case "req_transport_retries_exceeded":
+      return t("roce.counterTransportRetries");
+    case "rx_icrc_encapsulated":
+      return t("roce.counterIcrc");
+    case "np_ecn_marked_roce_packets":
+      return t("roce.counterEcnMarked");
+    case "np_cnp_sent":
+      return t("roce.counterCnpSent");
+    case "rp_cnp_handled":
+      return t("roce.counterCnpHandled");
+    case "roce_adp_retrans":
+      return t("roce.counterAdaptiveRetrans");
+    case "duplicate_request":
+      return t("roce.counterDuplicateRequest");
+    case "rx_discards_phy":
+      return t("roce.counterRxDiscards");
+    case "tx_discards_phy":
+      return t("roce.counterTxDiscards");
+    case "rx_crc_errors_phy":
+      return t("roce.counterCrcErrors");
+    case "rx_pause_ctrl_phy":
+      return t("roce.counterRxPause");
+    case "tx_pause_ctrl_phy":
+      return t("roce.counterTxPause");
+    default:
+      return fallback;
+  }
+}
+
 const n = (v: number | null | undefined) => (v == null ? "—" : v.toLocaleString());
 
 /** "PFC on: 3" / "PFC off" / null when unknown. */
-export function pfcLabel(d: RoceDevice): { text: string; tone: "good" | "neutral" | "warn" } | null {
+export function pfcLabel(d: RoceDevice, t?: Translate): { text: string; tone: "good" | "neutral" | "warn" } | null {
   const p = d.qos?.pfcPriorities;
   if (p == null) return null;
-  return p.length > 0 ? { text: `PFC on: ${p.join(", ")}`, tone: "good" } : { text: "PFC off", tone: "neutral" };
+  if (p.length > 0) {
+    return { text: t ? t("roce.pfcOn", { priorities: p.join(", ") }) : `PFC on: ${p.join(", ")}`, tone: "good" };
+  }
+  return { text: t ? t("roce.pfcOff") : "PFC off", tone: "neutral" };
 }
 
 function linkTone(d: RoceDevice): "good" | "warn" | "bad" | "neutral" {
@@ -44,7 +93,8 @@ function linkTone(d: RoceDevice): "good" | "warn" | "bad" | "neutral" {
 }
 
 function PortRow({ d }: { d: RoceDevice }) {
-  const pfc = pfcLabel(d);
+  const { t } = useTranslation("spark");
+  const pfc = pfcLabel(d, t);
   const lossRising = d.loss.rising.length > 0;
   const speed = d.speedMbps != null ? `${d.speedMbps / 1000} Gb/s` : d.rateGbps != null ? `${d.rateGbps} Gb/s` : null;
   const dscp = d.qos?.dscpMap
@@ -52,41 +102,46 @@ function PortRow({ d }: { d: RoceDevice }) {
         .map(([prio, list]) => `prio ${prio}: DSCP ${list.join(",")}`)
         .join(" · ")
     : null;
+  const pauseDirections = [
+    d.flowControl?.rx ? "rx" : "",
+    d.flowControl?.rx && d.flowControl.tx ? "/" : "",
+    d.flowControl?.tx ? "tx" : "",
+  ].join("");
   return (
     <div className={`sp-roce-port ${d.active ? "" : "is-down"}`} data-testid={`roce-${d.name}`}>
       <div className="sp-roce-port__head">
         <span className="mono sp-clip" title={d.name}>{d.netdev ?? d.name}</span>
         <span className="sp-chips">
-          <Tag tone={linkTone(d)} title={d.physState ?? undefined}>{d.state ?? "unknown"}</Tag>
+          <Tag tone={linkTone(d)} title={d.physState ?? undefined}>{d.state ?? t("roce.stateUnknown")}</Tag>
           {speed && <Tag>{speed}</Tag>}
-          {d.mtu != null && <Tag title="MTU">MTU {d.mtu}</Tag>}
+          {d.mtu != null && <Tag title={t("roce.mtuTitle")}>MTU {d.mtu}</Tag>}
         </span>
       </div>
       <div className="sp-roce-port__rates mono">
         <span><span className="text-accent">↓</span> {d.rxBps == null ? "—" : formatBytesPerSec(Math.round(d.rxBps))}</span>
         <span><span className="text-accent">↑</span> {d.txBps == null ? "—" : formatBytesPerSec(Math.round(d.txBps))}</span>
-        <span title="Frames dropped or in error on this interface">
-          {n(d.rxErrors)} err · {n(d.rxDropped)} drop
+        <span title={t("roce.droppedTitle")}>
+          {t("roce.errorsDrops", { errors: n(d.rxErrors), drops: n(d.rxDropped) })}
         </span>
       </div>
       <div className="sp-chips sp-roce-port__qos">
-        {pfc && <Tag tone={pfc.tone} title="Priority flow control (mlnx_qos)">{pfc.text}</Tag>}
-        {d.qos?.trust && <Tag title="QoS trust mode">trust {d.qos.trust}</Tag>}
+        {pfc && <Tag tone={pfc.tone} title={t("roce.pfcTitle")}>{pfc.text}</Tag>}
+        {d.qos?.trust && <Tag title={t("roce.trustTitle")}>{t("roce.trust", { mode: d.qos.trust })}</Tag>}
         {d.flowControl && (d.flowControl.rx || d.flowControl.tx) && (
-          <Tag title="Global pause (ethtool -a)">pause {d.flowControl.rx ? "rx" : ""}{d.flowControl.rx && d.flowControl.tx ? "/" : ""}{d.flowControl.tx ? "tx" : ""}</Tag>
+          <Tag title={t("roce.pauseTitle")}>{t("roce.pause", { directions: pauseDirections })}</Tag>
         )}
-        {lossRising && <Tag tone="warn" title={d.loss.rising.join(", ")}>loss rising</Tag>}
+        {lossRising && <Tag tone="warn" title={d.loss.rising.join(", ")}>{t("roce.lossRising")}</Tag>}
       </div>
       {dscp && <div className="sp-muted mono sp-roce-port__dscp">{dscp}</div>}
       <details className="sp-roce-port__more">
-        <summary>RDMA counters</summary>
+        <summary>{t("roce.counters")}</summary>
         <table className="sp-roce-table">
           <tbody>
             {ROCE_COUNTER_ROWS.filter((r) => d.counters[r.key] != null).map((r) => {
               const delta = d.deltas[r.key] ?? 0;
               return (
                 <tr key={r.key} className={r.loss && delta > 0 ? "is-rising" : ""}>
-                  <td>{r.label}</td>
+                  <td>{counterLabel(t, r.key, r.label)}</td>
                   <td className="mono">{n(d.counters[r.key])}</td>
                   <td className="mono sp-muted">{delta > 0 ? `+${delta.toLocaleString()}` : ""}</td>
                 </tr>
@@ -95,7 +150,7 @@ function PortRow({ d }: { d: RoceDevice }) {
             {d.eth &&
               ETH_ROWS.filter((r) => d.eth![r.key] != null).map((r) => (
                 <tr key={r.key}>
-                  <td>{r.label}</td>
+                  <td>{counterLabel(t, r.key, r.label)}</td>
                   <td className="mono">{n(d.eth![r.key])}</td>
                   <td />
                 </tr>
@@ -118,30 +173,41 @@ function readOpen(): boolean {
 }
 
 /** One line for the collapsed panel: link count, speeds, PFC, and whether loss is rising. */
-export function roceSummary(devices: RoceDevice[]): { text: string; tone: "good" | "warn" | "bad" | "neutral" } {
+export function roceSummary(devices: RoceDevice[], t?: Translate): { text: string; tone: "good" | "warn" | "bad" | "neutral" } {
   const up = devices.filter((d) => d.active);
   const down = devices.filter((d) => d.everActive && !d.active);
   const lossy = devices.filter((d) => d.loss.rising.length > 0);
   const speeds = [...new Set(up.map((d) => d.speedMbps ?? (d.rateGbps != null ? d.rateGbps * 1000 : null)).filter((v): v is number => v != null))];
   const pfcKnown = devices.filter((d) => d.qos?.pfcPriorities != null);
   const pfcOn = pfcKnown.filter((d) => (d.qos?.pfcPriorities?.length ?? 0) > 0).length;
+  const pfcPart = pfcKnown.length > 0
+    ? pfcOn === 0
+      ? t ? t("roce.summaryPfcOff") : "PFC off"
+      : t ? t("roce.summaryPfcOn", { on: pfcOn, known: pfcKnown.length }) : `PFC on (${pfcOn}/${pfcKnown.length})`
+    : null;
+  const lossPart = lossy.length > 0
+    ? t ? t("roce.summaryLossRising") : "loss rising"
+    : down.length > 0
+      ? t ? t("roce.summaryDown", { count: down.length }) : `${down.length} down`
+      : t ? t("roce.summaryNoLoss") : "no loss";
   const parts = [
-    `${up.length}/${devices.length} up`,
+    t ? t("roce.summaryUp", { up: up.length, total: devices.length }) : `${up.length}/${devices.length} up`,
     speeds.length > 0 ? speeds.map((v) => `${v / 1000} Gb/s`).join(" / ") : null,
-    pfcKnown.length > 0 ? (pfcOn === 0 ? "PFC off" : `PFC on (${pfcOn}/${pfcKnown.length})`) : null,
-    lossy.length > 0 ? "loss rising" : down.length > 0 ? `${down.length} down` : "no loss",
+    pfcPart,
+    lossPart,
   ].filter(Boolean);
   return { text: parts.join(" · "), tone: down.length > 0 ? "bad" : lossy.length > 0 ? "warn" : up.length === devices.length ? "good" : "neutral" };
 }
 
 /** RoCE / RDMA ports of a unit (shown only when it has RDMA devices). Collapsed by default. */
 export function RocePanel({ roce, className }: { roce: RoceMetrics | null | undefined; className?: string }) {
+  const { t } = useTranslation("spark");
   const [open, setOpen] = useState(readOpen);
   if (!roce || roce.devices.length === 0) return null;
   // Ports that never came up are not noise worth a row, but keep them reachable.
   const live = roce.devices.filter((d) => d.active || d.everActive);
   const idle = roce.devices.filter((d) => !d.active && !d.everActive);
-  const summary = roceSummary(roce.devices);
+  const summary = roceSummary(roce.devices, t);
   const toggle = () => {
     setOpen((v) => {
       try {
@@ -154,12 +220,12 @@ export function RocePanel({ roce, className }: { roce: RoceMetrics | null | unde
   };
   return (
     <Panel
-      title="RoCE / RDMA"
+      title={t("roce.title")}
       accent
       icon={<NetworkIcon />}
       className={`panel-roce ${className ?? ""}`}
       bodyClassName="sp-stack"
-      hint="Link state, rate, traffic, drops and RDMA counters per port, read from sysfs, ethtool and mlnx_qos on the Spark itself."
+      hint={t("roce.hint")}
       actions={
         <button
           type="button"
@@ -168,14 +234,14 @@ export function RocePanel({ roce, className }: { roce: RoceMetrics | null | unde
           aria-controls="roce-ports"
           onClick={toggle}
         >
-          {open ? "Hide ports" : "Show ports"}
+          {open ? t("roce.hidePorts") : t("roce.showPorts")}
         </button>
       }
     >
       <div className="sp-roce-summary">
         <Tag tone={summary.tone}>{summary.text}</Tag>
       </div>
-      <p className="sp-muted">These netdev traffic rates do not measure RDMA payload throughput. Pause frames are cumulative totals, separate from the current PFC setting.</p>
+      <p className="sp-muted">{t("roce.legend")}</p>
       {open && (
         <div id="roce-ports" className="sp-stack">
           {live.map((d) => (
@@ -183,7 +249,9 @@ export function RocePanel({ roce, className }: { roce: RoceMetrics | null | unde
           ))}
           {idle.length > 0 && (
             <p className="sp-muted sp-roce-idle">
-              {idle.length} port{idle.length === 1 ? "" : "s"} not connected: {idle.map((d) => d.netdev ?? d.name).join(", ")}
+              {idle.length === 1
+                ? t("roce.notConnected", { count: idle.length, names: idle.map((d) => d.netdev ?? d.name).join(", ") })
+                : t("roce.notConnectedMany", { count: idle.length, names: idle.map((d) => d.netdev ?? d.name).join(", ") })}
             </p>
           )}
         </div>

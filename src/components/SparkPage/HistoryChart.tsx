@@ -1,4 +1,5 @@
 import { useId, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useTranslation } from "react-i18next";
 import type { HistoryStat } from "../../api/types";
 import "../../styles/charts.css";
 
@@ -178,6 +179,7 @@ export function HistoryChart({
   formatTime,
   formatAxisTime,
 }: HistoryChartProps) {
+  const { t } = useTranslation("spark");
   const plotRef = useRef<HTMLDivElement>(null);
   /** This chart is the one under the pointer / keyboard focus: it shows the tooltip. */
   const [active, setActive] = useState(false);
@@ -261,7 +263,7 @@ export function HistoryChart({
           className="sp-hist-chart__plot"
           tabIndex={domain ? 0 : -1}
           role="group"
-          aria-label={`${title} from ${formatTime(from)} to ${formatTime(to)}. Use the arrow keys to read values; Escape clears.`}
+          aria-label={t("history.chartAria", { title, from: formatTime(from), to: formatTime(to) })}
           aria-describedby={showTooltip ? tooltipId : undefined}
           onKeyDown={onKeyDown}
           onPointerMove={onPointerMove}
@@ -401,7 +403,7 @@ export function HistoryChart({
                 />
               );
             })}
-          {!domain && <p className="chart__empty">No data in this range</p>}
+          {!domain && <p className="chart__empty">{t("shared.noData")}</p>}
           {showTooltip && crossPct != null && (
             <div
               id={tooltipId}
@@ -431,7 +433,11 @@ export function HistoryChart({
                     .map((s) => {
                       const v = s.values[cursorIdx];
                       if (!v || !s.band) return null;
-                      const edge = s.band === "max" ? `max ${format(v.max)}` : v.min != null ? `min ${format(v.min)}` : null;
+                      const edge = s.band === "max"
+                        ? t("history.tooltipMax", { value: format(v.max) })
+                        : v.min != null
+                          ? t("history.tooltipMin", { value: format(v.min) })
+                          : null;
                       return edge && (series.length > 1 ? `${s.label} ${edge}` : edge);
                     })
                     .filter(Boolean)

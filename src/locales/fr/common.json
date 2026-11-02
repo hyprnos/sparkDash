@@ -55,5 +55,35 @@
     "loadSettings": "Impossible de charger les réglages : {{message}}. Rechargez pour réessayer.",
     "refreshSparks": "Impossible d'actualiser les Sparks : {{message}}. Les données précédentes restent affichées.",
     "saveOrder": "Impossible d'enregistrer l'ordre des Sparks : {{message}}. L'ordre précédent a été restauré."
+  },
+  "connection": {
+    "connecting": "Connexion à la télémétrie en direct…",
+    "stale": "La télémétrie est obsolète. La dernière mise à jour valide date de {{age}}.",
+    "disconnectedShowing": "Télémétrie en direct déconnectée. Affichage des données d’il y a {{age}}.",
+    "waiting": "La télémétrie en direct est déconnectée. En attente de la première mise à jour valide…",
+    "announcedError": "Erreur des données de télémétrie.",
+    "announcedStale": "La télémétrie est obsolète.",
+    "announcedDisconnected": "La télémétrie en direct est déconnectée."
+  },
+  "errorBanner": {
+    "dismiss": "Ignorer",
+    "dismissAria": "Ignorer l’erreur"
+  },
+  "openAccess": {
+    "label": "Accès ouvert",
+    "explanation": "Ce tableau de bord est accessible depuis votre réseau sans jeton : quiconque sur ce réseau peut modifier les réglages. Définissez SPARKDASH_TOKEN sur le serveur pour en exiger un.",
+    "dontShowAgain": "Ne plus afficher"
+  },
+  "shutdownAll": {
+    "label": "Tout éteindre",
+    "title": "Éteindre tous les Sparks en ligne",
+    "confirmTitle": "Tout éteindre",
+    "confirmOne": "Éteindre proprement l’unique Spark en ligne ? Les nœuds hors ligne seront ignorés.",
+    "confirmMany": "Éteindre proprement les {{count}} Sparks en ligne ? Les nœuds hors ligne seront ignorés.",
+    "confirmLabel": "Tout éteindre",
+    "resultShutDown": "{{count}} éteints",
+    "resultFailed": "{{count}} en échec",
+    "resultSkipped": "{{count}} ignorés",
+    "batchFailed": "Échec de l’extinction groupée"
   }
 }

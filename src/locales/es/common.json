@@ -55,5 +55,35 @@
     "loadSettings": "No se pudieron cargar los ajustes: {{message}}. Recarga para reintentar.",
     "refreshSparks": "No se pudieron actualizar los Sparks: {{message}}. Se siguen mostrando los datos anteriores.",
     "saveOrder": "No se pudo guardar el orden de los Sparks: {{message}}. Se restauró el orden anterior."
+  },
+  "connection": {
+    "connecting": "Conectando a la telemetría en vivo…",
+    "stale": "La telemetría está obsoleta. La última actualización válida fue hace {{age}}.",
+    "disconnectedShowing": "Telemetría en vivo desconectada. Se muestran datos de hace {{age}}.",
+    "waiting": "La telemetría en vivo está desconectada. Esperando la primera actualización válida…",
+    "announcedError": "Error en los datos de telemetría.",
+    "announcedStale": "La telemetría está obsoleta.",
+    "announcedDisconnected": "La telemetría en vivo está desconectada."
+  },
+  "errorBanner": {
+    "dismiss": "Descartar",
+    "dismissAria": "Descartar error"
+  },
+  "openAccess": {
+    "label": "Acceso abierto",
+    "explanation": "Se puede acceder a este panel desde tu red sin token, así que cualquiera en ella puede cambiar la configuración. Define SPARKDASH_TOKEN en el servidor para exigir uno.",
+    "dontShowAgain": "No volver a mostrar"
+  },
+  "shutdownAll": {
+    "label": "Apagar todo",
+    "title": "Apagar todos los Spark en línea",
+    "confirmTitle": "Apagar todo",
+    "confirmOne": "¿Apagar de forma ordenada el único Spark en línea? Los nodos sin conexión se omitirán.",
+    "confirmMany": "¿Apagar de forma ordenada los {{count}} Spark en línea? Los nodos sin conexión se omitirán.",
+    "confirmLabel": "Apagar todo",
+    "resultShutDown": "{{count}} apagados",
+    "resultFailed": "{{count}} fallidos",
+    "resultSkipped": "{{count}} omitidos",
+    "batchFailed": "Falló el apagado por lotes"
   }
 }

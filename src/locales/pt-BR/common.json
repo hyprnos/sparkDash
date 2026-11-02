@@ -55,5 +55,35 @@
     "loadSettings": "Não foi possível carregar as configurações: {{message}}. Recarregue para tentar de novo.",
     "refreshSparks": "Não foi possível atualizar os Sparks: {{message}}. Os dados anteriores continuam visíveis.",
     "saveOrder": "Não foi possível salvar a ordem dos Sparks: {{message}}. A ordem anterior foi restaurada."
+  },
+  "connection": {
+    "connecting": "Conectando à telemetria ao vivo…",
+    "stale": "A telemetria está desatualizada. A última atualização válida foi há {{age}}.",
+    "disconnectedShowing": "Telemetria ao vivo desconectada. Exibindo dados de há {{age}}.",
+    "waiting": "A telemetria ao vivo está desconectada. Aguardando a primeira atualização válida…",
+    "announcedError": "Erro nos dados de telemetria.",
+    "announcedStale": "A telemetria está desatualizada.",
+    "announcedDisconnected": "A telemetria ao vivo está desconectada."
+  },
+  "errorBanner": {
+    "dismiss": "Dispensar",
+    "dismissAria": "Dispensar erro"
+  },
+  "openAccess": {
+    "label": "Acesso aberto",
+    "explanation": "Este painel é acessível pela sua rede sem token, então qualquer pessoa nela pode alterar configurações. Defina SPARKDASH_TOKEN no servidor para exigir um.",
+    "dontShowAgain": "Não mostrar novamente"
+  },
+  "shutdownAll": {
+    "label": "Desligar tudo",
+    "title": "Desligar todos os Sparks online",
+    "confirmTitle": "Desligar tudo",
+    "confirmOne": "Desligar de forma ordenada o único Spark online? Nós offline serão ignorados.",
+    "confirmMany": "Desligar de forma ordenada os {{count}} Sparks online? Nós offline serão ignorados.",
+    "confirmLabel": "Desligar tudo",
+    "resultShutDown": "{{count}} desligados",
+    "resultFailed": "{{count}} falharam",
+    "resultSkipped": "{{count}} ignorados",
+    "batchFailed": "Falha no desligamento em lote"
   }
 }
