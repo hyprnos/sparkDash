@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { fetchTokenHistory, resetTokenTotals } from "../../api/client";
 import { ClearMenu, type ClearChoice } from "../ui/ClearMenu";
-import { fetchLlmTokenTotals } from "../../api/llmTokenClient";
+import { fetchLlmTokenCost, fetchLlmTokenTotals, type LlmTokenCost } from "../../api/llmTokenClient";
 import type { LlmTokenSeriesTotals } from "../../api/llmTokenTypes";
 import type { SparkSnapshot, TokenHistory } from "../../api/types";
 import { formatTokensCompact } from "../../shared/tokenFormat";
@@ -254,6 +254,7 @@ export function TokensPage({ sparks, onSelectSpark }: { sparks: SparkSnapshot[];
       {view ? (
         <>
           {view.summary.total > 0 ? <Tiles s={view.summary} cmp={view.comparison} spec={spec} /> : null}
+          <CostCard range={range} />
 
           <div className="tk-grid">
             <section className="panel tk-card" aria-labelledby="tk-chart-title">
@@ -464,6 +465,54 @@ value={s.cacheRate == null ? "—" : fmtPct(s.cacheRate, 1)}
         sub={s.busiest ? bucketTitle(s.busiest.key, spec.unit, undefined, spec.localDays).replace(/ \((UTC|local)\)$/, "") : "No traffic yet"}
         title={s.busiest ? s.busiest.total.toLocaleString() : undefined}
       />
+    </section>
+  );
+}
+
+/** Cloud-price estimate for the selected range, using the e-paper pricing settings. */
+function CostCard({ range }: { range: RangeKey }) {
+  const [cost, setCost] = useState<LlmTokenCost | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchLlmTokenCost(range)
+      .then((next) => {
+        if (!cancelled) {
+          setCost(next);
+          setError(null);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) setError((err as Error).message);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [range]);
+
+  if (error) {
+    return (
+      <section className="panel tk-card tk-cost">
+        <h2>Cloud price</h2>
+        <p className="tk-cost__note">{error}</p>
+      </section>
+    );
+  }
+  if (!cost) return null;
+
+  return (
+    <section className="panel tk-card tk-cost">
+      <h2>Cloud price</h2>
+      <p className="tk-cost__value">
+        {cost.formatted}
+        <span className="tk-cost__range"> · {cost.label}</span>
+      </p>
+      <p className="tk-cost__note">
+        {cost.tariff === "peak" ? "高峰时段价" : "空闲时段价"}（¥{cost.rates.cacheHit}/¥
+        {cost.rates.cacheMiss}/¥{cost.rates.output} 每百万 tokens，缓存命中/未命中/输出）·
+        与墨水屏使用同一套价格设置，可在 E-paper 页面调整或同步官网价格
+      </p>
     </section>
   );
 }

@@ -260,6 +260,13 @@ export function bucketStartMs(key) {
   return Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]), Number(match[4]));
 }
 
+/** "2026-11-01" (UTC day key) → epoch millis of that UTC midnight. */
+export function dayStartMs(key) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(key || ""));
+  if (!match) return NaN;
+  return Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+}
+
 /**
  * Sum the ledger's hourly buckets that fall into the local calendar day that
  * contains ``nowMs``, so the tag clears at local midnight instead of on a
@@ -289,6 +296,24 @@ export function localDaySnapshot(history, { now = Date.now(), timeZone = "Asia/S
     cacheReported: cachedReported,
     series: [...perSpark.entries()].map(([sparkId, totals]) => ({ sparkId, port: 0, totals })),
   };
+}
+
+/**
+ * Sum daily buckets at or after ``sinceMs``; used for week/month windows where
+ * hour-level precision is not needed and hourly retention may be too short.
+ */
+export function bucketTotalsSince(history, sinceMs, { now = Date.now() } = {}) {
+  let promptTokens = 0;
+  let completionTokens = 0;
+  let cachedTokens = 0;
+  for (const bucket of Array.isArray(history?.day) ? history.day : []) {
+    const start = dayStartMs(bucket.t);
+    if (!Number.isFinite(start) || start < sinceMs - 24 * 3600_000 || start > now) continue;
+    promptTokens += Number(bucket.promptTokens) || 0;
+    completionTokens += Number(bucket.completionTokens) || 0;
+    cachedTokens += Number(bucket.cachedTokens) || 0;
+  }
+  return { promptTokens, completionTokens, cachedTokens };
 }
 
 /**
@@ -522,6 +547,56 @@ export function createEinkRuntime({
   });
 
   app.get("/api/eink/status", (_req, res) => res.json(status()));
+
+  /* Same rates as the tag, exposed for the Tokens page so both surfaces agree. */
+  app.get("/api/llm-token-cost", (req, res) => {
+    const range = typeof req.query?.range === "string" && req.query.range ? req.query.range : "today";
+    try {
+      let promptTokens = 0;
+      let completionTokens = 0;
+      let cachedTokens = 0;
+      const addSeries = (snapshot) => {
+        for (const series of Array.isArray(snapshot?.series) ? snapshot.series : []) {
+          const totals = series?.totals || {};
+          promptTokens += Number(totals.promptTokens) || 0;
+          completionTokens += Number(totals.completionTokens) || 0;
+          cachedTokens += Number(totals.cachedTokens) || 0;
+        }
+      };
+      if (range === "today" && ledgerHistory) {
+        addSeries(localDaySnapshot(ledgerHistory(), { now: now(), timeZone }));
+      } else if ((range === "week" || range === "month") && ledgerHistory) {
+        const history = ledgerHistory();
+        const midnight = zonedMidnight(now(), timeZone);
+        const parts = new Intl.DateTimeFormat("en-CA", { timeZone, weekday: "short", day: "2-digit" }).formatToParts(new Date(now()));
+        const dayOfMonth = Number(parts.find((part) => part.type === "day")?.value) || 1;
+        const since = range === "month" ? midnight - (dayOfMonth - 1) * 24 * 3600_000 : midnight - 6 * 24 * 3600_000;
+        const totals = bucketTotalsSince(history, since, { now: now() });
+        promptTokens = totals.promptTokens;
+        completionTokens = totals.completionTokens;
+        cachedTokens = totals.cachedTokens;
+      } else {
+        addSeries(ledgerSnapshot(range === "24h" ? "today" : range));
+      }
+      const rates = resolveRates(config.pricing, { now: new Date(now()) });
+      const cost = computeCost({ promptTokens, completionTokens, cachedTokens }, rates);
+      res.json({
+        range,
+        currency: "CNY",
+        cost,
+        formatted: formatCny(cost),
+        tokens: { promptTokens, completionTokens, cachedTokens, total: promptTokens + completionTokens },
+        modelId: config.pricing.modelId,
+        label: rates.label,
+        tariff: rates.tariff,
+        source: rates.source,
+        rates: { cacheHit: rates.cacheHit, cacheMiss: rates.cacheMiss, output: rates.output },
+        pricingUpdatedAt: config.pricing.updatedAt,
+      });
+    } catch (err) {
+      res.status(500).json({ error: err?.message || String(err) });
+    }
+  });
 
   app.get("/api/eink/pricing", (_req, res) =>
     res.json({ models: OFFICIAL_MODELS, pricing: config.pricing, source: OFFICIAL_SOURCE })

@@ -20,3 +20,22 @@ async function apiFetch<T>(path: string, opts?: RequestInit): Promise<T> {
   }
   return res.json();
 }
+
+export interface LlmTokenCost {
+  range: string;
+  currency: string;
+  cost: number;
+  formatted: string;
+  tokens: { promptTokens: number; completionTokens: number; cachedTokens: number; total: number };
+  modelId: string;
+  label: string;
+  tariff: string;
+  source: string;
+  rates: { cacheHit: number; cacheMiss: number; output: number };
+  pricingUpdatedAt: number | null;
+}
+
+/** Cost of the same token totals at the pricing configured for the e-paper tag. */
+export function fetchLlmTokenCost(range: string): Promise<LlmTokenCost> {
+  return apiFetch<LlmTokenCost>(`/api/llm-token-cost?range=${encodeURIComponent(range)}`);
+}

@@ -361,3 +361,23 @@
     font-size: 24px;
   }
 }
+
+.tk-cost__value {
+  margin: 4px 0 6px;
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--color-accent-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.tk-cost__range {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-muted);
+}
+
+.tk-cost__note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-muted);
+}
