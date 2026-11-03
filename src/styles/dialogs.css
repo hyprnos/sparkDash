@@ -576,6 +576,31 @@
 }
 .settings-panel .seg {
   flex-wrap: wrap;
+  /* The language picker carries 12 endonyms: on a phone the control has to be
+     allowed to shrink and wrap inside the panel instead of overflowing the
+     sheet, which made the right-hand languages unreachable. */
+  max-width: 100%;
+  min-width: 0;
+}
+
+.settings-panel .set-row:has(.seg) .set-row__control {
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+@media (max-width: 479px) {
+  .settings-panel .set-row:has(.seg) .set-row__control {
+    width: 100%;
+  }
+  .settings-panel .seg {
+    width: 100%;
+  }
+  .settings-panel .seg > button {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 .swatches {
   display: flex;
