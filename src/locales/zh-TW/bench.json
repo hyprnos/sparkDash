@@ -3,7 +3,9 @@
     "eyebrow": "基準測試",
     "eyebrowFamily": "基準測試 · {{family}}",
     "titleFallback": "基準測試",
-    "unknown": "未知的基準測試。"
+    "unknown": "未知的基準測試。",
+    "familySparkDash": "sparkDash",
+    "familyToolEval": "工具評測"
   },
   "types": {
     "decode": {

@@ -3,7 +3,9 @@
     "eyebrow": "基准测试",
     "eyebrowFamily": "基准测试 · {{family}}",
     "titleFallback": "基准测试",
-    "unknown": "未知的基准测试。"
+    "unknown": "未知的基准测试。",
+    "familySparkDash": "sparkDash",
+    "familyToolEval": "工具评测"
   },
   "types": {
     "decode": {

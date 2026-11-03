@@ -3,7 +3,9 @@
     "eyebrow": "벤치마크",
     "eyebrowFamily": "벤치마크 · {{family}}",
     "titleFallback": "벤치마크",
-    "unknown": "알 수 없는 벤치마크입니다."
+    "unknown": "알 수 없는 벤치마크입니다.",
+    "familySparkDash": "sparkDash",
+    "familyToolEval": "도구 평가"
   },
   "types": {
     "decode": {

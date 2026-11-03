@@ -24,7 +24,13 @@ export function BenchPageShell({ type, spark, sparks, onSelectSpark, tools, pick
     <div className="bench-page">
       <div className="page-head">
         <div>
-          <div className="eyebrow">{bench ? t("shell.eyebrowFamily", { family: bench.family }) : t("shell.eyebrow")}</div>
+          <div className="eyebrow">
+            {bench?.family === "Tool Eval Bench"
+              ? t("shell.eyebrowFamily", { family: t("shell.familyToolEval") })
+              : bench
+                ? t("shell.eyebrowFamily", { family: t("shell.familySparkDash") })
+                : t("shell.eyebrow")}
+          </div>
           <h1>{bench?.label ?? t("shell.titleFallback")}</h1>
           {bench ? <p className="page-head__sub">{bench.blurb}</p> : null}
         </div>

@@ -3,7 +3,9 @@
     "eyebrow": "Benchmarks",
     "eyebrowFamily": "Benchmarks · {{family}}",
     "titleFallback": "Benchmark",
-    "unknown": "Benchmark desconhecido."
+    "unknown": "Benchmark desconhecido.",
+    "familySparkDash": "sparkDash",
+    "familyToolEval": "Avaliação de ferramentas"
   },
   "types": {
     "decode": {

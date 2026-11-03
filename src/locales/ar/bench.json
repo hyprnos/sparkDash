@@ -3,7 +3,9 @@
     "eyebrow": "الاختبارات المعيارية",
     "eyebrowFamily": "الاختبارات المعيارية · {{family}}",
     "titleFallback": "اختبار معياري",
-    "unknown": "اختبار معياري غير معروف."
+    "unknown": "اختبار معياري غير معروف.",
+    "familySparkDash": "sparkDash",
+    "familyToolEval": "تقييم الأدوات"
   },
   "types": {
     "decode": {

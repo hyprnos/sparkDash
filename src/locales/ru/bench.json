@@ -3,7 +3,9 @@
     "eyebrow": "Бенчмарки",
     "eyebrowFamily": "Бенчмарки · {{family}}",
     "titleFallback": "Бенчмарк",
-    "unknown": "Неизвестный бенчмарк."
+    "unknown": "Неизвестный бенчмарк.",
+    "familySparkDash": "sparkDash",
+    "familyToolEval": "Оценка инструментов"
   },
   "types": {
     "decode": {

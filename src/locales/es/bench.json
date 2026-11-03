@@ -3,7 +3,9 @@
     "eyebrow": "Pruebas de rendimiento",
     "eyebrowFamily": "Pruebas de rendimiento · {{family}}",
     "titleFallback": "Prueba de rendimiento",
-    "unknown": "Prueba de rendimiento desconocida."
+    "unknown": "Prueba de rendimiento desconocida.",
+    "familySparkDash": "sparkDash",
+    "familyToolEval": "Evaluación de herramientas"
   },
   "types": {
     "decode": {

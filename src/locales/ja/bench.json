@@ -3,7 +3,9 @@
     "eyebrow": "ベンチマーク",
     "eyebrowFamily": "ベンチマーク · {{family}}",
     "titleFallback": "ベンチマーク",
-    "unknown": "不明なベンチマークです。"
+    "unknown": "不明なベンチマークです。",
+    "familySparkDash": "sparkDash",
+    "familyToolEval": "ツール評価"
   },
   "types": {
     "decode": {
