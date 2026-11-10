@@ -104,7 +104,7 @@ export class LlmProbe {
     this._openTunnel = openSshLlmTunnel;
 
     // State
-    this.backendType = null; // 'vllm' | 'llama.cpp' | 'sglang' | 'lmstudio' | 'ollama' | 'ds4' | 'exl3' | 'q27' | 'tensorfold' | 'freetoken' | 'radiance' | 'strata' | 'flare' | null
+    this.backendType = null; // 'vllm' | 'llama.cpp' | 'sglang' | 'lmstudio' | 'ollama' | 'ds4' | 'exl3' | 'q27' | 'tensorfold' | 'freetoken' | 'radiance' | 'halogen' | 'strata' | 'flare' | null
     this.serverIsOpenAI = null; // true = OpenAI-compatible
     /** Whether /v1/models (or /slots) answered without credentials. null = unknown. */
     this.authOpen = null;
@@ -129,6 +129,7 @@ export class LlmProbe {
     // Per-slot rate tracking (for llama.cpp native path)
     this.slotState = new Map();
     this.lastTokenCounts = { input: 0, output: 0 };
+    this._halogenLiveCounts = null;
     /** TensorFold: first /health sample with counters seeds the baseline (lifetime total is not a rate). */
     this._tensorfoldSeeded = false;
     /** Previous TensorFold `prefill_seconds_total`. null until a sample includes it. */
@@ -480,6 +481,7 @@ export class LlmProbe {
     this._splashBase = null;
     this.slotState.clear();
     this.lastTokenCounts = { input: 0, output: 0 };
+    this._halogenLiveCounts = null;
     // The counters restart from zero, so the next poll may only seed them. The
     // per-backend `dtSec < 10` guards do that when the probe clock is zero too;
     // failed polls keep advancing it, which is how lifetime totals used to be
@@ -536,6 +538,19 @@ export class LlmProbe {
             this.backendType = "strata";
             return;
           }
+          // Halogen exposes a llama.cpp-shaped /slots array but its health
+          // document fingerprints the OpenAI server and must win first.
+          if (
+            health?.metrics === "/metrics" &&
+            ["ok", "failed"].includes(health?.capability_probe) &&
+            Array.isArray(health?.endpoints) &&
+            health.endpoints.includes("/v1/models") &&
+            health.endpoints.includes("/v1/responses")
+          ) {
+            this.serverIsOpenAI = true;
+            this.backendType = "halogen";
+            return;
+          }
           // A JSON object that is not Strata's means another server took the port.
           otherServer = health != null && typeof health === "object" && !Array.isArray(health);
         }
@@ -565,7 +580,8 @@ export class LlmProbe {
       this.backendType !== "tensorfold" &&
       this.backendType !== "freetoken" &&
       this.backendType !== "radiance" &&
-      this.backendType !== "flare"
+      this.backendType !== "flare" &&
+      this.backendType !== "halogen"
     ) {
       const slotUrl = `${this.baseUrl}/slots`;
       try {
@@ -627,7 +643,7 @@ export class LlmProbe {
    * @param {unknown} ownedBy
    * @param {boolean} [flareCard] `/v1/models` carried Flare's `flare` object (its
    *   `owned_by` is the generic "local", so the card shape is the signal)
-   * @returns {Promise<"lmstudio" | "ollama" | "ds4" | "sglang" | "exl3" | "q27" | "tensorfold" | "freetoken" | "radiance" | "flare" | "vllm">}
+   * @returns {Promise<"lmstudio" | "ollama" | "ds4" | "sglang" | "exl3" | "q27" | "tensorfold" | "freetoken" | "radiance" | "halogen" | "flare" | "vllm">}
    */
   async _classifyOpenAIBackend(ownedBy, flareCard = false) {
     // LM Studio first: it answers 200 + JSON on every path, so the heuristic
@@ -653,6 +669,8 @@ export class LlmProbe {
       if (/freetoken/i.test(ownedBy)) return "freetoken";
       // Radiance (native RDNA engine) reports owned_by: "radiance" and serves vLLM-format /metrics.
       if (/radiance/i.test(ownedBy)) return "radiance";
+      // Halogen exposes an OpenAI API plus llama.cpp-namespaced Prometheus metrics.
+      if (/halogen/i.test(ownedBy)) return "halogen";
       // Ollama's OpenAI-compat /v1/models may report its own name.
       if (/^ollama$/i.test(ownedBy)) return "ollama";
     }
@@ -922,6 +940,8 @@ export class LlmProbe {
         this.backendType = "freetoken";
       } else if (/radiance/i.test(owned) && this.backendType !== "ds4") {
         this.backendType = "radiance";
+      } else if (/halogen/i.test(owned) && this.backendType !== "ds4") {
+        this.backendType = "halogen";
       }
     }
 
@@ -1108,6 +1128,7 @@ export class LlmProbe {
       this.backendType == null ||
       this.backendType === "vllm" ||
       this.backendType === "radiance" ||
+      this.backendType === "halogen" ||
       this.backendType === "ds4" ||
       this.backendType === "q27" ||
       this.backendType === "splash" ||
@@ -1144,6 +1165,18 @@ export class LlmProbe {
               // Radiance exports the vLLM series names (prompt/generation totals, TTFT histogram).
               this._applyVllmMetrics(txt, dtSec);
               this._applyRadianceLiveRates(txt);
+            } else if (this.backendType === "halogen") {
+              this._applyHalogenMetrics(txt, now);
+              // Halogen's /health carries the slot pool and queue gauges the
+              // Prometheus scrape does not: capacity, in-flight and waiting.
+              try {
+                const healthRes = await this._fetch(`${this.baseUrl}/health`);
+                if (healthRes.ok) {
+                  this._applyHalogenHealth(await healthRes.json().catch(() => null));
+                }
+              } catch {
+                /* health optional: metrics remain the authority for rates */
+              }
             } else if (this.backendType == null || this.backendType === "vllm") {
               this.backendType = "vllm";
               this._applyVllmMetrics(txt, dtSec);
@@ -2259,6 +2292,71 @@ export class LlmProbe {
     this.generationTps = steps.decode > last.decode ? round2(decodeRate) : 0;
     this.prefillTps = prefilling ? round2(prefillRate) : 0;
     this.prefillActive = prefilling && (this.requestsRunning ?? 0) > 0;
+  }
+
+  /** @param {string} txt */
+  _applyHalogenMetrics(txt, now = Date.now()) {
+    const prompt = this._getPromMetric(txt, "llamacpp:prompt_tokens_total");
+    const generated = this._getPromMetric(txt, "llamacpp:tokens_predicted_total");
+    if (generated != null) this.totalOutputTokens = generated;
+    const cachedPrompt = this._getPromMetric(txt, "halogen:prompt_tokens_cached_total");
+    if (cachedPrompt != null) this.totalCachedTokens = cachedPrompt;
+    // Halogen's two prompt counters are complementary, not nested: llama.cpp's
+    // `prompt_tokens_total` counts only the tokens it actually processed, while
+    // `prompt_tokens_cached_total` counts the ones the prompt cache covered
+    // ("not processed"). Reporting the processed counter as the total made the
+    // cached figure exceed it on every real deployment (e.g. 5.9M vs 265k), and
+    // the dashboard clamped the hit rate to 100%. The total is both together.
+    if (prompt != null) {
+      this.totalPromptTokens = prompt + (cachedPrompt != null && cachedPrompt > 0 ? cachedPrompt : 0);
+    }
+    // KV pool fill (tokens + fraction of the declared pool).
+    const kvTokens = this._getPromMetric(txt, "llamacpp:kv_cache_tokens");
+    if (kvTokens != null) this.kvCacheTokens = Math.round(kvTokens);
+    const kvRatio = this._getPromMetric(txt, "llamacpp:kv_cache_usage_ratio");
+    if (kvRatio != null) {
+      this.kvCacheUsage = Math.min(1, Math.max(0, kvRatio));
+    }
+
+    const promptTps = this._getPromMetric(txt, "llamacpp:prompt_tokens_seconds");
+    const generationTps = this._getPromMetric(txt, "llamacpp:predicted_tokens_seconds");
+    const livePrompt = this._getPromMetric(txt, "halogen:live_prompt_tokens_total");
+    const liveGenerated = this._getPromMetric(txt, "halogen:live_predicted_tokens_total");
+    if (livePrompt != null && liveGenerated != null) {
+      const prev = this._halogenLiveCounts;
+      const elapsed = prev ? (now - prev.time) / 1000 : 0;
+      const valid = prev && elapsed > 0 && elapsed < 10 && livePrompt >= prev.prompt && liveGenerated >= prev.generated;
+      this.prefillTps = valid ? Math.round((livePrompt - prev.prompt) / elapsed * 100) / 100 : 0;
+      this.generationTps = valid ? Math.round((liveGenerated - prev.generated) / elapsed * 100) / 100 : 0;
+      this._halogenLiveCounts = { prompt: livePrompt, generated: liveGenerated, time: now };
+    } else {
+      this._halogenLiveCounts = null;
+      this.prefillTps = Math.max(0, promptTps ?? 0);
+      this.generationTps = Math.max(0, generationTps ?? 0);
+    }
+    this.requestsRunning = this._getPromMetric(txt, "llamacpp:requests_processing");
+    if (this.requestsRunning != null) this.slotsActive = Math.round(this.requestsRunning);
+    this.prefillActive = this.prefillTps > 0;
+    this.decodeActive = this.generationTps > 0;
+  }
+
+  /**
+   * Halogen /health: slot pool capacity, in-flight and queued request gauges.
+   * Rates and token totals stay owned by /metrics.
+   * @param {Record<string, unknown> | null} health
+   */
+  _applyHalogenHealth(health) {
+    if (!health || typeof health !== "object") return;
+    const slots = Number(health.slots);
+    if (Number.isInteger(slots) && slots > 0) this.slotsTotal = slots;
+    const inflight = Number(health.in_flight);
+    if (Number.isFinite(inflight) && inflight >= 0) {
+      this.slotsActive = Math.round(inflight);
+    }
+    const queued = Number(health.queued);
+    if (Number.isFinite(queued) && queued >= 0) {
+      this.requestsWaiting = Math.round(queued);
+    }
   }
 
   /**
