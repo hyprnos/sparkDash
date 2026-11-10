@@ -106,7 +106,12 @@ follow() {
     T=$!
     trap 'kill "$T" "$W" 2>/dev/null' EXIT
     if ! wait "$W"; then kill "$T" 2>/dev/null; exit 0; fi
-    sleep 0.6
+    # BSD tail cannot say "stop when that pid exits", so it has to be killed, and
+    # killing it too early loses the log outright: a tail that is still starting up
+    # (cold cache, loaded host) has not read anything yet, and the file is already
+    # complete so its content cannot be used to tell. Wait long enough for a slow
+    # start to drain, then stop it - tail -F never exits on its own.
+    sleep 2.5
     kill "$T" 2>/dev/null
     wait "$T" 2>/dev/null
     trap - EXIT

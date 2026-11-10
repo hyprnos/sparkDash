@@ -73,6 +73,11 @@ export function fetchPinned(target, opts) {
           ...(opts.headers || {}),
         },
         timeout: timeoutMs,
+        // A proxy would resolve the hostname itself, which defeats the point of
+        // pinning: the connection must go to the address this call already
+        // validated. Node honours http_proxy for plain http requests when
+        // NODE_USE_ENV_PROXY is set, so opt out explicitly with a private agent.
+        agent: new lib.Agent({ keepAlive: false }),
         lookup: (_hostname, options, callback) => {
           const cb = typeof options === "function" ? options : callback;
           if (options && options.all) cb(null, [{ address, family: net.isIP(address) }]);

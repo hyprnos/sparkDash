@@ -57,6 +57,21 @@ export function secretsPayload(env) {
   return `${lines.join("\n")}\n\n`;
 }
 
+/**
+ * Hosts without bash 4 or util-linux (macOS ships bash 3.2 and no `timeout`).
+ * Both are convenience only — decoding argv and bounding a one-shot call — so
+ * fall back rather than fail the whole program. The Spark targets are Linux and
+ * take the primary path.
+ */
+const SHIMS = `
+read_argv() { ARGS=(); while IFS= read -r -d '' a; do ARGS+=("$a"); done < <(printf %s "$1" | base64 -d); }
+run_tmo() { local t="$1"; shift; if command -v timeout >/dev/null 2>&1; then timeout "$t" "$@"; else "$@"; fi; }
+# New session, so the run survives the SSH channel closing. macOS has no setsid(1):
+# perl's POSIX::setsid does the same and then execs, keeping $! the session leader.
+newsid() { if command -v setsid >/dev/null 2>&1; then exec setsid "$@"; fi
+  exec perl -MPOSIX -e 'POSIX::setsid(); exec { $ARGV[0] } @ARGV or die "exec: $!"' "$@"; }
+`;
+
 const HELPERS = `
 # A pid only counts while the run has not written its exit file and the process still looks like our wrapper
 # (guards against a recycled pid being mistaken for, or signalled as, the run).
@@ -91,14 +106,15 @@ ${READ_SECRETS}
 ${PATH_LINE}
 ${dirs(runId)}
 ${HELPERS}
+${SHIMS}
 BIN=$(command -v tool-eval-bench) || { echo "[sparkdash] tool-eval-bench is not installed on this Spark. Use Set up on the Tool Eval page to install it."; echo "${TX}127"; exit 0; }
 if [ "$PID" != 0 ] && alive; then echo "[sparkdash] this run is already running"; echo "${TX}-1"; exit 0; fi
-mapfile -d '' -t ARGS < <(printf %s '${argvB64}' | base64 -d)
+read_argv '${argvB64}'
 ${EXPAND_HOME}
 cd "$WD" || exit 1
 rm -f "$X" "$R"; : > "$L"; : > "$E"
 printf '[sparkdash] %s\\n' "$(printf %s '${displayB64}' | base64 -d)" >> "$L"
-setsid bash -c 'X="$1"; P="$2"; shift 2; "$@"; echo $? > "$X"; rm -f "$P"' _ "$X" "$P" "$BIN" "\${ARGS[@]}" >> "$L" 2>> "$E" < /dev/null &
+newsid bash -c 'X="$1"; P="$2"; shift 2; "$@"; echo $? > "$X"; rm -f "$P"' _ "$X" "$P" "$BIN" "\${ARGS[@]}" >> "$L" 2>> "$E" < /dev/null &
 PID=$!
 echo "$PID" > "$P"
 follow "+1"
@@ -140,10 +156,11 @@ export function buildOnceProgram({ argvB64, wantStdin = false, nonce = "" }) {
 ${wantStdin ? READ_SECRETS : ""}
 ${PATH_LINE}
 BIN=$(command -v tool-eval-bench) || { echo "tool-eval-bench is not installed"; echo "${TX}127"; exit 0; }
-mapfile -d '' -t ARGS < <(printf %s '${argvB64}' | base64 -d)
+${SHIMS}
+read_argv '${argvB64}'
 ${EXPAND_HOME}
 mkdir -p "${WORK_DIR}" && cd "${WORK_DIR}" || exit 1
-timeout 90 "$BIN" "\${ARGS[@]}" 2>&1 < /dev/null
+run_tmo 90 "$BIN" "\${ARGS[@]}" 2>&1 < /dev/null
 echo "${TX}$?"
 `);
 }
@@ -152,8 +169,9 @@ echo "${TX}$?"
 export function buildStatusProgram() {
   return wrap(`
 ${PATH_LINE}
+${SHIMS}
 BIN=$(command -v tool-eval-bench); echo "BIN=\${BIN:-}"
-if [ -n "$BIN" ]; then echo "VERSION=$(timeout 20 "$BIN" --version 2>&1 | head -n 1)"; fi
+if [ -n "$BIN" ]; then echo "VERSION=$(run_tmo 20 "$BIN" --version 2>&1 | head -n 1)"; fi
 echo "UV=$(command -v uv || true)"
 echo "PYTHON=$(command -v python3 || true)"
 if command -v python3 >/dev/null 2>&1; then echo "PYTHON_VERSION=$(python3 --version 2>&1)"; fi

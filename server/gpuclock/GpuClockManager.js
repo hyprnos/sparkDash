@@ -54,6 +54,8 @@ const httpError = (status, message, code) => Object.assign(new Error(message), {
  */
 export function gpuClockUnsupportedReason(spark) {
   if (!spark) return "Spark not found";
+  // Clock caps need `nvidia-smi -lgc`, which no AMD box (including an AI Max 395)
+  // has, so this stays a vendor capability rather than a memory-architecture one.
   if (spark.kind === "host") return "GPU clock caps are only supported on Spark units";
   if (spark.platform === "windows" || spark.platform === "darwin") {
     return "GPU clock caps are only supported on Linux Spark units";

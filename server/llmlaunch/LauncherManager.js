@@ -3,9 +3,10 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import { spawn, execFile } from "child_process";
+import os from "node:os";
 import { HOST_PATHS } from "../config.js";
 import { sshCommandSpec, sshExec } from "../collectors/ssh.js";
-import { chooseLocalInvocation } from "../collectors/HermesProbe.js";
+import { chooseLocalInvocation, parseHostPasswd } from "../collectors/HermesProbe.js";
 import {
   exitPrefix,
   buildAttachCommand,
@@ -88,11 +89,29 @@ function resolveLocalInvocation(spark, cmd) {
   } catch {
     passwdText = "";
   }
+  const user = spark.ssh?.user;
+  const currentUid = typeof process.getuid === "function" ? process.getuid() : -1;
+  // `/etc/passwd` is not the whole story off Linux: macOS keeps local accounts in
+  // DirectoryService, so a valid SSH user can be missing there and the drop-to-user
+  // check would refuse to run anything. When this process already runs as that
+  // user, run in place — the same outcome `chooseLocalInvocation` gives for a
+  // matching uid.
+  if (!parseHostPasswd(passwdText, user) && user && currentUid >= 0) {
+    let ident = null;
+    try {
+      ident = os.userInfo();
+    } catch {
+      ident = null;
+    }
+    if (ident && ident.username === user && ident.uid === currentUid) {
+      return { file: "sh", args: ["-c", cmd], repair: null };
+    }
+  }
   return chooseLocalInvocation({
     mntNs,
     passwdText,
-    currentUid: typeof process.getuid === "function" ? process.getuid() : -1,
-    user: spark.ssh?.user,
+    currentUid,
+    user,
     cmd,
     // Launcher scripts must never run as the dashboard's (root) user: refuse instead.
     requireDrop: true,

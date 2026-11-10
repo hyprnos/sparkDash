@@ -23,7 +23,13 @@ import { GpuClockManager, assertSupported, remoteCommand } from "../GpuClockMana
  * passwordless rule is the narrow nvidia-smi one, `cron` for a running cron,
  * `cronMangles` for a crontab tool that rewrites the clocks of what it stores. */
 function sandbox({ hwMax = 3003, lgcFails = false, narrowSudo = false, cron = false, cronMangles = false } = {}) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "gpuclock-"));
+  // Debian cron caps the command field at 998 bytes, and the @reboot line embeds
+  // a copy of itself (`J=...`), so its length roughly doubles. macOS hands out
+  // /var/folders/<long>/T as os.tmpdir(), which pushes the sandbox over that limit
+  // and fails tests for a reason a real install never hits — /tmp keeps the paths
+  // as short as a real install's.
+  const sandboxBase = fs.existsSync("/tmp") ? "/tmp" : os.tmpdir();
+  const root = fs.mkdtempSync(path.join(sandboxBase, "gpuclock-"));
   const bin = path.join(root, "bin");
   fs.mkdirSync(bin);
   for (const d of ["units", "run", "systemd", "user-home"]) fs.mkdirSync(path.join(root, d));
@@ -116,6 +122,43 @@ esac
 `,
     { mode: 0o755 }
   );
+  // util-linux `flock` is Linux-only, but the programs lock a *file descriptor*
+  // (`exec 9>>lock`, then `flock -w 30 9`), so a stub that merely succeeds would
+  // hide contention bugs. python3's fcntl can lock an inherited fd on every
+  // platform this suite runs on, which keeps the real semantics: a second caller
+  // blocks until the first owner exits.
+  const flockShim = path.join(bin, "flock");
+  fs.writeFileSync(
+    flockShim,
+    `#!/usr/bin/env python3
+import fcntl, sys, time
+args = sys.argv[1:]
+timeout = None
+while args and args[0].startswith("-"):
+    if args[0] == "-w":
+        timeout = float(args[1]); args = args[2:]
+    elif args[0] == "-n":
+        timeout = 0.0; args = args[1:]
+    elif args[0] == "-x" or args[0] == "-s" or args[0] == "-e":
+        args = args[1:]
+    else:
+        args = args[1:]
+fd = int(args[0])
+if timeout is None:
+    fcntl.flock(fd, fcntl.LOCK_EX)
+else:
+    deadline = time.time() + timeout
+    while True:
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            break
+        except OSError:
+            if time.time() >= deadline:
+                sys.exit(1)
+            time.sleep(0.01)
+`,
+    { mode: 0o755 }
+  );
   // Boot-time failures go to `logger`; the sandbox records instead of writing to the host's journal.
   fs.writeFileSync(path.join(bin, "logger"), `#!/bin/sh\necho "logger $*" >> ${calls}\n`, { mode: 0o755 });
   const paths = {
@@ -124,6 +167,7 @@ esac
     bootIdFile: path.join(root, "boot_id"),
     systemdRunDir: path.join(root, "systemd"),
     nvsmi: [path.join(bin, "nvidia-smi")],
+    flock: [flockShim],
     systemctl: path.join(bin, "systemctl"),
     sandbox: true,
     sandboxSudo: narrowSudo ? path.join(bin, "sudo") : "",
@@ -1549,8 +1593,10 @@ test("Reset and newer Apply wait for an in-flight reboot GPU command before repl
     const sb = sandbox({ narrowSudo: true, cron: true });
     const children = [];
     try {
-      const flock = path.join(sb.bin, "flock");
-      fs.writeFileSync(flock, `#!/bin/sh\n[ "\${GPU_LOCK_ACTOR-}" != dashboard ] || : > ${sb.root}/dashboard-waiting\nexec /usr/bin/flock "$@"\n`, { mode: 0o755 });
+      // Wrap the sandbox's portable flock so a dashboard attempt is observable,
+      // instead of `exec /usr/bin/flock`, which does not exist off Linux.
+      const flock = path.join(sb.bin, "flock-observed");
+      fs.writeFileSync(flock, `#!/bin/sh\n[ "\${GPU_LOCK_ACTOR-}" != dashboard ] || : > ${sb.root}/dashboard-waiting\nexec ${sb.bin}/flock "$@"\n`, { mode: 0o755 });
       const paths = { ...sb.paths, flock: [flock] };
       assert.equal(sb.run(buildApplyProgram({ minMHz: 0, maxMHz: 1800, persist: true }, paths)).RESULT, "ok");
       fs.writeFileSync(path.join(sb.bin, "nvidia-smi"), `#!/bin/sh

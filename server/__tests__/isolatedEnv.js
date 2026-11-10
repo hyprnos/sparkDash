@@ -35,6 +35,8 @@ export const CONFIG_PATH_VARS = [
   "OCCUPANCY_HELPERS_JSON_PATH",
   "MODEL_PRICES_JSON_PATH",
   "MODEL_PRICES_FETCH",
+  "EINK_CONFIG_PATH",
+  "EINK_CONFIG_HOST_DIR",
 ];
 
 /** Variables that point at a directory the server writes into. */
