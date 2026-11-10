@@ -31,6 +31,10 @@ services:
     # (ds4-server / start.sh default --host 127.0.0.1). Bridge NAT cannot
     # reach the host's 127.0.0.1, and LAN-IP probes miss loopback binds.
     network_mode: host
+    # Container mDNS does not resolve `.local` names. Pin the FAEX1 host here
+    # (DHCP-reserved LAN address) so SSH/HTTP probes reach it by hostname.
+    extra_hosts:
+      - "hyprnos-FAEX1.local:10.8.1.10"
     privileged: true
     # Share host PID namespace so nvidia-smi compute-apps sees GPU processes
     # (otherwise local VRAM falls back to minute-old config/gpu-memory.json).

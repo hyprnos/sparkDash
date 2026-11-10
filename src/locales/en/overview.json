@@ -23,7 +23,19 @@
     "wakeSent": "{{count}} wake packets sent",
     "wakePartial": "{{count}} sent, {{failed}} failed",
     "batchHermesFailed": "Batch Hermes update failed",
-    "batchWakeFailed": "Batch wake failed"
+    "batchWakeFailed": "Batch wake failed",
+    "deviceClass": {
+      "spark_one": "Spark",
+      "spark_other": "Sparks",
+      "amdAiMax_one": "AI Max 395",
+      "amdAiMax_other": "AI Max 395",
+      "gpuHost_one": "GPU host",
+      "gpuHost_other": "GPU hosts",
+      "windowsPc_one": "Windows PC",
+      "windowsPc_other": "Windows PCs",
+      "mac_one": "Mac",
+      "mac_other": "Macs"
+    }
   },
   "empty": {
     "workersHiddenTitle": "Worker nodes are hidden",
@@ -220,8 +232,10 @@
     "ram": "RAM",
     "gpuTemp": "GPU temp",
     "gpuPower": "GPU power",
+    "socPpt": "SoC PPT · CPU + GPU",
     "cpuTemp": "CPU temp",
     "cpuPower": "CPU power",
+    "estimateSuffix": "est.",
     "available": "Available",
     "sensorTitle": "Sensor: {{label}}",
     "workerOf": "Worker of",

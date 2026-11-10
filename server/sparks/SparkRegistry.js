@@ -609,7 +609,12 @@ export class SparkRegistry {
     return {
       id: config.id,
       name: config.name || config.id,
-      /** Unit type: spark (DGX Spark) or host (dedicated GPU Linux box). */
+      /**
+       * Configured unit type: spark (DGX Spark) or host (any other box).
+       * A "host" is only a *configuration* value — once the collector probes it,
+       * `deviceClassOf` names the real class (an AMD AI Max 395 APU is a peer of
+       * a Spark, not a generic GPU host: both share one memory pool).
+       */
       kind: config.kind === "host" || config.platform === "windows" ? "host" : "spark",
       /**
        * Optional OS platform override for SSH-collected units: "darwin" for

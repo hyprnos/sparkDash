@@ -44,6 +44,32 @@ test("remote CPU collection returns temperature for DGX Spark nodes", async () =
   assert.equal(result.temperatureSource, "acpitz");
 });
 
+test("remote CPU usage preserves low utilization", async () => {
+  const collector = new SystemCollector({ id: "host-test", kind: "host" });
+  let used = 100;
+  let idle = 900;
+  const execute = async () => `cpu ${used} 0 0 ${idle} 0 0 0 0\n---\n\n---\nk10temp 56000`;
+  await collector._getRemoteCpu(execute);
+  used += 4;
+  idle += 996;
+  const result = await collector._getRemoteCpu(execute);
+  assert.equal(result.usage, 0.4);
+  assert.equal(result.powerSource, "estimated");
+});
+
+test("local CPU usage preserves low utilization", async () => {
+  const collector = new SystemCollector({ id: "local-test", kind: "host", isLocal: true });
+  let stat = { total: 1000, used: 100 };
+  collector._getCPUUsage = async () => stat;
+  collector._getCPUTemperatureReading = async () => ({ temperature: 56.6, temperatureLabel: "CPU", temperatureSource: "k10temp" });
+  collector._getCPUPower = async () => ({ draw: 14.8, tdp: 185, powerSource: "estimated" });
+  await collector.collectCpu();
+  stat = { total: 2000, used: 104 };
+  const result = await collector.collectCpu();
+  assert.equal(result.usage, 0.4);
+  assert.equal(result.powerSource, "estimated");
+});
+
 test("remote CPU temperature names an x86 die sensor", () => {
   const sensor = pick(c._parseSensorCandidates("coretemp 45200\n"));
   assert.equal(sensor.temperature, 45.2);

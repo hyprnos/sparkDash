@@ -595,6 +595,28 @@ test("estimator clamps CPU usage and total node power", () => {
   assert.equal(estimateNodeWatts(nodeSnapshot("node-a", { gpuDraw: 500 })), 240);
 });
 
+test("estimator uses the APU SoC rail instead of a zero GPU draw", () => {
+  const apu = (socPowerWatts, gpuDraw = 0) =>
+    estimateNodeWatts({
+      online: true,
+      telemetryFresh: true,
+      metrics: {
+        gpu: { power: { draw: gpuDraw }, socPowerWatts },
+        cpu: { usage: 40 },
+      },
+    });
+
+  // One package rail covers CPU + GPU; the CPU model must not be added on top.
+  almostEqual(apu(89.3), 112.3);
+  almostEqual(apu(14), 37);
+  // Same ceiling as the discrete path.
+  assert.equal(apu(500), 240);
+  // A real discrete GPU reading wins over the shared rail.
+  almostEqual(apu(89.3, 10), 62.12);
+  // No rail and no GPU draw still falls back to the CPU-shaped estimate.
+  almostEqual(apu(null), 52.12);
+});
+
 test("estimator requires explicit telemetryFresh true", () => {
   const onlineOnly = nodeSnapshot("node-a", { online: true });
   delete onlineOnly.telemetryFresh;

@@ -163,6 +163,72 @@ export function parseAmdSmiMetrics(raw, limitRaw = null) {
 }
 
 /**
+ * Parse AMD_STRIX_PROBE output:
+ *   index,usage%,temp(m°C),ppt(µW),gttUsed,gttTotal,visUsed,visTotal,sclk(Hz)
+ *
+ * Strix Halo is an APU: there is no discrete VRAM. The GPU addresses system RAM
+ * through the GTT window, so "VRAM" here is the GTT window plus the BIOS-visible
+ * carve-out, and the SoC power rail (PPT) covers CPU + GPU together — it must
+ * stay out of the per-GPU draw so CPU power is not counted twice.
+ * Older four-field lines (`index,usage,temp,ppt`) are still accepted.
+ */
+export function parseAmdStrixSysfs(raw) {
+  return String(raw ?? "").split(/\r?\n/).flatMap((line) => {
+    const parts = line.trim().split(",");
+    if (parts.length < 4 || !/^\d+$/.test(parts[0])) return [];
+    const num = (i) => (parts[i] == null || parts[i] === "" ? null : Number(parts[i]));
+    const index = Number(parts[0]);
+    const usage = num(1);
+    const temp = num(2);
+    const power = num(3);
+    const gttUsed = num(4);
+    const gttTotal = num(5);
+    const visUsed = num(6);
+    const visTotal = num(7);
+    const sclkHz = num(8);
+    const usageValid = usage != null && Number.isFinite(usage) && usage >= 0 && usage <= 100;
+    const tempValid = temp != null && Number.isFinite(temp) && temp > 0 && temp < 200000;
+    const powerValid = power != null && Number.isFinite(power) && power >= 0 && power <= 1000000000;
+    const bytes = (n) => n != null && Number.isFinite(n) && n >= 0 && n <= Number.MAX_SAFE_INTEGER;
+    const vramValid = bytes(gttUsed) && bytes(gttTotal) && bytes(visUsed) && bytes(visTotal) && gttTotal + visTotal > 0;
+    const clockValid = sclkHz != null && Number.isFinite(sclkHz) && sclkHz > 0 && sclkHz < 100000000000;
+    if (!usageValid && !tempValid && !powerValid && !vramValid) return [];
+    const usedMB = vramValid ? Math.round((gttUsed + visUsed) / 1048576) : 0;
+    const totalMB = vramValid ? Math.round((gttTotal + visTotal) / 1048576) : 0;
+    return [{
+      index,
+      physicalIndex: index,
+      name: "AMD Radeon Graphics",
+      uuid: null,
+      vendor: "amd",
+      temperature: tempValid ? Math.round(temp / 100) / 10 : 0,
+      usage: usageValid ? usage : 0,
+      powerDraw: 0,
+      powerLimit: 0,
+      power: { draw: 0, limit: 0 },
+      socPowerWatts: powerValid ? Math.round(power / 100000) / 10 : null,
+      smClockMHz: clockValid ? Math.round(sclkHz / 1000000) : null,
+      vram: {
+        used: usedMB,
+        total: totalMB,
+        percentage: totalMB > 0 ? Math.round((usedMB / totalMB) * 100) : 0,
+        available: Math.max(0, totalMB - usedMB),
+      },
+      metricAvailability: {
+        temperature: tempValid,
+        usage: usageValid,
+        powerDraw: false,
+        powerLimit: false,
+        vramUsed: vramValid,
+        vramTotal: vramValid,
+      },
+      throttle: null,
+      processes: [],
+    }];
+  });
+}
+
+/**
  * Locate and run macmon on a macOS unit. Non-interactive SSH sessions get a minimal
  * PATH, so Homebrew and cargo locations are tried explicitly. MACMON_PATH overrides.
  */
@@ -417,7 +483,7 @@ export function parseMacIoregDiskStats(output) {
   return { readBytes, writeBytes };
 }
 
-const REMOTE_GPU_SECTIONS = new Set(["NVIDIA", "NVIDIA_VRAM", "NVIDIA_APPS", "AMD", "AMD_LIMITS", "INTEL", "MEMINFO", "CLOCK_CAP"]);
+const REMOTE_GPU_SECTIONS = new Set(["NVIDIA", "NVIDIA_VRAM", "NVIDIA_APPS", "AMD", "AMD_LIMITS", "AMD_STRIX", "INTEL", "MEMINFO", "CLOCK_CAP"]);
 
 /**
  * Split the remote GPU probe output into named sections. A section starts at a
@@ -453,6 +519,23 @@ const AMD_SMI_RESOLVER = [
 // an NVIDIA device's index in per-card histories or Prometheus labels.
 const AMD_GPU_INDEX_OFFSET = 1000;
 const INTEL_GPU_INDEX_OFFSET = 2000;
+const AMD_STRIX_PROBE = [
+  "for c in $(find /sys/class/drm -mindepth 1 -maxdepth 1 -name 'card[0-9]*' 2>/dev/null | sort); do",
+  'i=${c##*/}; i=${i#card}; case "$i" in ""|*[!0-9]*) continue;; esac;',
+  'd="$c/device"; [ "$(cat "$d/vendor" 2>/dev/null)" = 0x1002 ] || continue;',
+  'readlink "$d/driver" 2>/dev/null | grep -q amdgpu || continue;',
+  'u=$(cat "$d/gpu_busy_percent" 2>/dev/null); t=; w=; f=;',
+  'for h in $(find -L "$d/hwmon" -mindepth 1 -maxdepth 1 -name \'hwmon*\' 2>/dev/null | sort); do',
+  '[ "$(cat "$h/name" 2>/dev/null)" = amdgpu ] || continue;',
+  't=$(cat "$h/temp1_input" 2>/dev/null);',
+  '[ "$(cat "$h/power1_label" 2>/dev/null)" = PPT ] && w=$(cat "$h/power1_input" 2>/dev/null);',
+  'f=$(cat "$h/freq1_input" 2>/dev/null);',
+  'break; done;',
+  'gu=$(cat "$d/mem_info_gtt_used" 2>/dev/null); gt=$(cat "$d/mem_info_gtt_total" 2>/dev/null);',
+  'vu=$(cat "$d/mem_info_vis_vram_used" 2>/dev/null); vt=$(cat "$d/mem_info_vis_vram_total" 2>/dev/null);',
+  'printf "%s,%s,%s,%s,%s,%s,%s,%s,%s\\n" "$i" "$u" "$t" "$w" "$gu" "$gt" "$vu" "$vt" "$f";',
+  "done",
+].join(" ");
 
 function tagCollectionResult(result, successful) {
   Object.defineProperty(result, COLLECTION_SUCCESS, {
@@ -547,6 +630,13 @@ export class SystemCollector {
   constructor(spark) {
     this.spark = spark;
     this._nvidiaSmiPath = this._resolveNvidiaSmiPath();
+    /**
+     * "unified" once a probe proves the GPU shares the CPU's memory (AMD APU),
+     * "discrete" when it has VRAM of its own; undefined until then, so
+     * `sharesMemoryPool` falls back to `kind`.
+     * @type {"unified" | "discrete" | undefined}
+     */
+    this._detectedMemoryArchitecture = undefined;
 
     // Rate-tracking baselines
     this.lastNetworkStats = new Map();
@@ -661,7 +751,7 @@ export class SystemCollector {
       }
       const totalDiff = usage.total - (this.lastCpuStat?.total || usage.total);
       const usedDiff = usage.used - (this.lastCpuStat?.used || usage.used);
-      const cpuPercentage = totalDiff > 0 ? Math.round((usedDiff / totalDiff) * 100) : 0;
+      const cpuPercentage = totalDiff > 0 ? Math.round((usedDiff / totalDiff) * 1000) / 10 : 0;
       const usageFraction = totalDiff > 0 ? usedDiff / totalDiff : 0;
       // Temperature and power can run in parallel — power is now a pure
       // function of the usage fraction (no extra /proc/stat read).
@@ -1138,7 +1228,7 @@ export class SystemCollector {
     const usedMB = Math.round(used || 0);
     let totalMB = Math.round(total || 0);
 
-    if (this.spark.kind === "host") {
+    if (!this.sharesMemoryPool) {
       // Discrete GPU VRAM: trust nvidia-smi's memory.total (e.g. 24 GB L4), and
       // only fall back to the OS pool / Spark spec when nvidia-smi says N/A.
       // Free VRAM = total − used (unlike the shared pool, GPU memory is dedicated).
@@ -1146,8 +1236,8 @@ export class SystemCollector {
       else if (totalMB <= 0) totalMB = DGX_SPARK.MEMORY_HBM_SIZE_GB * 1024; // Convert to MB
       if (totalMB > 0) availableMB = Math.max(0, totalMB - usedMB);
     } else {
-      // GB10 shared HBM pool: prefer the OS-visible pool (MemTotal) as the total,
-      // fall back to nvidia-smi, then the hardware spec (HBM) only if nothing known.
+      // Shared pool (GB10 HBM, AMD APU GTT): prefer the OS-visible pool
+      // (MemTotal) as the total, then nvidia-smi, then the hardware spec.
       if (memTotalMB > 0) totalMB = memTotalMB;
       else if (totalMB <= 0) totalMB = DGX_SPARK.MEMORY_HBM_SIZE_GB * 1024; // Convert to MB
       availableMB = availMB;
@@ -1686,7 +1776,7 @@ export class SystemCollector {
     if (!Number.isFinite(frac) || frac < 0) frac = 0;
     const idleWatts = tdp * 0.08;
     const draw = idleWatts + (tdp - idleWatts) * Math.min(frac, 1);
-    return { draw: Math.round(draw * 10) / 10, tdp: Math.round(tdp) };
+    return { draw: Math.round(draw * 10) / 10, tdp: Math.round(tdp), powerSource: "estimated" };
   }
 
   // ─── RAM helpers ─────────────────────────────────────────
@@ -2084,6 +2174,7 @@ export class SystemCollector {
       const cmd = [
         "if command -v nvidia-smi >/dev/null 2>&1; then printf '\\n__NVIDIA__\\n'; nvidia-smi --query-gpu=temperature.gpu,utilization.gpu,power.draw,power.limit,clocks.current.sm,clocks.max.sm,clocks_throttle_reasons.hw_thermal_slowdown,clocks_throttle_reasons.sw_thermal_slowdown,clocks_throttle_reasons.hw_slowdown,clocks_throttle_reasons.sw_power_cap,index,name,uuid --format=csv,noheader,nounits 2>/dev/null; printf '\\n__NVIDIA_VRAM__\\n'; nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader,nounits 2>/dev/null; printf '\\n__NVIDIA_APPS__\\n'; nvidia-smi --query-compute-apps=pid,process_name,used_gpu_memory,gpu_uuid --format=csv,noheader,nounits 2>/dev/null; fi",
         `${AMD_SMI_RESOLVER}; if [ -n "$amd_smi" ]; then printf '\\n__AMD__\\n'; "$amd_smi" metric -u -p -m -t --json 2>/dev/null; printf '\\n__AMD_LIMITS__\\n'; "$amd_smi" static -l --json 2>/dev/null; fi`,
+        `printf '\\n__AMD_STRIX__\\n'; ${AMD_STRIX_PROBE}`,
         `printf '\\n__INTEL__\\n'; ${buildIntelProbeScript({ sudo: this._intelSudo.allowed && getSettings().intelVramSudo, vram: vramRead })}`,
         "printf '\\n__MEMINFO__\\n'; grep -E 'MemTotal|MemAvailable' /proc/meminfo 2>/dev/null",
         `printf '\\n__CLOCK_CAP__\\n'; ${CLOCK_CAP_CMD}`,
@@ -2110,7 +2201,14 @@ export class SystemCollector {
       this._applyClockCap(cliDevices, parseClockCap(clockCapOut));
       const perDeviceVram = this._parseVramLines(legacy ? (legacySections[1] || "") : memFields);
       const apps = this._parseComputeApps(legacy ? (legacySections[2] || "") : computeOut);
-      const amdDevices = legacy ? [] : parseAmdSmiMetrics(amdMetrics, amdLimits)
+      const amdSmiDevices = legacy ? [] : parseAmdSmiMetrics(amdMetrics, amdLimits);
+      // sysfs exposes the current sclk; there is no NVIDIA-style throttle
+      // bitfield, so the clock is reported without a max/cap.
+      const strixDevices = legacy ? [] : parseAmdStrixSysfs(section("AMD_STRIX"))
+        .map((device) => ({ ...device, throttle: this._buildThrottle({ smClockMHz: device.smClockMHz }) }));
+      // Reading GTT counters already proves the GPU sits behind the CPU's pool.
+      if (!legacy && strixDevices.length > 0) this._markMemoryArchitecture("unified");
+      const amdDevices = (amdSmiDevices.length ? amdSmiDevices : strixDevices)
         .map((device) => ({ ...device, index: AMD_GPU_INDEX_OFFSET + device.index }));
       // Probe output only exists in the section format; legacy fixtures carry no Intel data.
       const intelDevices = this._intelDevices(this._sampleIntel(legacy ? "" : intelOut, vramRead));
@@ -2152,7 +2250,7 @@ export class SystemCollector {
       // from that pool only; never fold AMD memory or host RAM into an unknown
       // discrete GPU capacity.
       let resolvedCliVram = cliVram;
-      if (this.spark.kind !== "host" && cliDevices.length) {
+      if (this.sharesMemoryPool && cliDevices.length) {
         const resolvedTotal = memTotalMB || cliTotal || DGX_SPARK.MEMORY_HBM_SIZE_GB * 1024;
         resolvedCliVram = {
           used: Math.round(cliUsed || 0),
@@ -2161,7 +2259,7 @@ export class SystemCollector {
         };
         totalMB = resolvedTotal + Math.round(otherVram.total || 0);
       }
-      if (this.spark.kind === "host") {
+      if (!this.sharesMemoryPool) {
         // Discrete GPU VRAM: trust vendor-reported memory. Unknown capacity
         // stays unknown instead of being replaced with system RAM or a spec.
         // Windows adapter counters include shared-memory use; when their driver
@@ -2191,7 +2289,7 @@ export class SystemCollector {
       }
 
       // Rough system power estimate: GPU draw + 20W CX7/peripherals
-      const systemDraw = Math.round(gpu.powerDraw + 20);
+      const systemDraw = gpu.metricAvailability.powerDraw ? Math.round(gpu.powerDraw + 20) : 0;
 
       // Top 5 GPU processes by VRAM usage (a PID spanning several GPUs is summed)
       const cachedApps = this._cachedApps();
@@ -2202,6 +2300,7 @@ export class SystemCollector {
         temperature: gpu.temperature,
         usage: gpu.usage,
         power: { draw: gpu.powerDraw, limit: gpu.powerLimit, systemDraw },
+        socPowerWatts: !amdSmiDevices.length && strixDevices.length === 1 ? strixDevices[0].socPowerWatts : null,
         vram,
         processes,
         throttle: gpu.throttle,
@@ -2267,7 +2366,7 @@ export class SystemCollector {
       }
       const totalDiff = cpuStat.total - (this.lastCpuStat?.total || cpuStat.total);
       const usedDiff = cpuStat.used - (this.lastCpuStat?.used || cpuStat.used);
-      const usage = totalDiff > 0 ? Math.round((usedDiff / totalDiff) * 100) : 0;
+      const usage = totalDiff > 0 ? Math.round((usedDiff / totalDiff) * 1000) / 10 : 0;
       if (attemptSequence === this._cpuCollectionSequence) {
         this.lastCpuStat = cpuStat;
         this.lastCpuUsagePct = usage;
@@ -2287,6 +2386,7 @@ export class SystemCollector {
         temperatureSource: tempReading.temperatureSource,
         draw: Math.round(draw * 10) / 10,
         tdp: Math.round(tdp),
+        powerSource: "estimated",
       };
     } catch (err) {
       console.error(`[SystemCollector] Remote CPU error for ${this.spark.id}:`, err.message);
@@ -2438,6 +2538,27 @@ export class SystemCollector {
     return this.spark.platform === "darwin";
   }
 
+  /**
+   * Does this unit have one physical memory pool behind both the CPU and the GPU?
+   *
+   * A DGX Spark (GB10 HBM) always does; a generic "host" only when the collector
+   * proved it is an AMD APU, whose iGPU addresses system RAM through the GTT
+   * window and has no VRAM of its own. Such a box must be handled exactly like a
+   * Spark — one pooled memory figure, no separate RAM/VRAM split — instead of as
+   * a discrete card.
+   */
+  get sharesMemoryPool() {
+    if (this.spark.kind !== "host") return true;
+    return this._detectedMemoryArchitecture === "unified";
+  }
+
+  /** Record the architecture a probe established, so later polls skip re-deriving it. */
+  _markMemoryArchitecture(architecture) {
+    if (architecture === "unified" || architecture === "discrete") {
+      this._detectedMemoryArchitecture = architecture;
+    }
+  }
+
   // ─── macOS via macmon ────────────────────────────────────
   // macmon (github.com/vladkens/macmon) reads Apple Silicon CPU/GPU/power/temperature
   // without sudo. One sample feeds the GPU, CPU, RAM and unified-memory polls (cached
@@ -2545,6 +2666,7 @@ export class SystemCollector {
         temperatureSource: "macmon",
         draw: Math.round((Number(j.cpu_power) || 0) * 10) / 10,
         tdp: 0,
+        powerSource: "measured",
       };
     } catch (err) {
       this._logMacmonError("CPU", err);
@@ -2709,6 +2831,11 @@ export class SystemCollector {
         // fetching that one afterwards cost a second SSH login per poll.
         // Virtual interfaces have no `speed`; they just come back blank.
         "for d in $(find -L /sys/class/net -mindepth 2 -maxdepth 2 -name speed 2>/dev/null | sort); do echo \"$(basename $(dirname $d)):$(cat $d 2>/dev/null)\"; done 2>/dev/null || true",
+        "echo '---'",
+        // MAC per interface: WOL_INTERFACE is the DGX Spark NIC name, but a
+        // generic host (FAEX1: eno1) has a different one. The MAC map lets WoL
+        // fall back to whichever interface actually carries the LAN route.
+        "for d in $(find -L /sys/class/net -mindepth 2 -maxdepth 2 -name address 2>/dev/null | sort); do echo \"$(basename $(dirname $d)):$(cat $d 2>/dev/null)\"; done 2>/dev/null || true",
       ].join("; ");
 
       const output = await execute(this.spark, cmd);
@@ -2717,8 +2844,18 @@ export class SystemCollector {
       const routeOut = sections[1]?.trim() || "";
       const ipOut = sections[2]?.trim() || "";
       const operstateOut = sections[3]?.trim() || "";
-      const wolMac = normalizeMac(sections[4]?.trim() || "");
+      const wolMacOut = normalizeMac(sections[4]?.trim() || "");
       const speedOut = sections[5]?.trim() || "";
+      const macOut = sections[6]?.trim() || "";
+
+      // Parse MAC lines ("eno1:70:70:fc:08:bf:19")
+      const macMap = new Map();
+      for (const line of macOut.split("\n")) {
+        const idx = line.indexOf(":");
+        if (idx <= 0) continue;
+        const mac = normalizeMac(line.slice(idx + 1).trim());
+        if (mac) macMap.set(line.slice(0, idx), mac);
+      }
 
       // Parse link speed lines ("enP7s7:10000"); blank values stay unknown.
       const speedMap = new Map();
@@ -2799,6 +2936,11 @@ export class SystemCollector {
 
       const linkSpeedMbps = (primaryInterface && speedMap.get(primaryInterface)) || null;
 
+      // Prefer the DGX Spark NIC name; otherwise take the MAC of the interface
+      // that actually carries the default route (generic hosts name NICs
+      // differently — FAEX1's LAN NIC is eno1, not enP7s7).
+      const wolMac = wolMacOut || (primaryInterface ? macMap.get(primaryInterface) ?? null : null);
+
       return { primaryInterface, linkSpeedMbps, interfaces: tagged, wolMac };
     } catch (err) {
       console.error(`[SystemCollector] Remote Network error for ${this.spark.id}:`, err.message);
@@ -2806,24 +2948,34 @@ export class SystemCollector {
     }
   }
 
-  async _getRemoteUnifiedMemory() {
+  async _getRemoteUnifiedMemory(execute = sshExec) {
     try {
       const cmd = [
         "grep -E 'MemTotal|MemAvailable' /proc/meminfo 2>/dev/null",
         "echo '---'",
-        "nvidia-smi --query-compute-apps=pid,process_name,used_gpu_memory --format=csv,noheader,nounits 2>/dev/null",
+        // `|| true`: a host without NVIDIA (e.g. an AMD-only node) must report
+        // memory, not fail the whole poll on command-not-found (sshExec rejects
+        // non-zero exit, and this is the command list's exit status).
+        "nvidia-smi --query-compute-apps=pid,process_name,used_gpu_memory --format=csv,noheader,nounits 2>/dev/null || true",
+        "echo '---'",
+        // APU path: on an AMD integrated GPU the "VRAM" is a GTT window into the
+        // same system RAM, so nvidia-smi has nothing to report. Read the sysfs
+        // GTT/visible-VRAM counters instead; they are the GPU's share of the pool.
+        "for c in $(find /sys/class/drm -mindepth 1 -maxdepth 1 -name 'card[0-9]*' 2>/dev/null | sort); do d=\"$c/device\"; [ \"$(cat \"$d/vendor\" 2>/dev/null)\" = 0x1002 ] || continue; readlink \"$d/driver\" 2>/dev/null | grep -q amdgpu || continue; echo \"$(cat \"$d/mem_info_gtt_used\" 2>/dev/null),$(cat \"$d/mem_info_vis_vram_used\" 2>/dev/null)\"; done",
       ].join("; ");
 
-      const output = await sshExec(this.spark, cmd);
+      const output = await execute(this.spark, cmd);
       const sections = output.split("---");
       const memOut = sections[0]?.trim() || "";
       const computeOut = sections[1]?.trim() || "";
+      const amdOut = sections[2]?.trim() || "";
 
       const totalMatch = memOut.match(/MemTotal:\s+(\d+)\s+kB/);
       const availMatch = memOut.match(/MemAvailable:\s+(\d+)\s+kB/);
       const totalKB = totalMatch ? parseInt(totalMatch[1]) : 0;
       const availKB = availMatch ? parseInt(availMatch[1]) : 0;
       const totalMB = Math.round(totalKB / 1024);
+      const systemUsedMB = Math.max(0, Math.round((totalKB - availKB) / 1024));
 
       // GPU memory from nvidia-smi compute apps (pid,process_name,used_gpu_memory)
       let gpuUsedMB = 0;
@@ -2835,10 +2987,23 @@ export class SystemCollector {
       }
       gpuUsedMB = Math.round(gpuUsedMB);
 
-      // CPU memory = total - available - GPU
-      const systemUsedKB = totalKB - availKB;
-      const cpuUsedKB = Math.max(0, systemUsedKB - (gpuUsedMB * 1024));
-      const cpuUsedMB = Math.round(cpuUsedKB / 1024);
+      // AMD APU: the GPU's GTT allocation is already inside MemTotal/MemAvailable,
+      // so it is a slice of systemUsed — never an addition on top of it.
+      let amdGpuUsedMB = 0;
+      let amdCards = 0;
+      for (const line of amdOut.split("\n")) {
+        const parts = line.split(",");
+        if (parts.length < 2) continue;
+        const gttUsed = parseInt(parts[0], 10);
+        const visUsed = parseInt(parts[1], 10);
+        if (!Number.isFinite(gttUsed) && !Number.isFinite(visUsed)) continue;
+        amdCards += 1;
+        amdGpuUsedMB += Math.round(((Number.isFinite(gttUsed) ? gttUsed : 0) + (Number.isFinite(visUsed) ? visUsed : 0)) / 1048576);
+      }
+      if (amdCards > 0) gpuUsedMB = Math.min(systemUsedMB, amdGpuUsedMB);
+
+      // CPU memory = system-used minus the GPU's slice
+      const cpuUsedMB = Math.max(0, systemUsedMB - gpuUsedMB);
 
       const usedMB = gpuUsedMB + cpuUsedMB;
       const percentage = totalMB > 0 ? Math.round((usedMB / totalMB) * 100) : 0;
@@ -2852,7 +3017,9 @@ export class SystemCollector {
         available: Math.round(availKB / 1024),
         percentage,
         oomRisk,
-        bandwidth: { current: 0, peak: 400 },
+        // nvidia-smi dmon only exists for NVIDIA; AMD APUs are LPDDR5x-8000 on a
+        // 256-bit bus (~256 GB/s), not the DGX Spark's 400 GB/s-class fabric.
+        bandwidth: { current: 0, peak: amdCards > 0 ? 256 : 400 },
       };
     } catch (err) {
       console.error(`[SystemCollector] Remote Unified Memory error for ${this.spark.id}:`, err.message);
@@ -2928,6 +3095,9 @@ export class SystemCollector {
       gpuCount,
       cudaDriver,
       storageModel: null,
+      // Adapter counters on Windows already fold shared memory into the GPU
+      // figures, but the cards themselves keep dedicated VRAM.
+      memoryArchitecture: "discrete",
     };
   }
 
@@ -2948,6 +3118,7 @@ export class SystemCollector {
         temperatureSource: null,
         draw: Math.round(draw * 10) / 10,
         tdp,
+        powerSource: "estimated",
       };
     } catch (err) {
       console.error(`[SystemCollector] Windows CPU error for ${this.spark.id}:`, err.message);
@@ -3192,26 +3363,38 @@ export class SystemCollector {
    * its static fallback summary.
    * @returns {Promise<object|null>}
    */
-  async detectHardware() {
+  async detectHardware(execute = sshExec) {
     try {
       let smiOut = "";
       let cpuinfo = "";
       let meminfo = "";
       let coresParsed = null;
+      let dmiOut = "";
+      let nvmeOut = "";
+      let vendorOut = "";
       if (this.spark.isLocal) {
+        const readQuiet = (path) => this._readHostFile(path).catch(() => "");
         const results = await Promise.all([
           this._nvidiaSmi(
             "--query-gpu=name,driver_version --format=csv,noheader,nounits 2>/dev/null"
           ).catch(() => ""),
-          this._readHostFile("/proc/cpuinfo").catch(() => ""),
-          this._readHostFile("/proc/meminfo").catch(() => ""),
+          readQuiet("/proc/cpuinfo"),
+          readQuiet("/proc/meminfo"),
+          readQuiet("/sys/class/dmi/id/sys_vendor"),
+          readQuiet("/sys/class/dmi/id/product_name"),
+          readQuiet("/sys/class/nvme/nvme0/model"),
+          readQuiet("/sys/class/drm/card0/device/vendor"),
         ]);
         smiOut = results[0];
         cpuinfo = results[1];
         meminfo = results[2];
         coresParsed = (cpuinfo.match(/processor\s*:/g) || []).length;
+        dmiOut = [results[3], results[4]].map((s) => String(s ?? "").trim()).join("\n");
+        nvmeOut = String(results[5] ?? "").trim();
+        const localVendor = String(results[6] ?? "").trim();
+        if (localVendor === "0x1002") vendorOut = `1 ${localVendor}`;
       } else {
-        const out = await sshExec(this.spark, [
+        const out = await execute(this.spark, [
           "nvidia-smi --query-gpu=name,driver_version --format=csv,noheader,nounits 2>/dev/null",
           "echo '---'",
           "grep -E '^model name' /proc/cpuinfo | head -1",
@@ -3219,6 +3402,15 @@ export class SystemCollector {
           "grep -E 'processor\\s*:' /proc/cpuinfo | wc -l",
           "echo '---'",
           "grep -E 'MemTotal' /proc/meminfo",
+          "echo '---'",
+          // DMI pins the actual chassis (e.g. FEVM FAEX1) instead of the generic
+          // "Linux GPU host" placeholder; both files are world-readable.
+          "cat /sys/class/dmi/id/sys_vendor 2>/dev/null; cat /sys/class/dmi/id/product_name 2>/dev/null",
+          "echo '---'",
+          "cat /sys/class/nvme/nvme*/model 2>/dev/null | head -1",
+          "echo '---'",
+          // Count AMD DRM cards so an APU host reports a GPU it has no nvidia-smi for.
+          "for c in /sys/class/drm/card[0-9]*/device/vendor; do cat \"$c\" 2>/dev/null; echo; done | sort | uniq -c",
         ].join("; "));
         const parts = out.split("---");
         smiOut = parts[0]?.trim() || "";
@@ -3226,9 +3418,12 @@ export class SystemCollector {
         meminfo = parts[3]?.trim() || "";
         const n = parseInt(parts[2]?.trim() || "", 10);
         coresParsed = Number.isInteger(n) && n > 0 ? n : null;
+        dmiOut = parts[4]?.trim() || "";
+        nvmeOut = parts[5]?.trim() || "";
+        vendorOut = parts[6]?.trim() || "";
       }
 
-      const { gpuChip, gpuCount, cudaDriver } = this._describeGpus(smiOut);
+      const nvidia = this._describeGpus(smiOut);
 
       const modelMatch = cpuinfo.match(/model name\s*:\s*(.+)/i);
       const cpuModel = modelMatch ? modelMatch[1].trim() : null;
@@ -3239,15 +3434,49 @@ export class SystemCollector {
         ? Math.max(1, Math.round(parseInt(memMatch[1], 10) / 1024 / 1024))
         : null;
 
+      // AMD cards that no nvidia-smi can describe (integrated Radeon on an APU).
+      let amdCount = 0;
+      for (const line of vendorOut.split("\n")) {
+        const parsed = /^\s*(\d+)\s+0x1002\s*$/.exec(line);
+        if (parsed) amdCount += Number(parsed[1]);
+      }
+      let gpuChip = nvidia.gpuChip;
+      let gpuCount = nvidia.gpuCount;
+      let cudaDriver = nvidia.cudaDriver;
+      // How the GPU obtains memory, so the dashboard knows whether RAM and VRAM
+      // are one pool (APU GTT window, GB10 HBM) or two separate ones.
+      let memoryArchitecture = "discrete";
+      if (!gpuCount && amdCount > 0) {
+        // APUs have no PCI product name in sysfs; the CPU SKU string carries the
+        // iGPU marketing name ("… w/ Radeon 8060S"), which is the best label available.
+        const apu = /w\/\s*(.+)$/i.exec(cpuModel || "");
+        gpuChip = apu ? apu[1].trim() : "AMD Radeon Graphics";
+        gpuCount = amdCount;
+        cudaDriver = null;
+        // An APU's iGPU has no memory of its own: its GTT window points into the
+        // same LPDDR the CPU uses.
+        if (apu != null) memoryArchitecture = "unified";
+      }
+      this._markMemoryArchitecture(memoryArchitecture);
+
+      const dmiLines = dmiOut.split("\n").map((s) => s.trim()).filter(Boolean);
+      const sysVendor = dmiLines[0] ?? null;
+      const productName = dmiLines[1] ?? null;
+      const device =
+        productName && sysVendor && !productName.toLowerCase().includes(sysVendor.toLowerCase())
+          ? `${sysVendor} ${productName}`
+          : productName || "Linux GPU host";
+
       return {
-        device: "Linux GPU host",
+        device,
         cpuModel,
         cpuCores,
         totalMemoryGB,
         gpuChip,
         gpuCount,
         cudaDriver,
-        storageModel: null,
+        storageModel: nvmeOut || null,
+        memoryArchitecture,
       };
     } catch {
       return null;

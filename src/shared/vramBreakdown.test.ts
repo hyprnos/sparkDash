@@ -77,6 +77,18 @@ describe("headroomTone", () => {
     expect(memoryModelFor("spark")).toBe("unified");
     expect(memoryModelFor(undefined)).toBe("unified");
   });
+
+  it("a detected architecture overrides the kind-based guess", () => {
+    // Strix Halo: kind "host", but the iGPU allocates from system LPDDR, so it
+    // must follow the exact same unified path as a GB10 Spark.
+    expect(memoryModelFor("host", { memoryArchitecture: "unified" })).toBe("unified");
+    expect(memoryModelFor("host", { memoryArchitecture: "discrete" })).toBe("discrete");
+    // Not probed yet: fall back to kind, never to "either".
+    expect(memoryModelFor("host", null)).toBe("discrete");
+    expect(memoryModelFor("host", {})).toBe("discrete");
+    expect(memoryModelFor("spark", {})).toBe("unified");
+    expect(memoryModelFor("spark", { memoryArchitecture: "discrete" })).toBe("discrete");
+  });
 });
 
 describe("isLlmServing / servingEndpoint", () => {

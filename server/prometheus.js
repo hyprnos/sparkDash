@@ -21,6 +21,8 @@
  * collection failed exports no GPU series, and a null field is left out.
  */
 
+import { sharesMemoryPool } from "../src/shared/deviceClass.js";
+
 export const PROMETHEUS_CONTENT_TYPE = "text/plain; version=0.0.4; charset=utf-8";
 
 const MIB = 1024 * 1024;
@@ -383,9 +385,9 @@ function addUnit(samples, entry) {
   const gpuMeasured = gpu && collected.gpu !== false && !isDefaultGpu(gpu);
   if (gpuMeasured) addGpu(samples, base, gpu);
 
-  // Headroom: the GB10 shares one pool, so MemAvailable is the real limit; a
-  // discrete card is limited by its own free VRAM (system RAM does not help).
-  if (snapshot.kind === "host") {
+  // Headroom: a shared-pool box (GB10 Spark, AMD AI Max 395) is limited by
+  // MemAvailable; a discrete card by its own free VRAM (system RAM does not help).
+  if (!sharesMemoryPool(snapshot)) {
     if (gpuMeasured && finite(gpu.vram?.total) && gpu.vram.total > 0) {
       samples.add("sparkdash_memory_available_bytes", base, bytesFromMib(gpu.vram.available));
     }
@@ -497,9 +499,9 @@ export function unitMetricJson(entry) {
     out.gpu = gpus;
   }
 
-  // Headroom: the GB10 shares one pool, so MemAvailable is the real limit; a
-  // discrete card is limited by its own free VRAM (system RAM does not help).
-  if (snapshot.kind === "host") {
+  // Headroom: a shared-pool box (GB10 Spark, AMD AI Max 395) is limited by
+  // MemAvailable; a discrete card by its own free VRAM.
+  if (!sharesMemoryPool(snapshot)) {
     if (gpuMeasured && finite(gpu.vram?.total) && gpu.vram.total > 0 && finite(gpu.vram?.available)) {
       out.memory_available_bytes = bytesFromMib(gpu.vram.available);
     }

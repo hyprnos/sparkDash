@@ -91,6 +91,7 @@
     "window8h": "8 h",
     "powerDraw": "Consumo",
     "powerAllCards": "Consumo (todas as placas)",
+    "socPpt": "SoC PPT · CPU + GPU",
     "smClock": "Clock SM",
     "systemDraw": "Sistema ≈ {{watts}} W",
     "lockedTitle": "Fixado com nvidia-smi -lgc",
@@ -151,8 +152,9 @@
     "cpuPackage": "o sensor do pacote da CPU",
     "acpiZone": "uma zona térmica ACPI/placa-mãe, não um sensor do pacote da CPU",
     "cpuPower": "Consumo da CPU",
+    "estimateSuffix": "est.",
     "modelLine": "Modelo",
-    "cores": "{{count}} núcleos"
+    "cores": "{{count}} CPUs lógicas"
   },
   "ram": {
     "title": "RAM"

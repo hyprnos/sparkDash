@@ -91,6 +91,7 @@
     "window8h": "8 h",
     "powerDraw": "Power draw",
     "powerAllCards": "Power (all cards)",
+    "socPpt": "SoC PPT · CPU + GPU",
     "smClock": "SM clock",
     "systemDraw": "System ≈ {{watts}} W",
     "lockedTitle": "Locked with nvidia-smi -lgc",
@@ -151,8 +152,9 @@
     "cpuPackage": "the CPU package sensor",
     "acpiZone": "an ACPI/board thermal zone, not a CPU package sensor",
     "cpuPower": "CPU power",
+    "estimateSuffix": "est.",
     "modelLine": "Model",
-    "cores": "{{count}} cores"
+    "cores": "{{count}} logical CPUs"
   },
   "ram": {
     "title": "RAM"

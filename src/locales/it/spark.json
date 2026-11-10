@@ -91,6 +91,7 @@
     "window8h": "8 h",
     "powerDraw": "Potenza assorbita",
     "powerAllCards": "Potenza (tutte le schede)",
+    "socPpt": "SoC PPT · CPU + GPU",
     "smClock": "Clock SM",
     "systemDraw": "Sistema ≈ {{watts}} W",
     "lockedTitle": "Bloccato con nvidia-smi -lgc",
@@ -151,8 +152,9 @@
     "cpuPackage": "il sensore del pacchetto CPU",
     "acpiZone": "una zona termica ACPI/scheda madre, non un sensore del pacchetto CPU",
     "cpuPower": "Potenza CPU",
+    "estimateSuffix": "stima",
     "modelLine": "Modello",
-    "cores": "{{count}} core"
+    "cores": "{{count}} CPU logiche"
   },
   "ram": {
     "title": "RAM"

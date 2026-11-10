@@ -91,6 +91,7 @@
     "window8h": "8 ч",
     "powerDraw": "Потребление",
     "powerAllCards": "Потребление (все карты)",
+    "socPpt": "SoC PPT · CPU + GPU",
     "smClock": "Частота SM",
     "systemDraw": "Система ≈ {{watts}} Вт",
     "lockedTitle": "Зафиксировано через nvidia-smi -lgc",
@@ -151,8 +152,9 @@
     "cpuPackage": "датчик корпуса CPU",
     "acpiZone": "тепловая зона ACPI/платы, а не датчик корпуса CPU",
     "cpuPower": "Потребление CPU",
+    "estimateSuffix": "оценка",
     "modelLine": "Модель",
-    "cores": "ядер: {{count}}"
+    "cores": "логических процессоров: {{count}}"
   },
   "ram": {
     "title": "RAM"

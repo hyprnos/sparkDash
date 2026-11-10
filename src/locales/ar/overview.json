@@ -23,7 +23,19 @@
     "wakeSent": "تم إرسال {{count}} من حزم الإيقاظ",
     "wakePartial": "أُرسل {{count}} وفشل {{failed}}",
     "batchHermesFailed": "فشل تحديث Hermes الجماعي",
-    "batchWakeFailed": "فشل الإيقاظ الجماعي"
+    "batchWakeFailed": "فشل الإيقاظ الجماعي",
+    "deviceClass": {
+      "spark_one": "Spark",
+      "spark_other": "Spark",
+      "amdAiMax_one": "AI Max 395",
+      "amdAiMax_other": "AI Max 395",
+      "gpuHost_one": "مضيف GPU",
+      "gpuHost_other": "مضيفات GPU",
+      "windowsPc_one": "جهاز Windows",
+      "windowsPc_other": "أجهزة Windows",
+      "mac_one": "Mac",
+      "mac_other": "Mac"
+    }
   },
   "empty": {
     "workersHiddenTitle": "عقد العمل مخفية",
@@ -220,8 +232,10 @@
     "ram": "RAM",
     "gpuTemp": "حرارة GPU",
     "gpuPower": "طاقة GPU",
+    "socPpt": "SoC PPT · CPU + GPU",
     "cpuTemp": "حرارة CPU",
     "cpuPower": "طاقة CPU",
+    "estimateSuffix": "تقديري",
     "available": "متاحة",
     "sensorTitle": "المستشعر: {{label}}",
     "workerOf": "عاملة لدى",

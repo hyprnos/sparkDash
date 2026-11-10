@@ -1,7 +1,7 @@
 import { SwitchMonitorPanel } from "../NetworkSwitches/SwitchMonitorPanel";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { AlertInstance, SparkSnapshot } from "../../api/types";
+import type { AlertInstance, DeviceClass, SparkSnapshot } from "../../api/types";
 import { isWorkerSpark } from "../../api/sparkRole";
 import { updateAllHermes, wakeAllSparks } from "../../api/client";
 import { ShutdownAll } from "../ShutdownAll";
@@ -17,7 +17,17 @@ import { ActivityIcon, PowerOnIcon, RotateIcon } from "../ui/icons";
 import { formatMb } from "../../shared/formatBytes";
 import { vramContextFor } from "../../shared/vramBreakdown";
 import { makeHeadResolver } from "../../shared/sparkHead";
+import { DEVICE_CLASS, deviceClassOf } from "../../shared/deviceClass.js";
 import "../../styles/overview.css";
+
+/** Header order: known unified-memory appliances first, generic boxes last. */
+const DEVICE_CLASS_ORDER = [
+  DEVICE_CLASS.DGX_SPARK,
+  DEVICE_CLASS.AMD_AI_MAX,
+  DEVICE_CLASS.GPU_HOST,
+  DEVICE_CLASS.WINDOWS_PC,
+  DEVICE_CLASS.MAC,
+];
 
 interface OverviewPageProps {
   sparks: SparkSnapshot[];
@@ -195,6 +205,21 @@ export function OverviewPage({
     }
   }
 
+  // One entry per device class present, in a fixed order: an AI Max 395 is a
+  // first-class box of its own, not "a host", so it is never folded into the
+  // Spark count or hidden behind a generic GPU-host label.
+  const classCounts = useMemo(() => {
+    const counts = new Map<DeviceClass, number>();
+    for (const unit of withoutWorkers) {
+      const cls = deviceClassOf(unit);
+      counts.set(cls, (counts.get(cls) ?? 0) + 1);
+    }
+    return DEVICE_CLASS_ORDER.filter((cls) => (counts.get(cls) ?? 0) > 0).map((cls) => ({
+      cls,
+      count: counts.get(cls) ?? 0,
+    }));
+  }, [withoutWorkers]);
+
   if (withoutWorkers.length === 0 || (hideOffline && withoutWorkers.every((spark) => !spark.online))) {
     const allWorkersHidden = hideWorkers && sparks.length > 0 && withoutWorkers.length === 0;
     const allOffline = hideOffline && withoutWorkers.length > 0;
@@ -221,6 +246,25 @@ export function OverviewPage({
 
   const onlineCount = visibleSparks.filter((s) => s.online).length;
   const memTotalMb = sparks.reduce((n, s) => n + (s.metrics.gpu?.vram?.total || s.metrics.unifiedMemory?.total || 0), 0);
+  // Literal t() keys per class: the i18n catalog check rejects dynamic keys, and
+  // each class must read as its own device ("Spark", "AI Max 395") rather than
+  // every non-Spark box collapsing into "GPU host".
+  const classLabel = (cls: DeviceClass, count: number): string => {
+    switch (cls) {
+      case DEVICE_CLASS.AMD_AI_MAX:
+        return t("header.deviceClass.amdAiMax", { count });
+      case DEVICE_CLASS.DGX_SPARK:
+        return t("header.deviceClass.spark", { count });
+      case DEVICE_CLASS.GPU_HOST:
+        return t("header.deviceClass.gpuHost", { count });
+      case DEVICE_CLASS.WINDOWS_PC:
+        return t("header.deviceClass.windowsPc", { count });
+      case DEVICE_CLASS.MAC:
+        return t("header.deviceClass.mac", { count });
+      default:
+        return t("header.deviceClass.gpuHost", { count });
+    }
+  };
 
   return (
     <div className="ov">
@@ -228,7 +272,12 @@ export function OverviewPage({
         <div>
           <h1>{t("header.title")}</h1>
           <div className="ov-meta">
-            {sparks.length} {sparks.length === 1 ? t("header.sparkOne") : t("header.sparkMany")}
+            {classCounts.map(({ cls, count }, i) => (
+              <span key={cls}>
+                {i > 0 ? "· " : ""}
+                {count} {classLabel(cls, count)}
+              </span>
+            ))}
             <span className="tag tag--good">{t("header.online", { online: onlineCount, total: visibleSparks.length })}</span>
             {memTotalMb > 0 ? <span>{t("header.memory", { size: formatMb(memTotalMb) })}</span> : null}
             {hiddenWorkerCount > 0 ? (

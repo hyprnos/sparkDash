@@ -23,7 +23,19 @@
     "wakeSent": "Отправлено пакетов пробуждения: {{count}}",
     "wakePartial": "Отправлено {{count}}, с ошибкой {{failed}}",
     "batchHermesFailed": "Пакетное обновление Hermes не удалось",
-    "batchWakeFailed": "Пакетное пробуждение не удалось"
+    "batchWakeFailed": "Пакетное пробуждение не удалось",
+    "deviceClass": {
+      "spark_one": "Spark",
+      "spark_other": "Spark",
+      "amdAiMax_one": "AI Max 395",
+      "amdAiMax_other": "AI Max 395",
+      "gpuHost_one": "GPU-хост",
+      "gpuHost_other": "GPU-хостов",
+      "windowsPc_one": "ПК Windows",
+      "windowsPc_other": "ПК Windows",
+      "mac_one": "Mac",
+      "mac_other": "Mac"
+    }
   },
   "empty": {
     "workersHiddenTitle": "Worker-узлы скрыты",
@@ -220,8 +232,10 @@
     "ram": "RAM",
     "gpuTemp": "Темп. GPU",
     "gpuPower": "Мощность GPU",
+    "socPpt": "SoC PPT · CPU + GPU",
     "cpuTemp": "Темп. CPU",
     "cpuPower": "Мощность CPU",
+    "estimateSuffix": "оценка",
     "available": "Свободно",
     "sensorTitle": "Датчик: {{label}}",
     "workerOf": "Worker для",

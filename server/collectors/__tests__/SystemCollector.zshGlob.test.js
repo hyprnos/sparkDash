@@ -150,7 +150,7 @@ test("remote network: no interfaces at all completes with every separator printe
       cmd = c;
       return "";
     });
-    expectClean(runZsh(cmd, root), (run) => assert.equal((run.stdout.match(/---/g) || []).length, 5));
+    expectClean(runZsh(cmd, root), (run) => assert.equal((run.stdout.match(/---/g) || []).length, 6));
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

@@ -1,4 +1,14 @@
 // ─── Spark config (matches server/sparks.json) ────────────
+/**
+ * A unit's role in the fleet, as the dashboard actually treats it.
+ *
+ * `dgx-spark` and `amd-ai-max` are peers: both have one physical pool shared by
+ * the CPU and the GPU, so every panel shows a single "Unified memory" figure and
+ * neither is listed as a plain GPU host. `gpu-host` is a Linux box with its own
+ * discrete VRAM. See `src/shared/deviceClass.js`.
+ */
+export type DeviceClass = "dgx-spark" | "amd-ai-max" | "gpu-host" | "windows-pc" | "mac";
+
 export interface SparkConfig {
   id: string;
   name: string;
@@ -6,7 +16,9 @@ export interface SparkConfig {
    * Unit type:
    * - spark: NVIDIA DGX Spark (default) — DGX Spark specs shown in the header.
    * - host: any Linux box with supported NVIDIA or AMD GPUs, just not a Spark.
-   *   Real hardware is auto-detected once online.
+   *   Real hardware is auto-detected once online; an AMD APU host is then
+   *   reclassified as `amd-ai-max` (`DeviceClass`) and treated exactly like a
+   *   Spark's shared memory pool.
    */
   kind?: "spark" | "host";
   /**
@@ -171,6 +183,19 @@ export interface HermesUpdatesResponse {
 }
 
 // ─── Hardware info ───────────────────────────────────────
+/**
+ * How the GPU gets its memory.
+ *
+ * `unified` — the GPU allocates from the same physical pool as the CPU (GB10
+ * HBM, an AMD APU's GTT window). The dashboard shows one shared pool and never
+ * sums RAM and VRAM.
+ * `discrete` — the GPU has its own VRAM, so RAM and VRAM are separate figures.
+ *
+ * Unknown is `undefined`: the host has not been probed yet (or the probe could
+ * not tell), and callers must not treat that as either architecture.
+ */
+export type MemoryArchitecture = "unified" | "discrete";
+
 export interface HardwareInfo {
   device: string;
   cpuModel: string | null;
@@ -181,6 +206,11 @@ export interface HardwareInfo {
   gpuCount?: number;
   cudaDriver: string | null;
   storageModel: string | null;
+  /**
+   * Detected memory architecture. Drives whether panels show "Unified memory"
+   * or separate RAM and VRAM rows — see `memoryModelFor`.
+   */
+  memoryArchitecture?: MemoryArchitecture;
 }
 
 // ─── GPU metrics ─────────────────────────────────────────
@@ -277,6 +307,7 @@ export interface GpuMetrics {
     /** Estimated total system power draw (GPU + CPU + CX7/peripherals). */
     systemDraw?: number;
   };
+  socPowerWatts?: number | null;
   vram: {
     used: number;
     total: number;
@@ -335,6 +366,7 @@ export interface CpuMetrics {
   temperatureSource?: string | null;
   draw: number;
   tdp: number;
+  powerSource?: "estimated" | "measured";
 }
 
 // ─── RAM metrics ─────────────────────────────────────────
@@ -452,7 +484,7 @@ export interface LlmMetrics {
   measurementValid?: boolean;
   /** Why the last poll's stats could not be read; null while they can. */
   measurementError?: string | null;
-  backend: "vllm" | "llama.cpp" | "sglang" | "lmstudio" | "ollama" | "ds4" | "exl3" | "q27" | "tensorfold" | "freetoken" | "radiance" | "strata" | "flare" | "locals" | "splash" | null;
+  backend: "vllm" | "llama.cpp" | "sglang" | "lmstudio" | "ollama" | "ds4" | "exl3" | "q27" | "tensorfold" | "freetoken" | "radiance" | "halogen" | "strata" | "flare" | "locals" | "splash" | null;
   /** How the monitor reaches the engine: its own address, or an SSH forward when only SSH gets there. */
   via?: "direct" | "ssh-tunnel";
   modelId: string | null;

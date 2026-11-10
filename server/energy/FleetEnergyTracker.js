@@ -194,15 +194,23 @@ function tokenObservations(snapshots, atMs, nodeIdSet) {
  */
 export function estimateNodeWatts(snapshot) {
   const gpuDraw = snapshot?.metrics?.gpu?.power?.draw;
+  const socWatts = snapshot?.metrics?.gpu?.socPowerWatts;
   const cpuUsage = snapshot?.metrics?.cpu?.usage;
-  if (
-    snapshot?.telemetryFresh !== true ||
-    !validNonnegative(gpuDraw) ||
-    !Number.isFinite(cpuUsage)
-  ) {
+  if (snapshot?.telemetryFresh !== true || !Number.isFinite(cpuUsage)) {
     return null;
   }
 
+  // An APU exposes one SoC package rail (CPU + GPU) instead of a discrete GPU
+  // draw. Adding the CPU model on top would count the CPU twice, so the package
+  // reading replaces gpuDraw + cpuWatts; only chassis overhead (NIC, NVMe, fans)
+  // is added.
+  if (validNonnegative(socWatts) && socWatts > 0 && !(validNonnegative(gpuDraw) && gpuDraw > 0)) {
+    return clamp(socWatts + 23, 0, 240);
+  }
+
+  if (!validNonnegative(gpuDraw)) {
+    return null;
+  }
   const boundedCpuUsage = clamp(cpuUsage, 0, 100);
   const cpuWatts = 5.2 + ((65 - 5.2) * boundedCpuUsage) / 100;
   return clamp(gpuDraw + cpuWatts + 23, 0, 240);

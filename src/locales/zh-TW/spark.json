@@ -91,6 +91,7 @@
     "window8h": "8 小時",
     "powerDraw": "功耗",
     "powerAllCards": "功耗（所有顯卡）",
+    "socPpt": "SoC PPT · CPU + GPU",
     "smClock": "SM 時脈",
     "systemDraw": "整機 ≈ {{watts}} W",
     "lockedTitle": "已透過 nvidia-smi -lgc 鎖定",
@@ -151,8 +152,9 @@
     "cpuPackage": "CPU 封裝感測器",
     "acpiZone": "ACPI／主機板熱區，而非 CPU 封裝感測器",
     "cpuPower": "CPU 功耗",
+    "estimateSuffix": "估計",
     "modelLine": "型號",
-    "cores": "{{count}} 核心"
+    "cores": "{{count}} 個邏輯執行緒"
   },
   "ram": {
     "title": "記憶體"

@@ -1341,6 +1341,7 @@ export class SparkMonitor {
         gpuChip: null,
         cudaDriver: null,
         storageModel: null,
+        // Unknown until detectHardware() answers; consumers fall back to `kind`.
       };
     }
     return {
@@ -1351,6 +1352,8 @@ export class SparkMonitor {
       gpuChip: "GB10",
       cudaDriver: null,
       storageModel: null,
+      // GB10 HBM is one pool for the CPU and the GPU.
+      memoryArchitecture: "unified",
     };
   }
 }

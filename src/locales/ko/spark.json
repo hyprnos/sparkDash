@@ -91,6 +91,7 @@
     "window8h": "8시간",
     "powerDraw": "전력 사용",
     "powerAllCards": "전력(모든 카드)",
+    "socPpt": "SoC PPT · CPU + GPU",
     "smClock": "SM 클록",
     "systemDraw": "시스템 ≈ {{watts}} W",
     "lockedTitle": "nvidia-smi -lgc로 고정됨",
@@ -151,8 +152,9 @@
     "cpuPackage": "CPU 패키지 센서",
     "acpiZone": "ACPI/보드 열 구역이며 CPU 패키지 센서가 아님",
     "cpuPower": "CPU 전력",
+    "estimateSuffix": "추정",
     "modelLine": "모델",
-    "cores": "{{count}}코어"
+    "cores": "논리 CPU {{count}}개"
   },
   "ram": {
     "title": "메모리"

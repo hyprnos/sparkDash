@@ -10,6 +10,7 @@ interface CpuPanelProps {
   hardware?: HardwareInfo | null;
   sparkId: string;
   temperatureUnit: "celsius" | "fahrenheit";
+  socPowerAvailable?: boolean;
   className?: string;
 }
 
@@ -25,7 +26,7 @@ function celsiusToFahrenheit(c: number): number {
  * this panel makes that visible at the device level. For non-Spark GPU
  * hosts it covers the discrete CPU.
  */
-export function CpuPanel({ cpu, hardware, sparkId, temperatureUnit, className }: CpuPanelProps) {
+export function CpuPanel({ cpu, hardware, sparkId, temperatureUnit, socPowerAvailable = false, className }: CpuPanelProps) {
   const { t } = useTranslation("spark");
   const usageHistory = useMetricsHistoryTail(sparkId, "cpu.usage");
   const tempHistory = useMetricsHistoryTail(sparkId, "cpu.temp");
@@ -34,6 +35,8 @@ export function CpuPanel({ cpu, hardware, sparkId, temperatureUnit, className }:
   const temperature = cpu?.temperature ?? 0;
   const draw = cpu?.draw ?? 0;
   const tdp = cpu?.tdp ?? 0;
+  const powerEstimated = cpu?.powerSource !== "measured";
+  const powerUnavailable = socPowerAvailable && powerEstimated;
 
   // No sensor (Windows exposes none without a driver): show a dash, not 0 °C.
   const hasTemp = temperature > 0 || Boolean(cpu?.temperatureSource);
@@ -100,9 +103,9 @@ export function CpuPanel({ cpu, hardware, sparkId, temperatureUnit, className }:
         </div>
       </div>
       <div className="sp-row">
-        <span className="text-muted">{t("cpu.cpuPower")}</span>
+        <span className="text-muted">{t("cpu.cpuPower")}{powerEstimated && !powerUnavailable ? ` · ${t("cpu.estimateSuffix")}` : ""}</span>
         <span className="mono text-text">
-          {draw}W{tdp > 0 ? ` / ${tdp}W` : ""}
+          {powerUnavailable ? "—" : <>{powerEstimated ? "≈" : ""}{draw}W{!powerEstimated && tdp > 0 ? ` / ${tdp}W` : ""}</>}
         </span>
       </div>
       {model && (

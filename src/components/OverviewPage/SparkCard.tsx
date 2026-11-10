@@ -103,6 +103,11 @@ function SparkCardImpl({
   const memAvail = gpu?.vram?.available ?? um?.available ?? 0;
   const vramAvailable = gpu?.metricAvailability?.vramUsed !== false && gpu?.metricAvailability?.vramTotal !== false;
   const breakdown = gpu && vramAvailable && vramContext ? computeVramBreakdown(gpu.vram, gpu.processes, vramContext) : null;
+
+  // An APU host (Strix Halo) draws its GPU memory from the same LPDDR as the CPU,
+  // so it follows the GB10 path: the breakdown above renders one shared pool
+  // ("Unified memory", GPU + system + free) and no separate RAM row is added.
+  const sharedPool = memoryModelFor(spark.kind, spark.hardware) === "unified";
   const throttle = gpu?.throttle;
   const slowed = !!(throttle?.thermal || throttle?.hwSlowdown);
   const hot = slowed || tempRaw >= 80;
@@ -307,7 +312,7 @@ function SparkCardImpl({
                 />
               )}
               <Bar label={t("spark.gpu")} caption={gpu.metricAvailability?.usage === false ? "—" : `${Math.round(usage)}%`} pct={gpu.metricAvailability?.usage === false ? 0 : usage} color={ringColor} />
-              {spark.kind === "host" && spark.metrics.ram?.total ? (
+              {spark.kind === "host" && !sharedPool && spark.metrics.ram?.total ? (
                 <Bar
                   label={t("spark.ram")}
                   caption={`${fmtStorage(spark.metrics.ram.used, false)} / ${fmtStorage(spark.metrics.ram.total, true)}`}
@@ -316,12 +321,16 @@ function SparkCardImpl({
                 />
               ) : null}
               <Bar label={t("spark.gpuTemp")} caption={gpu.metricAvailability?.temperature === false ? "—" : fmtTemp(tempRaw)} pct={gpu.metricAvailability?.temperature === false ? 0 : (tempVal / tempMax) * 100} color={tempColor} />
-              <Bar
-                label={t("spark.gpuPower")}
-                caption={gpu.metricAvailability?.powerDraw === false ? "—" : `${power?.draw ?? 0} / ${gpu.metricAvailability?.powerLimit === false ? "—" : power?.limit ?? 0} W`}
-                pct={gpu.metricAvailability?.powerDraw === false ? 0 : powerPct}
-                color="var(--color-violet)"
-              />
+              {gpu.socPowerWatts != null ? (
+                <div className="ov-lbl"><span>{t("spark.socPpt")}</span><b className="mono">{gpu.socPowerWatts} W</b></div>
+              ) : (
+                <Bar
+                  label={t("spark.gpuPower")}
+                  caption={gpu.metricAvailability?.powerDraw === false ? "—" : `${power?.draw ?? 0} / ${gpu.metricAvailability?.powerLimit === false ? "—" : power?.limit ?? 0} W`}
+                  pct={gpu.metricAvailability?.powerDraw === false ? 0 : powerPct}
+                  color="var(--color-violet)"
+                />
+              )}
               {cpuTempRaw !== null ? (
                 <Bar
                   label={t("spark.cpuTemp")}
@@ -331,10 +340,15 @@ function SparkCardImpl({
                   color={cpuTempColor}
                 />
               ) : null}
-              {cpuPower ? <Bar label={t("spark.cpuPower")} caption={`${cpuPower.draw} / ${cpuPower.tdp} W`} pct={cpuPowerPct} color="var(--color-violet)" /> : null}
+              {cpuPower && !(gpu.socPowerWatts != null && cpuMetrics?.powerSource !== "measured") ? <Bar
+                label={cpuMetrics?.powerSource === "measured" ? t("spark.cpuPower") : `${t("spark.cpuPower")} · ${t("spark.estimateSuffix")}`}
+                caption={cpuMetrics?.powerSource === "measured" ? `${cpuPower.draw} / ${cpuPower.tdp} W` : `≈${cpuPower.draw} W`}
+                pct={cpuPowerPct}
+                color="var(--color-violet)"
+              /> : null}
             </div>
           </div>
-          {showLauncher ? <ModelLauncher spark={spark} onOpen={onSelect} busy={loadingHint} busyHolders={gpuHolders.length > 0} freeMb={memTotal > 0 ? memAvail : null} lowFreeMb={HEADROOM_THRESHOLDS_MB[memoryModelFor(spark.kind)].low} /> : null}
+          {showLauncher ? <ModelLauncher spark={spark} onOpen={onSelect} busy={loadingHint} busyHolders={gpuHolders.length > 0} freeMb={memTotal > 0 ? memAvail : null} lowFreeMb={HEADROOM_THRESHOLDS_MB[memoryModelFor(spark.kind, spark.hardware)].low} /> : null}
           {role === "worker" ? (
             <div className="ov-launch ov-launch--worker">
               <div className="eyebrow">{t("spark.workerOf")}</div>

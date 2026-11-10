@@ -91,6 +91,7 @@
     "window8h": "8 Std.",
     "powerDraw": "Leistungsaufnahme",
     "powerAllCards": "Leistung (alle Karten)",
+    "socPpt": "SoC PPT · CPU + GPU",
     "smClock": "SM-Takt",
     "systemDraw": "System ≈ {{watts}} W",
     "lockedTitle": "Mit nvidia-smi -lgc fixiert",
@@ -151,8 +152,9 @@
     "cpuPackage": "der CPU-Paketsensor",
     "acpiZone": "eine ACPI-/Board-Thermalzone, kein CPU-Paketsensor",
     "cpuPower": "CPU-Leistung",
+    "estimateSuffix": "gesch.",
     "modelLine": "Modell",
-    "cores": "{{count}} Kerne"
+    "cores": "{{count}} logische CPUs"
   },
   "ram": {
     "title": "RAM"

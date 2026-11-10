@@ -173,6 +173,7 @@ export function GpuPanel({
   const powerDraw = gpu?.power?.draw ?? 0;
   const powerLimit = gpu?.power?.limit ?? 0;
   const systemDraw = gpu?.power?.systemDraw;
+  const socPowerWatts = gpu?.socPowerWatts;
 
   const vramUsed = gpu?.vram?.used ?? 0;
   const vramTotal = gpu?.vram?.total ?? 0;
@@ -238,10 +239,10 @@ export function GpuPanel({
           <Tag tone={temp.tone}>{temp.label}</Tag>
         </div>
         <div className="sp-stat">
-          <span className="eyebrow">{multiGpu ? t("gpu.powerAllCards") : t("gpu.powerDraw")}</span>
+          <span className="eyebrow">{socPowerWatts != null ? t("gpu.socPpt") : multiGpu ? t("gpu.powerAllCards") : t("gpu.powerDraw")}</span>
           <div className="big-num">
-            {metrics?.powerDraw === false ? "—" : powerDraw}
-            {metrics?.powerDraw === false ? null : <small>{metrics?.powerLimit === false ? "W" : powerLimit > 0 ? t("gpu.limitOf", { limit: powerLimit }) : "W"}</small>}
+            {socPowerWatts != null ? socPowerWatts : metrics?.powerDraw === false ? "—" : powerDraw}
+            {socPowerWatts != null ? <small>W</small> : metrics?.powerDraw === false ? null : <small>{metrics?.powerLimit === false ? "W" : powerLimit > 0 ? t("gpu.limitOf", { limit: powerLimit }) : "W"}</small>}
           </div>
           {systemDraw != null && systemDraw > 0 ? (
             <span className="sp-stat__sub mono">{t("gpu.systemDraw", { watts: systemDraw })}</span>
@@ -253,7 +254,7 @@ export function GpuPanel({
             {clock.value}
             <small>{clock.unit}</small>
           </div>
-          <Tag tone={throttle.tone}>{throttle.label}</Tag>
+          {throttleInfo != null && <Tag tone={throttle.tone}>{throttle.label}</Tag>}
           {throttleInfo?.clockCapMHz != null ? (
             <span className="sp-stat__sub mono" title={t("gpu.lockedTitle")}>
               {t("gpu.cap", { mhz: throttleInfo.clockCapMHz })}
@@ -266,7 +267,10 @@ export function GpuPanel({
       {!multiGpu && (
         <div className="legend">
           <span className="c-accent">{t("gpu.legendUtilization")}</span>
-          <span className="c-violet">{t("gpu.legendPowerLimit")}</span>
+          {/* No power line is plotted when the card reports no limit (AMD APUs). */}
+          {metrics?.powerDraw !== false && metrics?.powerLimit !== false ? (
+            <span className="c-violet">{t("gpu.legendPowerLimit")}</span>
+          ) : null}
           <span className="c-info">{t("gpu.legendTemperature")}</span>
         </div>
       )}

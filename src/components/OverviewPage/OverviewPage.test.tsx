@@ -1,3 +1,4 @@
+import { act } from "react";
 import { describe, expect, it } from "vitest";
 import { OverviewPage } from "./OverviewPage";
 import { render } from "../../testing/render";
@@ -108,5 +109,32 @@ describe("Overview panels can be hidden", () => {
     );
     expect(container.querySelector('[aria-label="Recent activity"]')).toBeNull();
     expect(container.querySelector(".ov-side")).toBeNull();
+  });
+
+  it("names an AI Max 395 separately from the Sparks", () => {
+    // Both share one memory pool, so both are first-class — but the header must
+    // not call an AMD box a Spark, nor bury it as a generic "GPU host".
+    const aiMax = host({ kind: "host" });
+    Object.assign(aiMax, {
+      id: "faex1",
+      name: "FAEX1",
+      hardware: { memoryArchitecture: "unified", gpuChip: "Radeon 8060S" },
+    });
+    const dgx = host({ kind: "spark" });
+    Object.assign(dgx, { id: "spark-1", name: "spark001 head", hardware: { memoryArchitecture: "unified" } });
+    const { container } = render(<OverviewPage sparks={[dgx, aiMax]} />);
+    const meta = container.querySelector(".ov-meta")?.textContent ?? "";
+    expect(meta).toContain("1 Spark");
+    expect(meta).toContain("1 AI Max 395");
+    expect(meta).not.toContain("GPU host");
+  });
+
+  it("survives going from an empty fleet to a populated one", () => {
+    // The class counters feed a useMemo; placing it below the empty-state return
+    // changed the hook count and crashed React with error #310 on the first unit.
+    const { container, root } = render(<OverviewPage sparks={[]} />);
+    expect(container.querySelector(".ov-meta")).toBeNull();
+    act(() => root.render(<OverviewPage sparks={[host()]} />));
+    expect(container.querySelector(".ov-meta")?.textContent).toContain("GPU host");
   });
 });

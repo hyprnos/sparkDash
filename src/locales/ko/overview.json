@@ -23,7 +23,19 @@
     "wakeSent": "깨우기 패킷 {{count}}개 전송",
     "wakePartial": "{{count}}개 전송, {{failed}}개 실패",
     "batchHermesFailed": "일괄 Hermes 업데이트 실패",
-    "batchWakeFailed": "일괄 깨우기 실패"
+    "batchWakeFailed": "일괄 깨우기 실패",
+    "deviceClass": {
+      "spark_one": "Spark",
+      "spark_other": "Spark",
+      "amdAiMax_one": "AI Max 395",
+      "amdAiMax_other": "AI Max 395",
+      "gpuHost_one": "GPU 호스트",
+      "gpuHost_other": "GPU 호스트",
+      "windowsPc_one": "Windows PC",
+      "windowsPc_other": "Windows PC",
+      "mac_one": "Mac",
+      "mac_other": "Mac"
+    }
   },
   "empty": {
     "workersHiddenTitle": "Worker 노드가 숨겨져 있습니다",
@@ -220,8 +232,10 @@
     "ram": "RAM",
     "gpuTemp": "GPU 온도",
     "gpuPower": "GPU 전력",
+    "socPpt": "SoC PPT · CPU + GPU",
     "cpuTemp": "CPU 온도",
     "cpuPower": "CPU 전력",
+    "estimateSuffix": "추정",
     "available": "사용 가능",
     "sensorTitle": "센서: {{label}}",
     "workerOf": "소속 head",

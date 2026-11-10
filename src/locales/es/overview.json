@@ -23,7 +23,19 @@
     "wakeSent": "{{count}} paquetes de despertar enviados",
     "wakePartial": "{{count}} enviados, {{failed}} fallidos",
     "batchHermesFailed": "Error en la actualización masiva de Hermes",
-    "batchWakeFailed": "Error en el despertar masivo"
+    "batchWakeFailed": "Error en el despertar masivo",
+    "deviceClass": {
+      "spark_one": "Spark",
+      "spark_other": "Sparks",
+      "amdAiMax_one": "AI Max 395",
+      "amdAiMax_other": "AI Max 395",
+      "gpuHost_one": "host GPU",
+      "gpuHost_other": "hosts GPU",
+      "windowsPc_one": "PC Windows",
+      "windowsPc_other": "PC Windows",
+      "mac_one": "Mac",
+      "mac_other": "Macs"
+    }
   },
   "empty": {
     "workersHiddenTitle": "Los nodos worker están ocultos",
@@ -220,8 +232,10 @@
     "ram": "RAM",
     "gpuTemp": "Temp. GPU",
     "gpuPower": "Potencia GPU",
+    "socPpt": "SoC PPT · CPU + GPU",
     "cpuTemp": "Temp. CPU",
     "cpuPower": "Potencia CPU",
+    "estimateSuffix": "est.",
     "available": "Disponible",
     "sensorTitle": "Sensor: {{label}}",
     "workerOf": "Worker de",

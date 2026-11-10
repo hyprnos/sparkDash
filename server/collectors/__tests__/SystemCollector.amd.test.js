@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { spawnSync } from "node:child_process";
-import { SystemCollector, parseAmdSmiMetrics, splitRemoteGpuSections } from "../SystemCollector.js";
+import { SystemCollector, parseAmdSmiMetrics, parseAmdStrixSysfs, splitRemoteGpuSections } from "../SystemCollector.js";
 
 const amdMetrics = {
   gpu_data: [{
@@ -48,6 +48,47 @@ test("parseAmdSmiMetrics accepts array-root output and legacy static power-limit
   assert.equal(gpu.vram.total, 32624);
   const [wrapped] = parseAmdSmiMetrics({ gpu_data: [row] }, { gpu_data: [{ limit: { ppt0: { socket_power_limit: { value: 300 } } } }] });
   assert.equal(wrapped.powerLimit, 300);
+});
+
+test("Strix Halo sysfs reports GPU activity and separate SoC power", () => {
+  const [gpu] = parseAmdStrixSysfs("0,99,82000,99813000\n");
+  assert.equal(gpu.usage, 99);
+  assert.equal(gpu.temperature, 82);
+  assert.equal(gpu.socPowerWatts, 99.8);
+  assert.equal(gpu.metricAvailability.powerDraw, false);
+  assert.equal(gpu.metricAvailability.vramTotal, false);
+  const [partial] = parseAmdStrixSysfs("1,0,,\n");
+  assert.equal(partial.usage, 0);
+  assert.equal(partial.metricAvailability.usage, true);
+  assert.equal(partial.socPowerWatts, null);
+  assert.deepEqual(parseAmdStrixSysfs("0,999,999999,9999999999\ninvalid"), []);
+});
+
+test("remote Strix Halo sysfs keeps SoC power out of GPU power", async () => {
+  const collector = new SystemCollector({ id: "strix", kind: "host", isLocal: false });
+  collector._nvErrNoMemory = async () => 0;
+  collector._kernelErrors = async () => null;
+  const output = ["__AMD_STRIX__", "0,99,82000,99813000", "__MEMINFO__", "MemTotal: 131072000 kB\nMemAvailable: 65536000 kB"].join("\n");
+  const gpu = await collector._getRemoteGpu(async () => output);
+  assert.equal(gpu.usage, 99);
+  assert.equal(gpu.temperature, 82);
+  assert.equal(gpu.socPowerWatts, 99.8);
+  assert.equal(gpu.metricAvailability.powerDraw, false);
+  assert.equal(gpu.metricAvailability.vramTotal, false);
+  assert.equal(gpu.power.draw, 0);
+  assert.equal(gpu.power.systemDraw, 0);
+  assert.equal(gpu.gpus[0].vendor, "amd");
+});
+
+test("amd-smi and Strix sysfs do not duplicate the same GPU", async () => {
+  const collector = new SystemCollector({ id: "amd", kind: "host", isLocal: false });
+  collector._nvErrNoMemory = async () => 0;
+  collector._kernelErrors = async () => null;
+  const output = ["__AMD__", JSON.stringify(amdMetrics), "__AMD_LIMITS__", JSON.stringify(amdLimits), "__AMD_STRIX__", "0,99,82000,99813000", "__MEMINFO__", "MemTotal: 64000000 kB"].join("\n");
+  const gpu = await collector._getRemoteGpu(async () => output);
+  assert.equal(gpu.gpus.length, 1);
+  assert.equal(gpu.gpus[0].name, "Radeon AI Pro R9700");
+  assert.equal(gpu.socPowerWatts, null);
 });
 
 test("remote collection detects NVIDIA and AMD independently and combines both device sets", async () => {

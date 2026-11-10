@@ -23,7 +23,19 @@
     "wakeSent": "{{count}} 件の起動パケットを送信",
     "wakePartial": "{{count}} 件送信、{{failed}} 件失敗",
     "batchHermesFailed": "Hermes の一括更新に失敗しました",
-    "batchWakeFailed": "一括起動に失敗しました"
+    "batchWakeFailed": "一括起動に失敗しました",
+    "deviceClass": {
+      "spark_one": "Spark",
+      "spark_other": "Spark",
+      "amdAiMax_one": "AI Max 395",
+      "amdAiMax_other": "AI Max 395",
+      "gpuHost_one": "台の GPU ホスト",
+      "gpuHost_other": "台の GPU ホスト",
+      "windowsPc_one": "台の Windows PC",
+      "windowsPc_other": "台の Windows PC",
+      "mac_one": "台の Mac",
+      "mac_other": "台の Mac"
+    }
   },
   "empty": {
     "workersHiddenTitle": "Worker ノードは非表示です",
@@ -220,8 +232,10 @@
     "ram": "RAM",
     "gpuTemp": "GPU 温度",
     "gpuPower": "GPU 電力",
+    "socPpt": "SoC PPT · CPU + GPU",
     "cpuTemp": "CPU 温度",
     "cpuPower": "CPU 電力",
+    "estimateSuffix": "推定",
     "available": "空き",
     "sensorTitle": "センサー: {{label}}",
     "workerOf": "所属 head",

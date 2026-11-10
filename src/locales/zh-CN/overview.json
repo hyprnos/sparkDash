@@ -23,7 +23,19 @@
     "wakeSent": "已发送 {{count}} 个唤醒包",
     "wakePartial": "已发送 {{count}} 个，{{failed}} 个失败",
     "batchHermesFailed": "批量 Hermes 更新失败",
-    "batchWakeFailed": "批量唤醒失败"
+    "batchWakeFailed": "批量唤醒失败",
+    "deviceClass": {
+      "spark_one": "Spark",
+      "spark_other": "Spark",
+      "amdAiMax_one": "AI Max 395",
+      "amdAiMax_other": "AI Max 395",
+      "gpuHost_one": "台 GPU 主机",
+      "gpuHost_other": "台 GPU 主机",
+      "windowsPc_one": "台 Windows PC",
+      "windowsPc_other": "台 Windows PC",
+      "mac_one": "台 Mac",
+      "mac_other": "台 Mac"
+    }
   },
   "empty": {
     "workersHiddenTitle": "Worker 节点已隐藏",
@@ -220,8 +232,10 @@
     "ram": "内存",
     "gpuTemp": "GPU 温度",
     "gpuPower": "GPU 功率",
+    "socPpt": "SoC PPT · CPU + GPU",
     "cpuTemp": "CPU 温度",
     "cpuPower": "CPU 功率",
+    "estimateSuffix": "估计",
     "available": "可用",
     "sensorTitle": "传感器：{{label}}",
     "workerOf": "所属 Head",

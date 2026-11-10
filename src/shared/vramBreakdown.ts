@@ -1,5 +1,5 @@
 import { resolveSparkRole } from "../api/sparkRole";
-import type { LlmMetrics, SparkRole } from "../api/types";
+import type { LlmMetrics, MemoryArchitecture, SparkRole } from "../api/types";
 import { backendLabel } from "./llmBackends.js";
 import { makeHeadResolver, usableHead, type HeadResolver } from "./sparkHead";
 
@@ -35,7 +35,21 @@ export const HEADROOM_THRESHOLDS_MB: Readonly<
 /** The engine's own KV pool is nearly full at this fill: requests queue or get preempted. */
 export const KV_NEARLY_FULL = 0.9;
 
-export function memoryModelFor(kind: string | null | undefined): MemoryModel {
+/**
+ * Which memory model a unit follows. `kind` alone is not enough: an AMD APU
+ * (Strix Halo, "… w/ Radeon …") is a "host" whose iGPU draws from the same
+ * LPDDR as the CPU, so the collector reports `memoryArchitecture: "unified"`
+ * and the panels collapse RAM and VRAM into one pool, exactly like a GB10 Spark.
+ *
+ * An explicit architecture from the collector always wins; `kind` is only the
+ * fallback while the host is still being probed.
+ */
+export function memoryModelFor(
+  kind: string | null | undefined,
+  hardware?: { memoryArchitecture?: MemoryArchitecture | null } | null
+): MemoryModel {
+  const detected = hardware?.memoryArchitecture;
+  if (detected === "unified" || detected === "discrete") return detected;
   return kind === "host" ? "discrete" : "unified";
 }
 
@@ -163,12 +177,15 @@ export interface VramBreakdownContext {
 }
 
 export function vramContextFor(
-  unit: ServingUnitLike & { metrics?: { unifiedMemory?: UnifiedMemoryLike | null } | null },
+  unit: ServingUnitLike & {
+    hardware?: { memoryArchitecture?: MemoryArchitecture | null } | null;
+    metrics?: { unifiedMemory?: UnifiedMemoryLike | null } | null;
+  },
   fleet: readonly ServingUnitLike[] | null | undefined,
   /** Pass `makeHeadResolver(fleet)` when building contexts for a whole fleet (avoids rescans). */
   resolveHead?: HeadResolver<ServingUnitLike>,
 ): VramBreakdownContext {
-  const model = memoryModelFor(unit.kind);
+  const model = memoryModelFor(unit.kind, unit.hardware);
   return {
     model,
     unified: model === "unified" ? unit.metrics?.unifiedMemory ?? null : null,

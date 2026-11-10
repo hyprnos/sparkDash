@@ -1,3 +1,4 @@
+import { sharesMemoryPool } from "../../src/shared/deviceClass.js";
 import { finite, llmKey } from "./historyTiers.js";
 
 /**
@@ -24,15 +25,15 @@ function isDefaultCpu(cpu) {
 /**
  * Used and free memory in MB, with the semantics of computeVramBreakdown in
  * src/shared/vramBreakdown.ts (the browser-side headroom helper; the server has
- * no shared copy): a GB10 (`kind` spark) judges its unified pool — used is GPU
- * + CPU side, free is MemAvailable — falling back to the GPU's view when the
- * pool is unknown; a discrete card (`kind` host) judges its VRAM, free = total
- * − used (the host collector puts system RAM in `vram.available` while no GPU
- * process runs).
+ * no shared copy): a shared-pool unit (DGX Spark GB10, AMD AI Max 395 APU)
+ * judges its unified pool — used is GPU + CPU side, free is MemAvailable —
+ * falling back to the GPU's view when the pool is unknown; a discrete card
+ * judges its VRAM, free = total − used (the host collector puts system RAM in
+ * `vram.available` while no GPU process runs).
  */
 export function memoryReading(snapshot, isFresh = () => true) {
   const m = snapshot?.metrics || {};
-  const unified = snapshot?.kind !== "host";
+  const unified = sharesMemoryPool(snapshot);
   const um = m.unifiedMemory;
   if (unified && isFresh("memory") && finite(um?.total) && um.total > 0) {
     const used = Math.max(0, finite(um.gpuUsed) ? um.gpuUsed : 0) +
@@ -113,7 +114,8 @@ export function extractSample(snapshot, isFresh = () => true) {
     if (cpu.temperature > 0) set("cpuTemp", cpu.temperature);
   }
 
-  if (snapshot.kind === "host" && isFresh("ram") && finite(m.ram?.total) && m.ram.total > 0) {
+  // A shared-pool unit already reports RAM inside the unified series.
+  if (!sharesMemoryPool(snapshot) && isFresh("ram") && finite(m.ram?.total) && m.ram.total > 0) {
     set("ramUsedMB", m.ram.used);
   }
 

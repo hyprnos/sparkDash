@@ -91,6 +91,7 @@
     "window8h": "8 時間",
     "powerDraw": "消費電力",
     "powerAllCards": "消費電力（全カード）",
+    "socPpt": "SoC PPT · CPU + GPU",
     "smClock": "SM クロック",
     "systemDraw": "システム ≈ {{watts}} W",
     "lockedTitle": "nvidia-smi -lgc で固定中",
@@ -151,8 +152,9 @@
     "cpuPackage": "CPU パッケージセンサー",
     "acpiZone": "ACPI／ボードのサーマルゾーン（CPU パッケージセンサーではありません）",
     "cpuPower": "CPU 電力",
+    "estimateSuffix": "推定",
     "modelLine": "型番",
-    "cores": "{{count}} コア"
+    "cores": "{{count}} 論理 CPU"
   },
   "ram": {
     "title": "メモリ"

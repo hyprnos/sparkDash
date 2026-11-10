@@ -19,7 +19,7 @@ import { RocePanel } from "./RocePanel";
 import { UnifiedMemoryPanel } from "./UnifiedMemoryPanel";
 import { HistoryPanel } from "./HistoryPanel";
 import "../../styles/spark.css";
-import { vramContextFor } from "../../shared/vramBreakdown";
+import { memoryModelFor, vramContextFor } from "../../shared/vramBreakdown";
 
 interface SparkPageProps {
   spark: SparkSnapshot;
@@ -151,7 +151,10 @@ export function SparkPage({
   const primaryPort = llmPorts[0];
   const extraPorts = llmPorts.slice(1);
   const unified = metrics.unifiedMemory;
-  const showUnified = spark.kind !== "host" && unified != null && unified.total > 0;
+  // An APU host (Strix Halo) shares one pool too: show the unified panel and drop
+  // the separate RAM row, the same way a GB10 Spark does.
+  const sharedPool = memoryModelFor(spark.kind, spark.hardware) === "unified";
+  const showUnified = sharedPool && unified != null && unified.total > 0;
 
   const renderLlmPanel = (port: number, portIndex: number, className?: string) => {
     // Match by the snapshot's own port so a panel never shows another port's
@@ -290,11 +293,13 @@ export function SparkPage({
                 <CpuPanel
                   cpu={metrics.cpu}
                   hardware={spark.hardware}
+                  socPowerAvailable={metrics.gpu?.socPowerWatts != null}
                   sparkId={spark.id}
                   temperatureUnit={temperatureUnit}
                 />
-                {/* Dedicated hosts have system RAM instead of a unified pool: CPU and RAM side by side. */}
-                {spark.kind === "host" && <RamPanel ram={metrics.ram} sparkId={spark.id} />}
+                {/* Dedicated hosts have system RAM instead of a unified pool: CPU and RAM side by side.
+                    A shared-pool APU host already shows its RAM inside the unified panel. */}
+                {!sharedPool && spark.kind === "host" && <RamPanel ram={metrics.ram} sparkId={spark.id} />}
                 {/* Models is the third column of the row (Windows PCs have no launchers). */}
                 {spark.platform !== "windows" && modelsPanel}
               </div>
@@ -304,7 +309,7 @@ export function SparkPage({
                 instead of starting below both columns. Stacked (below xl) it stays last. */}
             {metricsHistory && (
               <Item order={40}>
-                <HistoryPanel key={spark.id} sparkId={spark.id} kind={spark.kind} temperatureUnit={temperatureUnit} />
+                <HistoryPanel key={spark.id} sparkId={spark.id} kind={spark.kind} unifiedHost={sharedPool} temperatureUnit={temperatureUnit} />
               </Item>
             )}
           </div>

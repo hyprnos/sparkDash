@@ -29,6 +29,25 @@ describe("SparkCard when the engine's stats could not be read", () => {
     expect(container.querySelector('[title*="answered 500"]')).not.toBeNull();
   });
 
+  it("labels estimated CPU power without presenting the assumed limit", () => {
+    const spark = withLlm({});
+    Object.assign(spark.metrics.cpu!, { draw: 14.8, tdp: 185, powerSource: "estimated" });
+    const { container } = render(<SparkCard spark={spark} temperatureUnit="celsius" />);
+    expect(container.textContent).toContain("CPU power · est.");
+    expect(container.textContent).toContain("≈14.8 W");
+    expect(container.textContent).not.toContain("185 W");
+  });
+
+  it("shows SoC power separately from unavailable GPU and CPU power", () => {
+    const spark = withLlm({});
+    Object.assign(spark.metrics.cpu!, { draw: 20, tdp: 185, powerSource: "estimated" });
+    Object.assign(spark.metrics.gpu!, { socPowerWatts: 99.5, metricAvailability: { usage: true, temperature: true, powerDraw: false, powerLimit: false, vramUsed: false, vramTotal: false } });
+    const { container } = render(<SparkCard spark={spark} temperatureUnit="celsius" />);
+    expect(container.textContent).toContain("SoC PPT · CPU + GPU99.5 W");
+    expect(container.textContent).not.toContain("CPU power · est.");
+    expect(container.textContent).not.toContain("GPU power99.5");
+  });
+
   it("still shows a readable idle engine as 0.0 tok/s", () => {
     const { container } = render(
       <SparkCard spark={withLlm({ measurementValid: true, generationTps: 0, prefillTps: 0 })} temperatureUnit="celsius" />,

@@ -91,6 +91,7 @@
     "window8h": "8 ساعات",
     "powerDraw": "سحب الطاقة",
     "powerAllCards": "الطاقة (كل البطاقات)",
+    "socPpt": "SoC PPT · CPU + GPU",
     "smClock": "تردد SM",
     "systemDraw": "الجهاز ≈ {{watts}} واط",
     "lockedTitle": "مقفل عبر nvidia-smi -lgc",
@@ -151,8 +152,9 @@
     "cpuPackage": "مستشعر حزمة CPU",
     "acpiZone": "منطقة حرارية ACPI/لوحة وليست مستشعر حزمة CPU",
     "cpuPower": "طاقة CPU",
+    "estimateSuffix": "تقديري",
     "modelLine": "الطراز",
-    "cores": "{{count}} نوى"
+    "cores": "{{count}} معالج منطقي"
   },
   "ram": {
     "title": "RAM"

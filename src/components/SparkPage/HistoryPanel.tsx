@@ -130,6 +130,9 @@ function buildCharts(
   data: MetricsHistoryData,
   timeline: readonly number[],
   kind: string | undefined,
+  /** Shared CPU/GPU pool (GB10, AMD APU): RAM is inside the unified series, not a separate chart.
+   *  `undefined` leaves the decision to `kind`, for callers that do not probe hardware. */
+  sharedPool: boolean | undefined,
   temperatureUnit: "celsius" | "fahrenheit",
   t: Translate,
 ): ChartDef[] {
@@ -138,7 +141,10 @@ function buildCharts(
   const toTemp = f ? (c: number) => (c * 9) / 5 + 32 : undefined;
   const temp = (v: number) => `${Math.round(v)}°${f ? "F" : "C"}`;
   const accent = "var(--color-accent)";
-  const model = memoryModelFor(kind);
+  const model = memoryModelFor(
+    kind,
+    sharedPool === undefined ? null : { memoryArchitecture: sharedPool ? "unified" : "discrete" }
+  );
   const headroom = HEADROOM_THRESHOLDS_MB[model];
 
   const charts: ChartDef[] = [
@@ -194,7 +200,7 @@ function buildCharts(
   ];
 
   const ram = aligned(timeline, pts, (p) => p.ramUsedMB);
-  if (kind === "host" && hasAny(ram)) {
+  if (kind === "host" && model === "discrete" && hasAny(ram)) {
     charts.push({
       id: "ramUsed",
       title: t("history.chartRamUsed"),
@@ -325,10 +331,13 @@ function useUnitHistory(sparkId: string, range: MetricsHistoryRange, active: boo
 export function HistoryPanel({
   sparkId,
   kind,
+  unifiedHost,
   temperatureUnit,
 }: {
   sparkId: string;
   kind?: string;
+  /** See `memoryModelFor`: an APU host shares one pool with its CPU. Omit when unknown. */
+  unifiedHost?: boolean;
   temperatureUnit: "celsius" | "fahrenheit";
 }) {
   const { t } = useTranslation("spark");
@@ -342,8 +351,8 @@ export function HistoryPanel({
   const enabled = data?.enabled === true ? data : null;
   const timeline = useMemo(() => (enabled ? buildTimeline(enabled) : []), [enabled]);
   const charts = useMemo(
-    () => (enabled ? buildCharts(enabled, timeline, kind, temperatureUnit, t as unknown as Translate) : []),
-    [enabled, timeline, kind, temperatureUnit, t],
+    () => (enabled ? buildCharts(enabled, timeline, kind, unifiedHost, temperatureUnit, t as unknown as Translate) : []),
+    [enabled, timeline, kind, unifiedHost, temperatureUnit, t],
   );
   const formats = useMemo(() => timeFormatters(range), [range]);
 
