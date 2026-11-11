@@ -46,6 +46,13 @@ export interface LlmTokenCost {
   modelId: string;
   label: string;
   tariff: string;
+  /** Hours in the window charged at the peak tariff (0 for a flat or pinned price). */
+  peakHours?: number;
+  /** The configured tariff mode: "auto" prices each hour at its own rate. */
+  tariffMode?: string;
+  /** Both published tariffs, so an hourly estimate can show what was charged. */
+  peakRates?: { cacheHit: number; cacheMiss: number; output: number } | null;
+  offPeakRates?: { cacheHit: number; cacheMiss: number; output: number } | null;
   source: string;
   rates: { cacheHit: number; cacheMiss: number; output: number };
   pricingUpdatedAt: number | null;

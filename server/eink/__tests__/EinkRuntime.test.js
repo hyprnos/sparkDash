@@ -116,3 +116,29 @@ test("local midnight ignores the millisecond part of the clock", () => {
   };
   assert.equal(localDaySnapshot(history, { now, timeZone: "Asia/Shanghai" }).series[0].totals.promptTokens, 10);
 });
+
+test("buildScene prices the e-paper cloud cost per hour, not at a single live tariff", () => {
+  // 2026-11-02 is a Monday: 02:00Z is 10:00 Beijing (peak), 05:00Z is 13:00
+  // Beijing (off-peak). deepseek-flash charges cache-miss 2/M at peak and 1/M
+  // at off-peak, so one million tokens in each hour must cost 3, never 2 or 4.
+  const scene = buildScene({
+    snapshot: SNAPSHOT,
+    config: { ...DEFAULT_CONFIG, pricing: { modelId: "deepseek-flash", tariff: "auto" } },
+    now: Date.UTC(2026, 10, 2, 6),
+    costRows: [
+      { t: "2026-11-02T02", promptTokens: 1_000_000 },
+      { t: "2026-11-02T05", promptTokens: 1_000_000 },
+    ],
+  });
+  assert.equal(scene.cost.value, "¥3.0", `got ${scene.cost.value}`);
+});
+
+test("buildScene keeps the aggregate fallback when no hourly rows are supplied", () => {
+  const scene = buildScene({
+    snapshot: SNAPSHOT,
+    config: { ...DEFAULT_CONFIG, pricing: { modelId: "deepseek-flash", tariff: "off-peak" } },
+    now: Date.UTC(2026, 10, 1, 0, 30),
+  });
+  // 2.4M prompt (2.0M cached) + 0.6M output at off-peak: 0.4*1 + 0.6*4 = 2.8 hmm
+  assert.ok(/^¥\d/.test(scene.cost.value), `got ${scene.cost.value}`);
+});

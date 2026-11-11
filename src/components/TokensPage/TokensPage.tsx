@@ -106,6 +106,23 @@ interface Loaded {
   at: number;
 }
 
+/**
+ * How the estimate was priced. An automatic tariff charges each hour at the rate
+ * that applied to it, so the live tariff alone would describe only the current
+ * hour; say how much of the window was actually charged at peak instead.
+ */
+function peakNote(cost: LlmTokenCost, t: Translate): string {
+  const peakHours = Number(cost.peakHours) || 0;
+  if (cost.tariff === "flat") return t("cost.flat");
+  // "auto" is the configured mode; `tariff` is only whichever rate is live now.
+  if (cost.tariffMode === "auto") {
+    return peakHours > 0
+      ? t("cost.byHourPeak", { count: peakHours })
+      : t("cost.byHourOffPeak");
+  }
+  return cost.tariff === "peak" ? t("cost.peak") : t("cost.offPeak");
+}
+
 export function TokensPage({ sparks, onSelectSpark }: { sparks: SparkSnapshot[]; onSelectSpark?: (id: string) => void }) {
   const { t: translate } = useTranslation("tokens");
   const t = translate as unknown as Translate;
@@ -576,9 +593,18 @@ function CostCard({ range }: { range: RangeKey }) {
         <span className="tk-cost__range"> · {cost.label}</span>
       </p>
       <p className="tk-cost__note">
-        {cost.tariff === "peak" ? t("cost.peak") : t("cost.offPeak")} ·{" "}
-        {t("cost.rates", { hit: cost.rates.cacheHit, miss: cost.rates.cacheMiss, output: cost.rates.output })} ·{" "}
-        {t("cost.einkNote")}
+        {peakNote(cost, t)} ·{" "}
+        {cost.tariffMode === "auto" && cost.peakRates && cost.offPeakRates
+          ? t("cost.ratesBoth", {
+              peakHit: cost.peakRates.cacheHit,
+              peakMiss: cost.peakRates.cacheMiss,
+              peakOut: cost.peakRates.output,
+              offHit: cost.offPeakRates.cacheHit,
+              offMiss: cost.offPeakRates.cacheMiss,
+              offOut: cost.offPeakRates.output,
+            })
+          : t("cost.rates", { hit: cost.rates.cacheHit, miss: cost.rates.cacheMiss, output: cost.rates.output })}{" "}
+        · {t("cost.einkNote")}
       </p>
       {cost.groups && cost.groups.length ? (
       <div className="tk-cost__breakdown">

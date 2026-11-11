@@ -18,7 +18,10 @@ import {
   listPriceModels,
   priceSnapshot,
   applyOfficialPricing,
-  computeCost,
+  computeCostByHour,
+  findOfficialModel,
+  hourKeyToDate,
+  isPeakHour,
   formatCny,
   parseOfficialPricing,
   resolveRates,
@@ -388,6 +391,65 @@ function priceWindowSnapshot(totals) {
 }
 
 /**
+ * Hourly ledger rows for the requested cost window.
+ *
+ * Cost has to be charged per hour, because the official table is time-of-day
+ * dependent; the aggregates these ranges used to be priced from have no hour
+ * dimension left. Hourly buckets are retained for 35 days, which covers every
+ * range the page offers.
+ *
+ * @param {string} range one of today / 24h / week / month / all
+ * @param {{hour?: Array<object>}} history ledger history
+ * @param {{ now?: number, timeZone?: string }} [options]
+ */
+export function costRowsForRange(range, history, { now = Date.now(), timeZone = "Asia/Shanghai" } = {}) {
+  const rows = Array.isArray(history?.hour) ? history.hour : [];
+  if (range === "all") return rows;
+  let since;
+  if (range === "today") {
+    since = zonedMidnight(now, timeZone);
+  } else if (range === "24h") {
+    since = now - 24 * 3600_000;
+  } else if (range === "week" || range === "month") {
+    const midnight = zonedMidnight(now, timeZone);
+    const parts = new Intl.DateTimeFormat("en-CA", { timeZone, weekday: "short", day: "2-digit" }).formatToParts(new Date(now));
+    const dayOfMonth = Number(parts.find((part) => part.type === "day")?.value) || 1;
+    since = range === "month" ? midnight - (dayOfMonth - 1) * 24 * 3600_000 : midnight - 6 * 24 * 3600_000;
+  } else {
+    return rows;
+  }
+  return rows.filter((row) => {
+    const start = bucketStartMs(row?.t);
+    return Number.isFinite(start) && start >= since && start <= now;
+  });
+}
+
+/**
+ * The published rates for one tariff of the configured model, or null when the
+ * model has a single price (hosted/manual entries).
+ */
+export function peakOffPeakRates(pricing, tariff) {
+  const official = findOfficialModel(pricing?.modelId);
+  if (!official) return null;
+  const key = tariff === "peak" ? "peak" : "offPeak";
+  return {
+    cacheHit: official.cacheHit[key],
+    cacheMiss: official.cacheMiss[key],
+    output: official.output[key],
+  };
+}
+
+/** How many hours of the window fell inside the peak (double-price) tariff. */
+export function countPeakHours(rows) {
+  const seen = new Set();
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const at = hourKeyToDate(row?.t);
+    if (at && isPeakHour(at)) seen.add(row.t);
+  }
+  return seen.size;
+}
+
+/**
  * Build the scene the bridge renders. Only aggregate numbers leave this function —
  * the tag shows a summary, never per-model detail.
  *
@@ -397,7 +459,7 @@ function priceWindowSnapshot(totals) {
  * @param {number} [args.now] epoch millis, injectable for tests
  * @param {string} [args.timeZone]
  */
-export function buildScene({ snapshot, config, now = Date.now(), timeZone = "Asia/Shanghai" }) {
+export function buildScene({ snapshot, config, now = Date.now(), timeZone = "Asia/Shanghai", costRows = null }) {
   const series = Array.isArray(snapshot?.series) ? snapshot.series : [];
   let promptTokens = 0;
   let completionTokens = 0;
@@ -436,8 +498,13 @@ export function buildScene({ snapshot, config, now = Date.now(), timeZone = "Asi
   const priced = priceSnapshot({ series, pricing: config.pricing, now: new Date(now) });
   const stamp = clockLabel(now, timeZone);
   const footer = config.footer ? config.footer.replace(/\{time\}/gi, stamp) : `每 ${config.intervalMinutes} 分钟刷新`;
+  // Charge each hour at the tariff that applied to it, under the price book of the
+  // endpoint that burned it. The per-endpoint snapshot above has no hour dimension
+  // left, so it is only the fallback when the ledger cannot supply hourly rows.
   const rates = resolveRates(config.pricing, { now: new Date(now) });
-  const costValue = priced.formatted;
+  const costBuckets = Array.isArray(costRows) ? costRows : [];
+  const hourlyCost = costBuckets.length ? computeCostByHour(costBuckets, config.pricing) : null;
+  const costValue = hourlyCost == null ? priced.formatted : formatCny(hourlyCost);
 
   const scene = {
     title: config.title || "sparkDash",
@@ -447,14 +514,20 @@ export function buildScene({ snapshot, config, now = Date.now(), timeZone = "Asi
     rows: config.sections.rows
       ? rows.map(([label, value]) => {
           /* Each node carries its own price book, so the row shows what that
-             node's traffic would cost — the tag never invents a fleet average. */
+             node's traffic would cost — the tag never invents a fleet average.
+             When hourly rows exist the node figure is charged hour by hour too,
+             so the rows add up to the headline instead of drifting from it. */
           const own = priced.groups.filter((group) => group.sparkId === label);
-          const rowCost = own.reduce((sum, group) => sum + group.cost, 0);
+          const ownHours = costBuckets.filter((row) => (row.sparkId || "unknown") === label);
+          const rowCost = ownHours.length
+            ? computeCostByHour(ownHours, config.pricing)
+            : own.reduce((sum, group) => sum + group.cost, 0);
+          const showCost = (own.length || ownHours.length) && config.sections.cost;
           return {
             label,
             value: formatCompact(value),
             ratio: rowMax ? value / rowMax : 0,
-            cost: own.length && config.sections.cost ? formatCny(rowCost) : "",
+            cost: showCost ? formatCny(rowCost) : "",
           };
         })
       : [],
@@ -547,7 +620,13 @@ export function createEinkRuntime({
   }
 
   function sceneFromLedger() {
-    return buildScene({ snapshot: tokensForToday(), config, now: now(), timeZone });
+    return buildScene({
+      snapshot: tokensForToday(),
+      config,
+      now: now(),
+      timeZone,
+      costRows: ledgerHistory ? costRowsForRange("today", ledgerHistory(), { now: now(), timeZone }) : null,
+    });
   }
 
   async function callBridge(pathname, body, { timeoutMs = BRIDGE_TIMEOUT_MS, raw = false } = {}) {
@@ -661,18 +740,35 @@ export function createEinkRuntime({
         completionTokens += group.tokens.completionTokens;
         cachedTokens += group.tokens.cachedTokens;
       }
-      const fallbackRates = resolveRates(config.pricing, { now: new Date(now()) });
+      // Charge every hour at its own tariff, under the price book of the endpoint
+      // that burned it. The official table doubles at peak, so pricing the whole
+      // window at the tariff that happens to be live now would misprice the rest by
+      // up to 2x. The per-endpoint snapshot — already split by price book, but with
+      // no hour dimension — is the fallback when the ledger has no hourly rows.
+      const hourRows = ledgerHistory ? costRowsForRange(range, ledgerHistory(), { now: now(), timeZone }) : [];
+      const cost = hourRows.length ? computeCostByHour(hourRows, config.pricing) : priced.total;
+      // The rates line describes the tariff live right now; `peakHours` says how
+      // much of the window was actually charged at peak.
+      const rates = resolveRates(config.pricing, { now: new Date(now()) });
       res.json({
         range,
         currency: "CNY",
-        cost: priced.total,
-        formatted: priced.formatted,
+        cost,
+        formatted: formatCny(cost),
         tokens: { promptTokens, completionTokens, cachedTokens, total: promptTokens + completionTokens },
         modelId: config.pricing.modelId,
-        label: fallbackRates.label,
-        tariff: fallbackRates.tariff,
-        source: fallbackRates.source,
-        rates: { cacheHit: fallbackRates.cacheHit, cacheMiss: fallbackRates.cacheMiss, output: fallbackRates.output },
+        label: rates.label,
+        tariff: rates.tariff,
+        // The configured mode ("auto" prices every hour at its own tariff); `tariff`
+        // above is only the one live right now.
+        tariffMode: config.pricing.tariff,
+        source: rates.source,
+        peakHours: countPeakHours(hourRows),
+        rates: { cacheHit: rates.cacheHit, cacheMiss: rates.cacheMiss, output: rates.output },
+        // Both tariffs, when the model publishes them: an hourly estimate is a mix,
+        // so quoting only the live one would misstate what was charged.
+        peakRates: peakOffPeakRates(config.pricing, "peak"),
+        offPeakRates: peakOffPeakRates(config.pricing, "off-peak"),
         pricingUpdatedAt: config.pricing.updatedAt,
         profiles: config.pricing.profiles,
         assignments: config.pricing.assignments,
@@ -732,6 +828,7 @@ export function createEinkRuntime({
         config: effective,
         now: now(),
         timeZone,
+        costRows: ledgerHistory ? costRowsForRange("today", ledgerHistory(), { now: now(), timeZone }) : null,
       });
       const background = hostBackgroundPath(effective, configHostDir);
       if (background) scene.background = background;

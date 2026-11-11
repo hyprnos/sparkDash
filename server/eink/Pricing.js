@@ -117,6 +117,65 @@ export function resolveRates(pricing, { now = new Date() } = {}) {
   };
 }
 
+/** "2026-11-10T14" (a UTC hour bucket key) as the instant that hour starts. */
+export function hourKeyToDate(key) {
+  if (typeof key !== "string") return null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2})$/.exec(key);
+  if (!match) return null;
+  const at = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]), Number(match[4])));
+  return Number.isNaN(at.getTime()) ? null : at;
+}
+
+/**
+ * Cost in CNY for hourly ledger rows, charging every hour at the tariff that
+ * applied to that hour and every endpoint at its own price book.
+ *
+ * The official table is time-of-day dependent (peak is double off-peak), so
+ * pricing a whole day at whatever tariff is live right now is wrong by up to 2×
+ * in either direction: a day read at 03:00 charges every morning token at the
+ * off-peak rate, and the same day read at 10:00 charges every night token at the
+ * peak rate. Each bucket is priced at its own hour instead.
+ *
+ * The ledger rows carry `sparkId`/`port`/`modelId`, so the same split honours the
+ * per-endpoint profiles: an hour is priced under the book assigned to the endpoint
+ * that burned it, never under a fleet average.
+ *
+ * A pinned tariff ("peak"/"off-peak") or a provider with flat pricing resolves to
+ * the same rates for every hour, so this reduces to the plain total for those.
+ *
+ * @param {ReadonlyArray<{ t?: string, sparkId?: string, port?: number, modelId?: string, promptTokens?: number, completionTokens?: number, cachedTokens?: number }>} rows
+ * @param {object} pricing
+ */
+export function computeCostByHour(rows, pricing) {
+  const byHourEndpoint = new Map();
+  for (const row of Array.isArray(rows) ? rows : []) {
+    if (!hourKeyToDate(row?.t)) continue;
+    const sparkId = typeof row.sparkId === "string" ? row.sparkId : "";
+    const port = Number(row.port) || 0;
+    const modelId = typeof row.modelId === "string" ? row.modelId : "";
+    const key = `${row.t}\u0000${sparkId}\u0000${port}\u0000${modelId}`;
+    const bucket =
+      byHourEndpoint.get(key) ||
+      { t: row.t, sparkId, port, modelId, promptTokens: 0, completionTokens: 0, cachedTokens: 0 };
+    bucket.promptTokens += Math.max(0, Number(row.promptTokens) || 0);
+    bucket.completionTokens += Math.max(0, Number(row.completionTokens) || 0);
+    bucket.cachedTokens += Math.max(0, Number(row.cachedTokens) || 0);
+    byHourEndpoint.set(key, bucket);
+  }
+  let cost = 0;
+  for (const bucket of byHourEndpoint.values()) {
+    // Each endpoint's own price book, each hour its own tariff.
+    const match = matchProfile(pricing, {
+      sparkId: bucket.sparkId || undefined,
+      port: bucket.port || undefined,
+      modelId: bucket.modelId || undefined,
+    });
+    // resolveRates honours a pinned tariff and derives "auto" from this instant.
+    cost += computeCost(bucket, resolveRates(match.pricing, { now: hourKeyToDate(bucket.t) }));
+  }
+  return cost;
+}
+
 /** Cost in CNY for the given token counts at the resolved rates. */
 export function computeCost(tokens, rates) {
   const cached = Math.max(0, Number(tokens?.cachedTokens) || 0);
