@@ -433,11 +433,9 @@ export function buildScene({ snapshot, config, now = Date.now(), timeZone = "Asi
   stats.push({ label: "输入", value: formatCompact(promptTokens) });
   stats.push({ label: "输出", value: formatCompact(completionTokens) });
 
+  const priced = priceSnapshot({ series, pricing: config.pricing, now: new Date(now) });
   const stamp = clockLabel(now, timeZone);
   const footer = config.footer ? config.footer.replace(/\{time\}/gi, stamp) : `每 ${config.intervalMinutes} 分钟刷新`;
-  /* The tag shows the fleet total, priced with whatever book each endpoint is
-     assigned to; a single-endpoint install keeps the default book. */
-  const priced = priceSnapshot({ series, pricing: config.pricing, now: new Date(now) });
   const rates = resolveRates(config.pricing, { now: new Date(now) });
   const costValue = priced.formatted;
 
@@ -447,7 +445,18 @@ export function buildScene({ snapshot, config, now = Date.now(), timeZone = "Asi
     headline: { label: "今日 Token", value: formatCompact(total) },
     stats: config.sections.stats ? stats.slice(0, 3) : [],
     rows: config.sections.rows
-      ? rows.map(([label, value]) => ({ label, value: formatCompact(value), ratio: rowMax ? value / rowMax : 0 }))
+      ? rows.map(([label, value]) => {
+          /* Each node carries its own price book, so the row shows what that
+             node's traffic would cost — the tag never invents a fleet average. */
+          const own = priced.groups.filter((group) => group.sparkId === label);
+          const rowCost = own.reduce((sum, group) => sum + group.cost, 0);
+          return {
+            label,
+            value: formatCompact(value),
+            ratio: rowMax ? value / rowMax : 0,
+            cost: own.length && config.sections.cost ? formatCny(rowCost) : "",
+          };
+        })
       : [],
     footer,
     pigment: config.pigment,
@@ -506,12 +515,14 @@ export function createEinkRuntime({
   let lastOkAt = 0;
   let lastError = null;
   let batteryMv = null;
+  let batteryPercent = null;
   let lastDurationMs = null;
 
   const assetsDir = path.join(path.dirname(configPath), "eink-assets");
 
   const status = () => ({
     enabled: config.enabled,
+    batteryPercent,
     device: config.device,
     intervalMinutes: config.intervalMinutes,
     nextRunAt:
@@ -576,6 +587,9 @@ export function createEinkRuntime({
     lastAttemptAt = startedAt;
     try {
       const scene = sceneFromLedger();
+      /* Battery comes from the previous connection: the tag cannot report it
+         before we have written the frame it would appear in. */
+      if (batteryPercent != null) scene.battery = { percent: batteryPercent };
       const background = hostBackgroundPath(config, configHostDir);
       if (background) scene.background = background;
       const result = await callBridge("/display", { scene, device: config.device });
@@ -583,6 +597,7 @@ export function createEinkRuntime({
       lastDurationMs = lastOkAt - startedAt;
       lastError = null;
       if (typeof result?.batteryMv === "number") batteryMv = result.batteryMv;
+      if (typeof result?.batteryPercent === "number") batteryPercent = result.batteryPercent;
       log.log(`[eink] ${reason} refresh ok in ${lastDurationMs} ms`);
       return { scene, result, durationMs: lastDurationMs };
     } catch (err) {

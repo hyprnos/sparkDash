@@ -281,7 +281,14 @@ export function EinkPage() {
             {status?.lastDurationMs ? t("cadence.duration", { seconds: (status.lastDurationMs / 1000).toFixed(1) }) : ""}
           </p>
           <p className="eink-meta">
-            {t("cadence.battery", { voltage: status?.batteryMv ? `${(status.batteryMv / 1000).toFixed(2)} V` : "—" })}
+            {t("cadence.battery", {
+              voltage:
+                status?.batteryPercent != null
+                  ? `${status.batteryPercent}%`
+                  : status?.batteryMv
+                    ? `${(status.batteryMv / 1000).toFixed(2)} V`
+                    : "—",
+            })}
             {status?.lastError ? t("cadence.errorBelow") : ""}
           </p>
           {status?.lastError ? <p className="eink-note eink-note--error">{status.lastError}</p> : null}

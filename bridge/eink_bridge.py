@@ -112,6 +112,7 @@ DEFAULT_PREVIEW_PATH = "/tmp/eink-preview.png"
 # BLE protocol constants (verified against real hardware; do not change)
 # --------------------------------------------------------------------------- #
 
+BATTERY_LEVEL_UUID = "00002a19-0000-1000-8000-00805f9b34fb"
 EPD_SERVICE_UUID = "62750001-d828-918d-fb46-b6c11c675aec"
 EPD_CHAR_UUID = "62750002-d828-918d-fb46-b6c11c675aec"
 
@@ -230,6 +231,7 @@ class Row:
     label: str
     value: str
     ratio: float = 0.0
+    cost: str = ""
 
 
 @dataclass
@@ -245,6 +247,7 @@ class SceneSpec:
     stats: List[Stat] = field(default_factory=list)
     rows: List[Row] = field(default_factory=list)
     footer: str = ""
+    battery_percent: Optional[int] = None
     pigment_name: str = "yellow"
     theme: str = "dark"
     background: Optional[str] = None
@@ -391,10 +394,22 @@ def parse_scene(raw: Any) -> SceneSpec:
                 ratio = 0.0
             label = _as_text(item.get("label"))
             value = _as_text(item.get("value"))
+            cost = _as_text(item.get("cost"))
             if label or value:
-                rows.append(Row(label=label, value=value, ratio=ratio))
+                rows.append(Row(label=label, value=value, ratio=ratio, cost=cost))
+
+    battery_raw = raw.get("battery")
+    battery_percent = None
+    if isinstance(battery_raw, dict):
+        try:
+            value = int(battery_raw.get("percent"))
+            if 0 <= value <= 100:
+                battery_percent = value
+        except (TypeError, ValueError):
+            battery_percent = None
 
     return SceneSpec(
+        battery_percent=battery_percent,
         headline_value=headline_value,
         headline_label=_as_text(headline.get("label")),
         cost_label=_as_text((raw.get("cost") or {}).get("label")) if isinstance(raw.get("cost"), dict) else "",
@@ -686,6 +701,11 @@ def render_scene(spec: SceneSpec) -> Image.Image:
     bottom_limit = (CANVAS_H - MARGIN) * scale - footer_h
     cursor = margin
 
+    if spec.battery_percent is not None:
+        font = load_font(max(11 * scale, SUBTITLE_SIZE * scale - 2 * scale), True)
+        text = f"{spec.battery_percent}%"
+        width = text_width(font, text)
+        tdraw((CANVAS_W * scale - margin - width, margin // 2), text, font, dim)
     if spec.title:
         font = load_font(TITLE_SIZE * scale, True)
         cursor += tdraw((margin, cursor), truncate_text(spec.title, font, content_w), font, fg) + 2 * scale
@@ -741,9 +761,12 @@ def render_scene(spec: SceneSpec) -> Image.Image:
         slot = line_h + 10 * scale
         rows_bottom = bottom_limit - ROW_GAP * scale
         count = min(len(spec.rows), max(0, int((rows_bottom - cursor) // slot)))
+        cost_font = load_font(max(11 * scale, ROW_SIZE * scale - 3 * scale), True)
         for row in spec.rows[:count]:
             y = cursor
-            value_w = text_width(value_font_row, row.value)
+            cost_text = row.cost or ""
+            cost_w = text_width(cost_font, cost_text) + (6 * scale if cost_text else 0)
+            value_w = text_width(value_font_row, row.value) + cost_w
             label_w = 0.0
             if row.label:
                 label_text = truncate_text(row.label, row_font, content_w * 0.45)
@@ -757,6 +780,12 @@ def render_scene(spec: SceneSpec) -> Image.Image:
                 filled = int(round(bar_max * max(0.0, min(1.0, row.ratio))))
                 if filled > 0:
                     bar_items[-1]["filled"] = filled
+            if cost_text:
+                tdraw((CANVAS_W * scale - margin - text_width(cost_font, cost_text) - 2 * scale, y),
+                    cost_text,
+                    cost_font,
+                    pigment,
+                )
             if row.value:
                 tdraw((CANVAS_W * scale - margin - value_w - 2 * scale, y),
                     row.value,
@@ -1387,6 +1416,7 @@ async def _push_planes_async(
         except asyncio.TimeoutError:
             LOGGER.warning("no mtu notification within %.0fs, assuming %d", INIT_MTU_WAIT, DEFAULT_MTU)
 
+        battery_percent = await _read_battery_percent(client, collector)
         mtu = collector.mtu or DEFAULT_MTU
         chunk = max(1, min(mtu, MAX_WRITE_BYTES) - 2)
         LOGGER.info("mtu=%d chunk=%d", mtu, chunk)
@@ -1418,9 +1448,27 @@ async def _push_planes_async(
         except Exception:
             LOGGER.debug("disconnect raised", exc_info=True)
 
-    if collector.battery_mv is None:
-        LOGGER.warning("tag did not report a battery level")
-    return {"batteryMv": collector.battery_mv, "chunks": chunks}
+    if collector.battery_mv is None and battery_percent is None:
+        LOGGER.debug("tag did not report a battery level")
+    return {"batteryMv": collector.battery_mv, "batteryPercent": battery_percent, "chunks": chunks}
+
+
+async def _read_battery_percent(client: BleakClient, collector: "_StatusCollector") -> Optional[int]:
+    """Battery level from the standard GATT service, when the firmware exposes it.
+
+    Most EPD-nRF5 builds only answer on the vendor characteristic, so every
+    failure here is expected and simply means the tag has no battery reading.
+    """
+    try:
+        raw = await asyncio.wait_for(client.read_gatt_char(BATTERY_LEVEL_UUID), 3.0)
+    except Exception:
+        return None
+    if not raw:
+        return None
+    percent = int(raw[0])
+    if 0 <= percent <= 100:
+        return percent
+    return None
 
 
 def push_planes(bw_plane: bytes, color_plane: bytes, address: str, name: str) -> Dict[str, Any]:

@@ -81,6 +81,7 @@ export interface EinkStatus {
   lastOkAt: number | null;
   lastError: string | null;
   batteryMv: number | null;
+  batteryPercent: number | null;
   lastDurationMs: number | null;
   bridgeUrl?: string;
 }
