@@ -192,3 +192,27 @@
   border-color: var(--color-border-strong);
   color: var(--color-muted);
 }
+
+.eink-profiles {
+  border-top: 1px solid var(--color-border);
+  padding-top: 10px;
+}
+
+.eink-profiles__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.eink-profile {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  align-items: end;
+  margin: 8px 0;
+  padding: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+}

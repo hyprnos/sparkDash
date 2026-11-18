@@ -393,3 +393,54 @@
   color: var(--color-muted-strong);
   margin-bottom: 8px;
 }
+
+.tk-cost__breakdown {
+  margin: 10px 0 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border);
+}
+
+.tk-cost__note--head {
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: var(--color-muted-strong);
+}
+
+.tk-cost__rows {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tk-cost__row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1.4fr) auto;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 12px;
+}
+
+.tk-cost__endpoint {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.tk-cost__endpoint em {
+  font-style: normal;
+  color: var(--color-muted);
+}
+
+.tk-cost__profile {
+  color: var(--color-muted);
+}
+
+.tk-cost__amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--color-accent-text);
+}

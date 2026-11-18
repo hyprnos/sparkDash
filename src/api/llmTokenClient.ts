@@ -21,6 +21,22 @@ async function apiFetch<T>(path: string, opts?: RequestInit): Promise<T> {
   return res.json();
 }
 
+export interface LlmTokenCostGroup {
+  key: string;
+  sparkId: string;
+  port: number;
+  modelId: string;
+  tokens: { promptTokens: number; completionTokens: number; cachedTokens: number };
+  cost: number;
+  formatted: string;
+  profileId: string;
+  profileName: string;
+  label: string;
+  tariff: string;
+  source: string;
+  rates: { cacheHit: number; cacheMiss: number; output: number };
+}
+
 export interface LlmTokenCost {
   range: string;
   currency: string;
@@ -33,6 +49,7 @@ export interface LlmTokenCost {
   source: string;
   rates: { cacheHit: number; cacheMiss: number; output: number };
   pricingUpdatedAt: number | null;
+  groups: LlmTokenCostGroup[];
 }
 
 /** Cost of the same token totals at the pricing configured for the e-paper tag. */

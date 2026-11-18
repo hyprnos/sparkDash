@@ -94,6 +94,17 @@
     "synced": "Prices synced from the DeepSeek website",
     "updated": "Updated {{time}}",
     "never": "Not synced yet",
-    "loading": "Loading prices…"
+    "loading": "Loading prices…",
+    "profilesTitle": "Per-endpoint pricing",
+    "profileAdd": "Add price book",
+    "profileDefaultName": "Price book {{n}}",
+    "profilesHelp": "Give a node its own rates — useful when one Spark runs a cheaper model than another.",
+    "profilesEmpty": "No separate price books yet. Unassigned endpoints use the default rates above.",
+    "profileName": "Name",
+    "profileRemove": "Remove",
+    "assignTitle": "Endpoint assignment",
+    "assignHelp": "Pick which price book each discovered endpoint is priced with.",
+    "assignEmpty": "No endpoints with traffic yet.",
+    "assignDefault": "Default rates"
   }
 }

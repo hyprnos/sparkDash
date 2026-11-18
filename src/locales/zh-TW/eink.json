@@ -94,6 +94,17 @@
     "synced": "已從 DeepSeek 官網同步價格",
     "updated": "更新於 {{time}}",
     "never": "尚未同步",
-    "loading": "正在載入價格…"
+    "loading": "正在載入價格…",
+    "profilesTitle": "節點定價",
+    "profileAdd": "新增價格方案",
+    "profileDefaultName": "價格方案 {{n}}",
+    "profilesHelp": "為某個節點單獨定價——當一台 Spark 跑的模型比另一台便宜時很有用。",
+    "profilesEmpty": "還沒有單獨的價格方案。未分配的端點沿用上方的預設價格。",
+    "profileName": "名稱",
+    "profileRemove": "刪除",
+    "assignTitle": "節點分配",
+    "assignHelp": "為發現的每個端點選擇依哪套價格方案計費。",
+    "assignEmpty": "還沒有產生用量的端點。",
+    "assignDefault": "預設價格"
   }
 }

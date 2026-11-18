@@ -94,6 +94,17 @@
     "synced": "已从 DeepSeek 官网同步价格",
     "updated": "更新于 {{time}}",
     "never": "尚未同步",
-    "loading": "正在加载价格…"
+    "loading": "正在加载价格…",
+    "profilesTitle": "节点定价",
+    "profileAdd": "添加价格方案",
+    "profileDefaultName": "价格方案 {{n}}",
+    "profilesHelp": "给某个节点单独定价——当一台 Spark 跑的模型比另一台便宜时很有用。",
+    "profilesEmpty": "还没有单独的价格方案。未分配的端点沿用上面的默认价格。",
+    "profileName": "名称",
+    "profileRemove": "删除",
+    "assignTitle": "节点分配",
+    "assignHelp": "为发现的每个端点选择按哪套价格方案计费。",
+    "assignEmpty": "还没有产生用量的端点。",
+    "assignDefault": "默认价格"
   }
 }

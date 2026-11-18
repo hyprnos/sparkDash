@@ -16,6 +16,7 @@ import {
   DEFAULT_FX_CNY_PER_USD,
   OFFICIAL_SOURCE,
   listPriceModels,
+  priceSnapshot,
   applyOfficialPricing,
   computeCost,
   formatCny,
@@ -81,10 +82,52 @@ export const DEFAULT_CONFIG = Object.freeze({
     outputPrice: 0,
     fxRate: DEFAULT_FX_CNY_PER_USD,
     updatedAt: null,
+    /** Named price books, assigned to endpoints below. */
+    profiles: [],
+    /** `{ sparkId, port?, modelId?, profileId }` — most specific rule wins. */
+    assignments: [],
   },
   /** Outline thickness in panel pixels (1-4); the ring follows the glyph shape. */
   haloWidth: 3,
 });
+
+/** One sanitized price book; ids are stable strings so assignments can point at them. */
+function normalizeProfile(raw, index) {
+  const source = raw && typeof raw === "object" ? raw : {};
+  const id = typeof source.id === "string" && source.id.trim() ? source.id.trim().slice(0, 40) : `profile-${index + 1}`;
+  return {
+    id,
+    name: typeof source.name === "string" && source.name.trim() ? source.name.trim().slice(0, 40) : id,
+    modelId: typeof source.modelId === "string" && source.modelId ? source.modelId : "deepseek-flash",
+    tariff: ["auto", "peak", "off-peak"].includes(source.tariff) ? source.tariff : "auto",
+    label: typeof source.label === "string" ? source.label.slice(0, 40) : "",
+    cacheHitPrice: Math.max(0, Number(source.cacheHitPrice) || 0),
+    cacheMissPrice: Math.max(0, Number(source.cacheMissPrice) || 0),
+    outputPrice: Math.max(0, Number(source.outputPrice) || 0),
+    fxRate: Math.min(20, Math.max(1, Number(source.fxRate) || DEFAULT_FX_CNY_PER_USD)),
+  };
+}
+
+/** Rules that bind an endpoint (and optionally a model) to a price book. */
+function normalizeAssignments(raw, profileIds) {
+  const list = Array.isArray(raw) ? raw : [];
+  const seen = new Set();
+  const out = [];
+  for (const entry of list) {
+    if (!entry || typeof entry !== "object") continue;
+    const sparkId = typeof entry.sparkId === "string" ? entry.sparkId.trim().slice(0, 80) : "";
+    const profileId = typeof entry.profileId === "string" ? entry.profileId.trim() : "";
+    if (!sparkId || !profileIds.has(profileId)) continue;
+    const port = Number(entry.port) || 0;
+    const modelId = typeof entry.modelId === "string" ? entry.modelId.trim().slice(0, 120) : "";
+    const key = `${sparkId}:${port}:${modelId}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ sparkId, port, modelId, profileId });
+    if (out.length >= 100) break;
+  }
+  return out;
+}
 
 function clampNumber(value, min, max, fallback) {
   const n = Number(value);
@@ -176,7 +219,18 @@ export function normalizeConfig(patch = {}, base = DEFAULT_CONFIG) {
       outputPrice: Math.max(0, Number(source.outputPrice) || 0),
       fxRate: Math.min(20, Math.max(1, Number(source.fxRate) || basePricing.fxRate)),
       updatedAt: Number(source.updatedAt) || basePricing.updatedAt,
+      profiles: [],
+      assignments: [],
     };
+    const rawProfiles = Array.isArray(source.profiles) ? source.profiles.slice(0, 20) : basePricing.profiles || [];
+    next.pricing.profiles = rawProfiles
+      .map((profile, index) => normalizeProfile(profile, index))
+      .filter((profile, index, all) => all.findIndex((other) => other.id === profile.id) === index);
+    const profileIds = new Set(next.pricing.profiles.map((profile) => profile.id));
+    next.pricing.assignments = normalizeAssignments(
+      Array.isArray(source.assignments) ? source.assignments : basePricing.assignments || [],
+      profileIds
+    );
   }
   if (patch.sections && typeof patch.sections === "object") {
     for (const key of Object.keys(next.sections)) {
@@ -319,6 +373,20 @@ export function bucketTotalsSince(history, sinceMs, { now = Date.now() } = {}) {
   return { promptTokens, completionTokens, cachedTokens };
 }
 
+/** Wrap an aggregate total as a one-series snapshot so the pricer can run on it. */
+function priceWindowSnapshot(totals) {
+  return {
+    series: [
+      {
+        sparkId: "unknown",
+        port: 0,
+        totals,
+        models: [{ modelId: "", ...totals }],
+      },
+    ],
+  };
+}
+
 /**
  * Build the scene the bridge renders. Only aggregate numbers leave this function —
  * the tag shows a summary, never per-model detail.
@@ -367,10 +435,11 @@ export function buildScene({ snapshot, config, now = Date.now(), timeZone = "Asi
 
   const stamp = clockLabel(now, timeZone);
   const footer = config.footer ? config.footer.replace(/\{time\}/gi, stamp) : `每 ${config.intervalMinutes} 分钟刷新`;
+  /* The tag shows the fleet total, priced with whatever book each endpoint is
+     assigned to; a single-endpoint install keeps the default book. */
+  const priced = priceSnapshot({ series, pricing: config.pricing, now: new Date(now) });
   const rates = resolveRates(config.pricing, { now: new Date(now) });
-  const costValue = formatCny(
-    computeCost({ promptTokens, completionTokens, cachedTokens }, rates)
-  );
+  const costValue = priced.formatted;
 
   const scene = {
     title: config.title || "sparkDash",
@@ -555,46 +624,47 @@ export function createEinkRuntime({
   app.get("/api/llm-token-cost", (req, res) => {
     const range = typeof req.query?.range === "string" && req.query.range ? req.query.range : "today";
     try {
-      let promptTokens = 0;
-      let completionTokens = 0;
-      let cachedTokens = 0;
-      const addSeries = (snapshot) => {
-        for (const series of Array.isArray(snapshot?.series) ? snapshot.series : []) {
-          const totals = series?.totals || {};
-          promptTokens += Number(totals.promptTokens) || 0;
-          completionTokens += Number(totals.completionTokens) || 0;
-          cachedTokens += Number(totals.cachedTokens) || 0;
-        }
-      };
+      let snapshot;
       if (range === "today" && ledgerHistory) {
-        addSeries(localDaySnapshot(ledgerHistory(), { now: now(), timeZone }));
+        snapshot = localDaySnapshot(ledgerHistory(), { now: now(), timeZone });
       } else if ((range === "week" || range === "month") && ledgerHistory) {
         const history = ledgerHistory();
         const midnight = zonedMidnight(now(), timeZone);
         const parts = new Intl.DateTimeFormat("en-CA", { timeZone, weekday: "short", day: "2-digit" }).formatToParts(new Date(now()));
         const dayOfMonth = Number(parts.find((part) => part.type === "day")?.value) || 1;
         const since = range === "month" ? midnight - (dayOfMonth - 1) * 24 * 3600_000 : midnight - 6 * 24 * 3600_000;
-        const totals = bucketTotalsSince(history, since, { now: now() });
-        promptTokens = totals.promptTokens;
-        completionTokens = totals.completionTokens;
-        cachedTokens = totals.cachedTokens;
+        snapshot = priceWindowSnapshot(bucketTotalsSince(history, since, { now: now() }));
       } else {
-        addSeries(ledgerSnapshot(range === "24h" ? "today" : range));
+        snapshot = ledgerSnapshot(range === "24h" ? "today" : range);
       }
-      const rates = resolveRates(config.pricing, { now: new Date(now()) });
-      const cost = computeCost({ promptTokens, completionTokens, cachedTokens }, rates);
+      const priced = priceSnapshot({ series: snapshot?.series, pricing: config.pricing, now: new Date(now()) });
+      let promptTokens = 0;
+      let completionTokens = 0;
+      let cachedTokens = 0;
+      for (const group of priced.groups) {
+        promptTokens += group.tokens.promptTokens;
+        completionTokens += group.tokens.completionTokens;
+        cachedTokens += group.tokens.cachedTokens;
+      }
+      const fallbackRates = resolveRates(config.pricing, { now: new Date(now()) });
       res.json({
         range,
         currency: "CNY",
-        cost,
-        formatted: formatCny(cost),
+        cost: priced.total,
+        formatted: priced.formatted,
         tokens: { promptTokens, completionTokens, cachedTokens, total: promptTokens + completionTokens },
         modelId: config.pricing.modelId,
-        label: rates.label,
-        tariff: rates.tariff,
-        source: rates.source,
-        rates: { cacheHit: rates.cacheHit, cacheMiss: rates.cacheMiss, output: rates.output },
+        label: fallbackRates.label,
+        tariff: fallbackRates.tariff,
+        source: fallbackRates.source,
+        rates: { cacheHit: fallbackRates.cacheHit, cacheMiss: fallbackRates.cacheMiss, output: fallbackRates.output },
         pricingUpdatedAt: config.pricing.updatedAt,
+        profiles: config.pricing.profiles,
+        assignments: config.pricing.assignments,
+        groups: priced.groups.map((group) => ({
+          ...group,
+          key: `${group.sparkId}:${group.port}${group.modelId ? `:${group.modelId}` : ""}`,
+        })),
       });
     } catch (err) {
       res.status(500).json({ error: err?.message || String(err) });

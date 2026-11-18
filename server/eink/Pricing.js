@@ -131,6 +131,92 @@ export function computeCost(tokens, rates) {
 }
 
 /** "¥0.42" — three significant digits is all a 400 px panel can show. */
+/**
+ * Which price book applies to one endpoint (and optionally one model).
+ *
+ * Profiles are named price books; assignments map a concrete
+ * `sparkId` (+ optional `port`, + optional `modelId`) onto one of them. The most
+ * specific matching rule wins, and anything unmatched falls back to the default
+ * price book held in `pricing` itself — so a single-endpoint install keeps
+ * working with no assignments at all.
+ */
+export function matchProfile(pricing, { sparkId, port, modelId } = {}) {
+  const profiles = Array.isArray(pricing?.profiles) ? pricing.profiles : [];
+  const assignments = Array.isArray(pricing?.assignments) ? pricing.assignments : [];
+  const byId = new Map(profiles.map((profile) => [profile.id, profile]));
+  const wantedPort = Number(port) || 0;
+  const rank = (rule) => {
+    if (!rule || rule.sparkId !== sparkId) return -1;
+    const rulePort = Number(rule.port) || 0;
+    if (rulePort && rulePort !== wantedPort) return -1;
+    const ruleModel = typeof rule.modelId === "string" ? rule.modelId : "";
+    if (ruleModel && ruleModel !== modelId) return -1;
+    return (ruleModel ? 2 : 0) + (rulePort ? 4 : 0);
+  };
+  let best = null;
+  let bestRank = -1;
+  for (const rule of assignments) {
+    const score = rank(rule);
+    if (score < 0) continue;
+    const profile = byId.get(rule.profileId);
+    if (!profile) continue;
+    if (score > bestRank) {
+      best = { profile, rule };
+      bestRank = score;
+    }
+  }
+  if (best) return { pricing: best.profile, profileId: best.profile.id, profileName: best.profile.name, matched: true };
+  return { pricing, profileId: "default", profileName: "", matched: false };
+}
+
+/**
+ * Price a ledger snapshot per endpoint and model.
+ *
+ * Returns one row per (spark, port, model) with the tokens it burned and what
+ * that would cost under the price book assigned to that endpoint, plus the
+ * grand total. Rows priced by the default book carry `profileId: "default"`.
+ */
+export function priceSnapshot({ series, pricing, now = new Date() } = {}) {
+  const groups = [];
+  let total = 0;
+  for (const item of Array.isArray(series) ? series : []) {
+    const sparkId = typeof item?.sparkId === "string" && item.sparkId ? item.sparkId : "unknown";
+    const port = Number(item?.port) || 0;
+    const models = Array.isArray(item?.models) && item.models.length
+      ? item.models
+      : [{ modelId: "", promptTokens: item?.totals?.promptTokens, completionTokens: item?.totals?.completionTokens, cachedTokens: item?.totals?.cachedTokens }];
+    for (const model of models) {
+      const tokens = {
+        promptTokens: Number(model?.promptTokens) || 0,
+        completionTokens: Number(model?.completionTokens) || 0,
+        cachedTokens: Number(model?.cachedTokens) || 0,
+      };
+      if (!tokens.promptTokens && !tokens.completionTokens) continue;
+      const modelId = typeof model?.modelId === "string" ? model.modelId : "";
+      const match = matchProfile(pricing, { sparkId, port, modelId });
+      const rates = resolveRates(match.pricing, { now });
+      const cost = computeCost(tokens, rates);
+      total += cost;
+      groups.push({
+        sparkId,
+        port,
+        modelId,
+        tokens,
+        cost,
+        formatted: formatCny(cost),
+        profileId: match.profileId,
+        profileName: match.profileName,
+        label: rates.label,
+        tariff: rates.tariff,
+        source: rates.source,
+        rates: { cacheHit: rates.cacheHit, cacheMiss: rates.cacheMiss, output: rates.output },
+      });
+    }
+  }
+  groups.sort((a, b) => b.cost - a.cost);
+  return { groups, total, formatted: formatCny(total) };
+}
+
 export function formatCny(value) {
   const amount = Number(value) || 0;
   if (amount <= 0) return "¥0";

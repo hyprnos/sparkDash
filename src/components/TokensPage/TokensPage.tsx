@@ -562,7 +562,7 @@ function CostCard({ range }: { range: RangeKey }) {
     return (
       <section className="panel tk-card tk-cost">
         <h2>{t("cost.title")}</h2>
-        <p className="tk-cost__note">{error}</p>
+      <p className="tk-cost__note">{error}</p>
       </section>
     );
   }
@@ -580,6 +580,25 @@ function CostCard({ range }: { range: RangeKey }) {
         {t("cost.rates", { hit: cost.rates.cacheHit, miss: cost.rates.cacheMiss, output: cost.rates.output })} ·{" "}
         {t("cost.einkNote")}
       </p>
+      {cost.groups && cost.groups.length ? (
+      <div className="tk-cost__breakdown">
+        <p className="tk-cost__note tk-cost__note--head">{t("cost.byEndpoint")}</p>
+        <ul className="tk-cost__rows">
+          {cost.groups.map((group) => (
+            <li key={group.key} className="tk-cost__row">
+              <span className="tk-cost__endpoint">
+                {group.sparkId}:{group.port}
+                {group.modelId ? <em> · {group.modelId}</em> : null}
+              </span>
+              <span className="tk-cost__profile">
+                {group.profileId === "default" ? t("cost.defaultRates") : group.profileName}
+              </span>
+              <span className="tk-cost__amount">{group.formatted}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      ) : null}
       <details className="tk-cost__settings">
         <summary>{t("cost.details")}</summary>
         <CloudPriceSetting />

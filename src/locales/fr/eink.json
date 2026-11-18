@@ -94,6 +94,17 @@
     "synced": "Tarifs synchronisés depuis le site DeepSeek",
     "updated": "Mis à jour {{time}}",
     "never": "Jamais synchronisé",
-    "loading": "Chargement des tarifs…"
+    "loading": "Chargement des tarifs…",
+    "profilesTitle": "Tarifs par nœud",
+    "profileAdd": "Ajouter une grille",
+    "profileDefaultName": "Grille {{n}}",
+    "profilesHelp": "Attribuez des tarifs propres à un nœud — utile quand un Spark exécute un modèle moins cher qu'un autre.",
+    "profilesEmpty": "Aucune grille séparée pour l'instant. Les points d'accès non attribués utilisent les tarifs par défaut ci-dessus.",
+    "profileName": "Nom",
+    "profileRemove": "Supprimer",
+    "assignTitle": "Attribution des points d'accès",
+    "assignHelp": "Choisissez la grille appliquée à chaque point d'accès détecté.",
+    "assignEmpty": "Aucun point d'accès avec du trafic pour l'instant.",
+    "assignDefault": "Tarifs par défaut"
   }
 }

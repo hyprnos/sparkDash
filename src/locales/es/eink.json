@@ -94,6 +94,17 @@
     "synced": "Precios sincronizados desde el sitio web de DeepSeek",
     "updated": "Actualizado {{time}}",
     "never": "Sin sincronizar",
-    "loading": "Cargando precios…"
+    "loading": "Cargando precios…",
+    "profilesTitle": "Precios por nodo",
+    "profileAdd": "Añadir tarifa",
+    "profileDefaultName": "Tarifa {{n}}",
+    "profilesHelp": "Asigna tarifas propias a un nodo: útil cuando un Spark ejecuta un modelo más barato que otro.",
+    "profilesEmpty": "Aún no hay tarifas separadas. Los endpoints sin asignar usan las tarifas predeterminadas de arriba.",
+    "profileName": "Nombre",
+    "profileRemove": "Eliminar",
+    "assignTitle": "Asignación de endpoints",
+    "assignHelp": "Elige con qué tarifa se factura cada endpoint detectado.",
+    "assignEmpty": "Aún no hay endpoints con tráfico.",
+    "assignDefault": "Tarifas predeterminadas"
   }
 }

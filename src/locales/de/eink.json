@@ -94,6 +94,17 @@
     "synced": "Tarife von der DeepSeek-Website synchronisiert",
     "updated": "Aktualisiert {{time}}",
     "never": "Noch nie synchronisiert",
-    "loading": "Tarife werden geladen…"
+    "loading": "Tarife werden geladen…",
+    "profilesTitle": "Preise pro Knoten",
+    "profileAdd": "Preisliste hinzufügen",
+    "profileDefaultName": "Preisliste {{n}}",
+    "profilesHelp": "Eigene Sätze für einen Knoten — nützlich, wenn ein Spark ein günstigeres Modell betreibt als ein anderer.",
+    "profilesEmpty": "Noch keine eigenen Preislisten. Nicht zugeordnete Endpunkte nutzen die Standardpreise oben.",
+    "profileName": "Name",
+    "profileRemove": "Entfernen",
+    "assignTitle": "Endpunkt-Zuordnung",
+    "assignHelp": "Wähle, mit welcher Preisliste jeder erkannte Endpunkt abgerechnet wird.",
+    "assignEmpty": "Noch keine Endpunkte mit Verkehr.",
+    "assignDefault": "Standardpreise"
   }
 }

@@ -10,7 +10,7 @@ export interface EinkDevice {
   rssi?: number;
 }
 
-export interface EinkPricing {
+export interface EinkPriceBook {
   modelId: string;
   tariff: "auto" | "peak" | "off-peak";
   label: string;
@@ -18,7 +18,26 @@ export interface EinkPricing {
   cacheMissPrice: number;
   outputPrice: number;
   fxRate: number;
+}
+
+/** A named price book that can be assigned to a specific endpoint. */
+export interface EinkPriceProfile extends EinkPriceBook {
+  id: string;
+  name: string;
+}
+
+/** Binds an endpoint (spark, optionally a port or model) to a price book. */
+export interface EinkPriceAssignment {
+  sparkId: string;
+  port: number;
+  modelId: string;
+  profileId: string;
+}
+
+export interface EinkPricing extends EinkPriceBook {
   updatedAt: number | null;
+  profiles: EinkPriceProfile[];
+  assignments: EinkPriceAssignment[];
 }
 
 export interface EinkPriceModel {

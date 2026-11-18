@@ -94,6 +94,17 @@
     "synced": "Tariffe sincronizzate dal sito DeepSeek",
     "updated": "Aggiornato {{time}}",
     "never": "Mai sincronizzato",
-    "loading": "Caricamento delle tariffe…"
+    "loading": "Caricamento delle tariffe…",
+    "profilesTitle": "Prezzi per nodo",
+    "profileAdd": "Aggiungi listino",
+    "profileDefaultName": "Listino {{n}}",
+    "profilesHelp": "Assegna tariffe dedicate a un nodo — utile quando uno Spark esegue un modello più economico di un altro.",
+    "profilesEmpty": "Nessun listino separato. Gli endpoint non assegnati usano le tariffe predefinite sopra.",
+    "profileName": "Nome",
+    "profileRemove": "Rimuovi",
+    "assignTitle": "Assegnazione endpoint",
+    "assignHelp": "Scegli con quale listino viene tariffato ogni endpoint rilevato.",
+    "assignEmpty": "Nessun endpoint con traffico per ora.",
+    "assignDefault": "Tariffe predefinite"
   }
 }

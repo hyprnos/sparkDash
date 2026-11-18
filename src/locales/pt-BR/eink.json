@@ -94,6 +94,17 @@
     "synced": "Preços sincronizados do site da DeepSeek",
     "updated": "Atualizado {{time}}",
     "never": "Nunca sincronizado",
-    "loading": "Carregando preços…"
+    "loading": "Carregando preços…",
+    "profilesTitle": "Preços por nó",
+    "profileAdd": "Adicionar tabela de preços",
+    "profileDefaultName": "Tabela de preços {{n}}",
+    "profilesHelp": "Defina preços próprios para um nó — útil quando um Spark executa um modelo mais barato que outro.",
+    "profilesEmpty": "Ainda não há tabelas separadas. Endpoints sem atribuição usam os preços padrão acima.",
+    "profileName": "Nome",
+    "profileRemove": "Remover",
+    "assignTitle": "Atribuição de endpoints",
+    "assignHelp": "Escolha com qual tabela cada endpoint detectado é precificado.",
+    "assignEmpty": "Ainda não há endpoints com tráfego.",
+    "assignDefault": "Preços padrão"
   }
 }
