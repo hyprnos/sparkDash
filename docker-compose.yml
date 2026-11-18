@@ -17,6 +17,12 @@ services:
         # built: for host builds set VITE_HISTORY_HOURS in the shell that runs
         # `npm run build`; this arg only matters if you build the image itself.
         VITE_HISTORY_HOURS: ${VITE_HISTORY_HOURS:-8}
+    # The tag this service runs from. On a source checkout `docker compose build`
+    # writes it; on a runtime-only host — no Dockerfile, no frontend source, just
+    # what scripts/deploy-spark001.sh ships — `up -d` finds the image already
+    # loaded and never needs a build context. Point SPARKDASH_IMAGE at an older
+    # tag to roll the container back without touching the code.
+    image: ${SPARKDASH_IMAGE:-sparkdash-sparkdash:latest}
     # Runs on the platform its image was built for: empty by default, so the
     # container follows the host platform the build detected. DOCKER_DEFAULT_PLATFORM
     # pins build and run together when cross-building.

@@ -21,6 +21,10 @@
     "docker:prod": "docker compose up -d",
     "docker:rebuild": "docker compose up --build -d",
     "docker:multiarch": "docker compose -f docker-compose.yml -f docker-compose.multiarch.yml build",
+    "deploy": "bash scripts/deploy-spark001.sh",
+    "deploy:image": "bash scripts/deploy-spark001.sh --image",
+    "deploy:rollback": "bash scripts/deploy-spark001.sh --rollback",
+    "deploy:dry": "bash scripts/deploy-spark001.sh --dry-run",
     "frontend": "npm run build",
     "i18n:check": "node scripts/i18n-check.mjs",
     "test:i18n-check": "node --test scripts/__tests__/i18n-check.test.mjs"
