@@ -6,6 +6,7 @@ import { usableHead } from "../../shared/sparkHead";
 import { wakeSpark } from "../../api/client";
 import { backendLabel } from "../../shared/llmBackends";
 import { formatDiskSize, formatMb } from "../../shared/formatBytes";
+import { formatTokensCompact } from "../../shared/tokenFormat";
 import { Tag } from "../ui/Tag";
 import { HealthChips, worstSeverity } from "../ui/HealthFindings";
 import { AppLink } from "../ui/AppLink";
@@ -81,6 +82,7 @@ function SparkCardImpl({
   onSelect?: (id: string) => void;
 }) {
   const { t } = useTranslation("overview");
+  const { t: tSpark } = useTranslation("spark");
   const gpu = spark.metrics.gpu;
   const um = spark.metrics.unifiedMemory;
   const online = spark.online;
@@ -231,6 +233,11 @@ function SparkCardImpl({
         </Tag>
       ) : null}
       {online && llmChip ? <Tag tone={(llm?.requestsRunning ?? llm?.slotsActive ?? 0) > 0 ? "good" : "neutral"} title={llmChipTitle}>{llmChip}</Tag> : null}
+      {online && llm?.kvCacheTokens != null && llm.kvCacheTokens > 0 ? (
+        <Tag title={tSpark("llm.pool", { value: `${llm.kvCacheTokens.toLocaleString()} tok` })}>
+          {tSpark("llm.kvCache")} · {formatTokensCompact(llm.kvCacheTokens)} tok
+        </Tag>
+      ) : null}
       {comfy !== undefined || spark.comfyMonitoring ? (
         !comfy?.available ? (
           <Tag title={t("spark.comfyUnreachableTitle")}>{t("spark.comfy")}</Tag>

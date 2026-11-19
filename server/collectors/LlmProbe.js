@@ -9,6 +9,7 @@ import { classifyHostScope } from "../validate.js";
 import { llmProbeHost } from "./llmHost.js";
 import { openSshLlmTunnel } from "./llmTunnel.js";
 import { SglangLoadTelemetry } from "./SglangLoadTelemetry.js";
+import { localTensorFoldSlots } from "./tensorfoldRuntime.js";
 
 const FAIL_RESET_THRESHOLD = 3;
 /** Direct failures in a row before the probe tries an SSH tunnel to the unit's loopback. */
@@ -977,12 +978,10 @@ export class LlmProbe {
       return this._getSnapshot();
     }
 
-    // Engine pool sizes: only SGLang and vLLM report them, and they re-read
-    // them every poll below, so a size never outlives the payload it came from.
+    // Reset pool sizes before reading the current backend's telemetry.
     this._clearEngineMemory();
 
-    // TensorFold: no Prometheus. /health carries cumulative token totals when the
-    // server publishes them; without them tok/s stays 0 rather than guessing.
+    // TensorFold exposes different levels of detail on /health and /metrics.
     if (this.backendType === "tensorfold") {
       try {
         const healthRes = await this._fetch(`${this.baseUrl}/health`);
@@ -1006,6 +1005,17 @@ export class LlmProbe {
           }
         } else {
           this._applyTensorFoldHealth(null, dtSec);
+        }
+        if (this.slotsTotal === 0 && this.spark.isLocal && !this.spark.llmHost && process.platform === "linux") {
+          const key = JSON.stringify(this.models);
+          if (this._tensorfoldLocalSlots?.key !== key || now >= this._tensorfoldLocalSlots.refreshAt) {
+            this._tensorfoldLocalSlots = {
+              key,
+              slots: await localTensorFoldSlots(this.port, this.models),
+              refreshAt: now + 15_000,
+            };
+          }
+          this.slotsTotal = this._tensorfoldLocalSlots.slots;
         }
       } catch {
         this._applyTensorFoldHealth(null, dtSec);
@@ -1935,6 +1945,8 @@ export class LlmProbe {
     const prevPrefillSec = this._tensorfoldPrefillSeconds;
     const prevCached = this._tensorfoldPrevCached ?? null;
     this._applyExl3Health(health, dtSec);
+    this.slotsTotal = 0;
+    this.kvCacheTokensUsed = null;
     // TensorFold 0.5.0 (cuda/health.py) publishes cumulative cached prompt tokens
     // alongside the EXL3-style counters; older builds omit it (stays null).
     const cached = health.cached_tokens_total == null ? NaN : Number(health.cached_tokens_total);
@@ -1971,9 +1983,11 @@ export class LlmProbe {
     // `pool_free_tokens` not held by a request (kept prompts count as held).
     const pool = count(health.pool_tokens);
     const poolFree = count(health.pool_free_tokens);
+    if (Number.isSafeInteger(pool) && pool > 0) this.kvCacheTokens = pool;
     if (Number.isFinite(pool) && pool > 0 && Number.isFinite(poolFree) && poolFree >= 0) {
       const used = 1 - Math.min(poolFree, pool) / pool;
       this.kvCacheUsage = Math.round(used * 10000) / 10000;
+      this.kvCacheTokensAvailable = Math.min(poolFree, pool);
     }
     if (!Number.isFinite(prefillSec) || !Number.isFinite(prompt)) return;
     if (prevPrefillSec == null) {
@@ -2143,8 +2157,26 @@ export class LlmProbe {
         Number.isFinite(preemptions) && preemptions >= 0 ? Math.round(preemptions) : null;
     }
 
-    const kv = queueOnly ? null : m("kv_cache_usage_ratio");
-    if (Number.isFinite(kv) && kv >= 0) this.kvCacheUsage = Math.min(1, kv);
+    if (!queueOnly) {
+      const capacity = m("kv_pool_capacity_tokens");
+      if (Number.isSafeInteger(capacity) && capacity > 0) {
+        this.kvCacheTokens = capacity;
+        this.kvCacheTokensAvailable = null;
+        this.kvCacheTokensUsed = null;
+        this.kvCacheUsage = null;
+        const active = m("kv_pool_active_tokens");
+        const cached = m("kv_pool_cached_tokens");
+        // These gauges are disjoint confirmed and retained KV. Reservations
+        // also cover future output, so they are not an occupancy measurement.
+        if (Number.isSafeInteger(active) && active >= 0 && Number.isSafeInteger(cached) && cached >= 0 && active + cached <= capacity) {
+          this.kvCacheTokensUsed = active + cached;
+          this.kvCacheUsage = this.kvCacheTokensUsed / capacity;
+        }
+      } else {
+        const kv = m("kv_cache_usage_ratio");
+        if (Number.isFinite(kv) && kv >= 0) this.kvCacheUsage = Math.min(1, kv);
+      }
+    }
     const drafted = queueOnly ? null : m("mtp_drafted_total");
     const accepted = queueOnly ? null : m("mtp_accepted_total");
     if (Number.isFinite(drafted) && drafted > 0 && Number.isFinite(accepted)) {

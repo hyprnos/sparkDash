@@ -64,6 +64,7 @@ test("probe: tensorfold CUDA {ok:true} health → labeled, 0 tok/s, no crash", a
   assert.equal(snap.modelId, "Qwen3.8-Flash-Next-MLX-4bit-MTP");
   assert.equal(snap.generationTps, 0);
   assert.equal(snap.prefillTps, 0);
+  assert.equal(snap.slotsTotal, 0);
 });
 
 test("_applyTensorFoldHealth: open requests do not count queued work as occupied slots", () => {
@@ -417,7 +418,7 @@ test("_applyTensorFoldHealth: CUDA 0.6.0 KV pool tokens give the KV fill", () =>
   assert.equal(probe.kvCacheUsage, null);
 });
 
-test("probe: tensorfold snapshot carries kvCacheUsage and null pool sizes", async () => {
+test("probe: tensorfold health reports the KV pool size and usage", async () => {
   const probe = new LlmProbe({ lanIp: "192.0.2.10" }, 8888);
   probe._fetch = async (url) => {
     const u = String(url);
@@ -429,9 +430,39 @@ test("probe: tensorfold snapshot carries kvCacheUsage and null pool sizes", asyn
   };
   const snap = await probe.probe();
   assert.equal(snap.backend, "tensorfold");
+  assert.equal(snap.kvCacheTokens, 2387968);
+  assert.equal(snap.kvCacheTokensAvailable, 2256896);
   assert.equal(snap.kvCacheUsage, 0.0549);
   assert.equal(snap.kvCacheGb, null);
   assert.equal(snap.weightsGb, null);
+});
+
+test("probe: TensorFold with protected health reads shared KV capacity from metrics", async () => {
+  const probe = new LlmProbe({ lanIp: "192.0.2.10" });
+  probe._fetch = async (url) => {
+    if (url.endsWith("/v1/models")) return jsonRes(CUDA_MODELS);
+    if (url.endsWith("/health")) return jsonRes({ status: "ok" });
+    if (url.endsWith("/metrics")) return {
+      ok: true,
+      status: 200,
+      text: async () => [
+        "tensorfold:requests_running 1",
+        "tensorfold:requests_waiting 0",
+        "tensorfold:kv_pool_capacity_tokens 3300000",
+        "tensorfold:kv_pool_active_tokens 100000",
+        "tensorfold:kv_pool_cached_tokens 230000",
+        "tensorfold:kv_pool_reserved_tokens 800000",
+        'tensorfold:kv_cache_usage_ratio{pool="0"} 0.25',
+      ].join("\n"),
+    };
+    return notFound();
+  };
+  const snap = await probe.probe();
+  assert.equal(snap.slotsActive, 1);
+  assert.equal(snap.slotsTotal, 0);
+  assert.equal(snap.kvCacheTokens, 3300000);
+  assert.equal(snap.kvCacheTokensUsed, 330000);
+  assert.equal(snap.kvCacheUsage, 0.1);
 });
 
 test("_applyTensorFoldHealth: prefillActive follows streams.prefilling and the last finished rate is held", () => {

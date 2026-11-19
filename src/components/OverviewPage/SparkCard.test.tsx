@@ -69,6 +69,18 @@ describe("SparkCard", () => {
     expect(text).toContain("2 running · 1 queued");
     expect(text).not.toContain("slots");
   });
+
+  it("shows the reported KV pool capacity alongside the parallel slots", () => {
+    const spark = makeSpark("fixture");
+    Object.assign(spark.metrics.llm[0], {
+      backend: "tensorfold", requestsRunning: 1, requestsWaiting: 0,
+      slotsTotal: 8, kvCacheTokens: 3300000,
+    });
+    const { container } = render(<SparkCard spark={spark} temperatureUnit="celsius" />);
+    const chips = container.querySelector(".ov-chips")?.textContent;
+    expect(chips).toContain("1 running · 0 queued · 8 slots");
+    expect(chips).toContain("KV cache · 3.3M tok");
+  });
   it("lists private loaded models alongside the monitored model without duplicates", () => {
     const spark = head(true);
     spark.metrics.residentModels = [
